@@ -13,7 +13,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mrmonk.kuraldaily",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "This app needs access to save the Kural image to your photo library for sharing."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,8 +27,15 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.android.kuraldaily"
+      "package": "com.mrmonk.kuraldaily",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_EXTERNAL_STORAGE"
+      ]
     },
+    "jsEngine": "hermes",
     "web": {
       "bundler": "metro",
       "output": "static",

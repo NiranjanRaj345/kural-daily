@@ -27,6 +27,7 @@ export default function ProfileScreen() {
   const [allVoices, setAllVoices] = useState<Speech.Voice[]>([]);
   const [showAllVoices, setShowAllVoices] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const loadVoices = async () => {
     try {
@@ -254,6 +255,13 @@ export default function ProfileScreen() {
         <List.Section>
           <List.Subheader>About</List.Subheader>
           <List.Item
+            title="Privacy Policy"
+            description="Read our data handling policy"
+            left={() => <List.Icon icon="shield-check-outline" />}
+            onPress={() => setShowPrivacyModal(true)}
+            right={props => <List.Icon {...props} icon="chevron-right" />}
+          />
+          <List.Item
             title="Version"
             description="1.0.0"
             left={() => <List.Icon icon="information-outline" />}
@@ -262,6 +270,47 @@ export default function ProfileScreen() {
         
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Privacy Policy Modal */}
+      <Portal>
+        <Modal
+          visible={showPrivacyModal}
+          onDismiss={() => setShowPrivacyModal(false)}
+          animationType="slide"
+          transparent={true}
+        >
+          <View style={styles.modalContainer}>
+            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+              <View style={styles.modalHeader}>
+                <Text variant="titleMedium">Privacy Policy</Text>
+                <IconButton icon="close" onPress={() => setShowPrivacyModal(false)} />
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 20 }}>
+                <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Data Collection</Text>
+                <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
+                  We do not collect, store, or share any personal information. You can use the entire application without creating an account.
+                </Text>
+
+                <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Local Storage</Text>
+                <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
+                  All user preferences (theme, history, favorites, streaks) are stored locally on your device. This data never leaves your phone.
+                </Text>
+
+                <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Permissions</Text>
+                <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
+                  • Notifications: Used only for daily reminders scheduled locally.{'\n'}
+                  • Storage: Used temporarily when you share a Kural image.
+                </Text>
+
+                <Text variant="bodySmall" style={{ marginTop: 20, color: theme.colors.secondary, textAlign: 'center' }}>
+                  Last Updated: November 30, 2025
+                </Text>
+                <View style={{ height: 40 }} />
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </Portal>
 
       {/* Voice Selection Modal */}
       <Portal>
