@@ -1,9 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-// Read the source JSON files
-const sourcePath = path.join(__dirname, '../../temp_data/thirukkural.json');
-const detailPath = path.join(__dirname, '../../temp_data/detail.json');
+// Rebuilds assets/data/thirukkural.json from the raw source files.
+// Usage: node scripts/transform_data.js <path/to/thirukkural.json> <path/to/detail.json>
+// (defaults to ../temp_data/ next to the repo, where the source files were originally kept)
+const sourcePath = path.resolve(process.argv[2] || path.join(__dirname, '../../temp_data/thirukkural.json'));
+const detailPath = path.resolve(process.argv[3] || path.join(__dirname, '../../temp_data/detail.json'));
 const destPath = path.join(__dirname, '../assets/data/thirukkural.json');
 
 try {
@@ -84,9 +86,18 @@ try {
     };
   });
 
+  if (kurals.length !== 1330) {
+    throw new Error(`Expected 1330 kurals, got ${kurals.length}`);
+  }
+  const unknown = kurals.filter(k => k.chap_tam === 'Unknown').length;
+  if (unknown > 0) {
+    throw new Error(`${unknown} kurals have no chapter metadata`);
+  }
+
   console.log(`Transformed ${kurals.length} kurals with metadata.`);
   fs.writeFileSync(destPath, JSON.stringify(kurals, null, 2));
-  
+
 } catch (error) {
-  console.error('Error transforming data:', error);
+  console.error('Error transforming data:', error.message || error);
+  process.exit(1);
 }

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Share } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Card, Text, Button, IconButton, Divider, useTheme } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 import * as Clipboard from 'expo-clipboard';
@@ -17,11 +17,11 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural }) => {
   const theme = useTheme();
   const {
     showEnglish, showTamil, favorites, toggleFavorite, addToHistory,
-    shareIncludeTamil, shareIncludeEnglish, shareIncludeExplanation,
     fontSize, selectedVoiceIdentifier
   } = useSettingsStore();
   const [showExplanation, setShowExplanation] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const isSpeakingRef = useRef(false);
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -31,25 +31,40 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural }) => {
   useEffect(() => {
     setShowExplanation(false);
     addToHistory(kural.number);
+  }, [kural.number, addToHistory]);
+
+  const updateSpeaking = (value: boolean) => {
+    isSpeakingRef.current = value;
+    setIsSpeaking(value);
+  };
+
+  // Don't keep reading aloud after the card is closed or replaced
+  useEffect(() => {
+    return () => {
+      if (isSpeakingRef.current) {
+        isSpeakingRef.current = false;
+        Speech.stop();
+      }
+    };
   }, [kural.number]);
 
   const handleSpeak = async () => {
     if (isSpeaking) {
       Speech.stop();
-      setIsSpeaking(false);
+      updateSpeaking(false);
       return;
     }
 
-    setIsSpeaking(true);
+    updateSpeaking(true);
     const thingToSay = `${kural.line1} ... ${kural.line2}`;
     
     // Speak Tamil text
     Speech.speak(thingToSay, {
       language: 'ta-IN',
       voice: selectedVoiceIdentifier || undefined,
-      onDone: () => setIsSpeaking(false),
-      onStopped: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
+      onDone: () => updateSpeaking(false),
+      onStopped: () => updateSpeaking(false),
+      onError: () => updateSpeaking(false),
     });
   };
 
@@ -66,23 +81,6 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural }) => {
     await Clipboard.setStringAsync(message);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleShare = async (forceText = false) => {
-    let message = `Thirukkural #${kural.number}`;
-    if (shareIncludeTamil) message += `\n\n${kural.line1}\n${kural.line2}`;
-    if (shareIncludeEnglish) message += `\n\nMeaning:\n${kural.eng}`;
-    if (shareIncludeExplanation) {
-      if (shareIncludeTamil) message += `\n\nTamil Explanation:\n${kural.tam_exp}`;
-      if (shareIncludeEnglish) message += `\n\nEnglish Explanation:\n${kural.eng_exp}`;
-    }
-
-    if (!forceText) {
-      setShowShareModal(true);
-    } else {
-      // Share as text
-      await Share.share({ message });
-    }
   };
 
   const handleFavoritePress = () => {
@@ -158,23 +156,25 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural }) => {
           icon={isFavorite ? "heart" : "heart-outline"}
           iconColor={isFavorite ? theme.colors.error : undefined}
           onPress={handleFavoritePress}
+          accessibilityLabel={isFavorite ? "Remove from favorites" : "Add to favorites"}
           mode="contained-tonal"
         />
         <IconButton
           icon={isSpeaking ? "stop" : "volume-high"}
           onPress={handleSpeak}
+          accessibilityLabel={isSpeaking ? "Stop reading" : "Read aloud"}
           mode="contained-tonal"
         />
         <IconButton
           icon="share-variant"
-          onPress={() => handleShare(false)}
-          onLongPress={() => handleShare(true)}
-          delayLongPress={500}
+          onPress={() => setShowShareModal(true)}
+          accessibilityLabel="Share"
           mode="contained-tonal"
         />
         <IconButton
           icon={copied ? "check" : "content-copy"}
           onPress={handleCopy}
+          accessibilityLabel="Copy text"
           mode="contained-tonal"
         />
         <Button

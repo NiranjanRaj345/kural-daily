@@ -26,48 +26,77 @@ const getRandomKural = (allKurals: Kural[]): Kural => {
   return allKurals[Math.floor(Math.random() * allKurals.length)];
 };
 
+const newId = () => Math.random().toString(36).slice(2, 11);
+
+const PUNCTUATION = /[.,;:!?'"“”‘’()\[\]-]/g;
+
+// Strip punctuation so options don't give the answer away (e.g. "உலகு." vs "உலகு")
+export const normalizeWord = (word: string) => word.replace(PUNCTUATION, '').trim();
+
+const MIN_WORD_LENGTH = 3;
+
 export const generateMissingWordQuestion = (): QuizQuestion => {
   const allKurals = getAllKurals();
-  const randomKural = getRandomKural(allKurals);
-  
-  // Combine lines and split into words
-  const fullText = `${randomKural.line1} ${randomKural.line2}`;
-  const words = fullText.split(/\s+/).filter(w => w.length > 2); // Filter out very short words
-  
-  if (words.length < 4) {
-    return generateMissingWordQuestion();
-  }
 
-  // Select a random word to mask
-  const correctWordIndex = Math.floor(Math.random() * words.length);
-  const correctWord = words[correctWordIndex];
-  
-  // Create masked text
-  const maskedText = fullText.replace(correctWord, '_______');
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const randomKural = getRandomKural(allKurals);
+    const lines = [randomKural.line1, randomKural.line2].map(line => line.split(/\s+/).filter(Boolean));
+    const tokens = lines.flatMap((words, lineIndex) =>
+      words.map((raw, wordIndex) => ({ raw, word: normalizeWord(raw), lineIndex, wordIndex }))
+    );
 
-  // Generate distractors
-  const distractors: string[] = [];
-  while (distractors.length < 3) {
-    const randomDistractorKural = getRandomKural(allKurals);
-    const distractorWords = `${randomDistractorKural.line1} ${randomDistractorKural.line2}`.split(/\s+/);
-    const randomDistractor = distractorWords[Math.floor(Math.random() * distractorWords.length)];
-    
-    if (randomDistractor !== correctWord && !distractors.includes(randomDistractor) && randomDistractor.length > 2) {
-      distractors.push(randomDistractor);
+    // Only blank a word that appears once, so there's exactly one right answer
+    const candidates = tokens.filter(t =>
+      t.word.length >= MIN_WORD_LENGTH && tokens.filter(o => o.word === t.word).length === 1
+    );
+    if (candidates.length === 0) continue;
+
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    const correctWord = target.word;
+    const kuralWords = new Set(tokens.map(t => t.word));
+
+    const maskedText = lines
+      .map((words, lineIndex) =>
+        words
+          .map((raw, wordIndex) =>
+            lineIndex === target.lineIndex && wordIndex === target.wordIndex
+              ? (raw.includes(correctWord) ? raw.replace(correctWord, '_______') : '_______')
+              : raw
+          )
+          .join(' ')
+      )
+      .join('\n');
+
+    // Distractors come from other Kurals and must not appear in this one
+    const distractors: string[] = [];
+    for (let tries = 0; distractors.length < 3 && tries < 500; tries++) {
+      const other = getRandomKural(allKurals);
+      if (other.number === randomKural.number) continue;
+      const otherWords = `${other.line1} ${other.line2}`.split(/\s+/).map(normalizeWord);
+      const candidate = otherWords[Math.floor(Math.random() * otherWords.length)];
+      if (
+        candidate.length >= MIN_WORD_LENGTH &&
+        !kuralWords.has(candidate) &&
+        !distractors.includes(candidate)
+      ) {
+        distractors.push(candidate);
+      }
     }
+    if (distractors.length < 3) continue;
+
+    const options = shuffleArray([...distractors, correctWord]);
+
+    return {
+      id: newId(),
+      kural: randomKural,
+      questionText: maskedText,
+      options,
+      correctAnswerIndex: options.indexOf(correctWord),
+      type: 'missing-word',
+    };
   }
 
-  const options = shuffleArray([...distractors, correctWord]);
-  const correctAnswerIndex = options.indexOf(correctWord);
-
-  return {
-    id: Math.random().toString(36).substr(2, 9),
-    kural: randomKural,
-    questionText: maskedText,
-    options,
-    correctAnswerIndex,
-    type: 'missing-word',
-  };
+  throw new Error('Could not generate a missing-word question');
 };
 
 export const generateMeaningMatchQuestion = (): QuizQuestion => {
@@ -90,7 +119,7 @@ export const generateMeaningMatchQuestion = (): QuizQuestion => {
   const correctAnswerIndex = options.indexOf(correctMeaning);
 
   return {
-    id: Math.random().toString(36).substr(2, 9),
+    id: newId(),
     kural: randomKural,
     questionText: `${randomKural.line1}\n${randomKural.line2}`,
     options,
@@ -119,7 +148,7 @@ export const generateFindChapterQuestion = (): QuizQuestion => {
   const correctAnswerIndex = options.indexOf(correctChapter);
 
   return {
-    id: Math.random().toString(36).substr(2, 9),
+    id: newId(),
     kural: randomKural,
     questionText: `${randomKural.line1}\n${randomKural.line2}`,
     options,
@@ -143,7 +172,7 @@ export const generateJumbledKuralQuestion = (): QuizQuestion => {
   const jumbledWords = shuffleArray([...words]);
 
   return {
-    id: Math.random().toString(36).substr(2, 9),
+    id: newId(),
     kural: randomKural,
     questionText: "Arrange the words in the correct order:",
     options: [], // Not used for this type in the same way

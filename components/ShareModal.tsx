@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, Modal, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { Text, Button, IconButton, Portal, useTheme, Divider } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Share } from 'react-native';
+import { Text, Button, Chip, useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Kural } from '../types/kural';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { SheetModal } from './SheetModal';
 
 interface ShareModalProps {
   visible: boolean;
@@ -21,14 +23,37 @@ const THEMES = [
   { id: 'royal', name: 'Royal', colors: ['#141E30', '#243B55'] as const, textColor: '#ffffff', subTextColor: '#b2bec3' },
 ];
 
+export const buildShareText = (
+  kural: Kural,
+  options: { tamil: boolean; english: boolean; explanation: boolean }
+) => {
+  let message = `Thirukkural #${kural.number}`;
+  if (options.tamil) message += `\n\n${kural.line1}\n${kural.line2}`;
+  if (options.english) message += `\n\nMeaning:\n${kural.eng}`;
+  if (options.explanation) {
+    if (options.tamil) message += `\n\nTamil Explanation:\n${kural.tam_exp}`;
+    if (options.english) message += `\n\nEnglish Explanation:\n${kural.eng_exp}`;
+  }
+  return message;
+};
+
 export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kural }) => {
   const theme = useTheme();
+  const {
+    shareIncludeTamil, shareIncludeEnglish, shareIncludeExplanation,
+    toggleShareIncludeTamil, toggleShareIncludeEnglish, toggleShareIncludeExplanation,
+  } = useSettingsStore();
   const [selectedThemeId, setSelectedThemeId] = useState('white');
+  const [sharing, setSharing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const viewRef = useRef<View>(null);
 
   const selectedTheme = THEMES.find(t => t.id === selectedThemeId) || THEMES[0];
+  const options = { tamil: shareIncludeTamil, english: shareIncludeEnglish, explanation: shareIncludeExplanation };
 
-  const handleShare = async () => {
+  const handleShareImage = async () => {
+    setError(null);
+    setSharing(true);
     try {
       const uri = await captureRef(viewRef, {
         format: 'png',
@@ -37,132 +62,174 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
       });
 
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri);
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: `Thirukkural #${kural.number}` });
+      } else {
+        setError('Image sharing is not available on this device. Try sharing as text.');
       }
-    } catch (error) {
-      console.error("Sharing failed", error);
+    } catch (e) {
+      console.error("Sharing failed", e);
+      setError('Could not create the image. Try sharing as text.');
+    } finally {
+      setSharing(false);
     }
   };
 
+  const handleShareText = async () => {
+    setError(null);
+    try {
+      await Share.share({ message: buildShareText(kural, options) });
+    } catch (e) {
+      console.error("Text share failed", e);
+    }
+  };
+
+  // Keep at least one language selected so the share is never empty
+  const onToggleTamil = () => { if (shareIncludeEnglish || !shareIncludeTamil) toggleShareIncludeTamil(); };
+  const onToggleEnglish = () => { if (shareIncludeTamil || !shareIncludeEnglish) toggleShareIncludeEnglish(); };
+
   return (
-    <Portal>
-      <Modal visible={visible} onDismiss={onDismiss} animationType="slide" transparent>
-        <View style={styles.modalContainer}>
-          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-            <View style={styles.header}>
-              <Text variant="titleLarge">Share Kural</Text>
-              <IconButton icon="close" onPress={onDismiss} />
-            </View>
-
-            <ScrollView style={styles.contentScroll}>
-              {/* Preview Area */}
-              <View style={styles.previewContainer}>
-                <View ref={viewRef} collapsable={false} style={styles.cardWrapper}>
-                  <LinearGradient
-                    colors={selectedTheme.colors}
-                    style={styles.card}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <View style={styles.cardHeader}>
-                      <Text style={[styles.kuralNumber, { color: selectedTheme.subTextColor }]}>
-                        Kural {kural.number}
-                      </Text>
-                      <Text style={[styles.chapter, { color: selectedTheme.subTextColor }]}>
-                        {kural.chap_tam}
-                      </Text>
-                    </View>
-
-                    <View style={styles.textContainer}>
-                      <Text style={[styles.tamilText, { color: selectedTheme.textColor }]}>
-                        {kural.line1}
-                      </Text>
-                      <Text style={[styles.tamilText, { color: selectedTheme.textColor }]}>
-                        {kural.line2}
-                      </Text>
-                    </View>
-
-                    <View style={[styles.divider, { backgroundColor: selectedTheme.subTextColor, opacity: 0.3 }]} />
-
-                    <Text style={[styles.englishText, { color: selectedTheme.textColor }]}>
-                      {kural.eng}
-                    </Text>
-
-                    <Text style={[styles.footer, { color: selectedTheme.subTextColor }]}>
-                      Thirukkural Daily
-                    </Text>
-                  </LinearGradient>
-                </View>
+    <SheetModal visible={visible} onClose={onDismiss} title="Share Kural" scrollable={false}>
+      <ScrollView style={styles.contentScroll}>
+        {/* Preview Area */}
+        <View style={[styles.previewContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <View
+            ref={viewRef}
+            collapsable={false}
+            style={[styles.cardWrapper, !shareIncludeExplanation && styles.cardWrapperFixed]}
+          >
+            <LinearGradient
+              colors={selectedTheme.colors}
+              style={styles.card}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <View style={styles.cardHeader}>
+                <Text style={[styles.kuralNumber, { color: selectedTheme.subTextColor }]}>
+                  Kural {kural.number}
+                </Text>
+                <Text style={[styles.chapter, { color: selectedTheme.subTextColor }]} numberOfLines={1}>
+                  {shareIncludeTamil ? kural.chap_tam : kural.chap_eng ?? kural.chap_tam}
+                </Text>
               </View>
 
-              {/* Theme Selector */}
-              <Text variant="titleMedium" style={styles.sectionTitle}>Choose Style</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeSelector}>
-                {THEMES.map((t) => (
-                  <TouchableOpacity
-                    key={t.id}
-                    onPress={() => setSelectedThemeId(t.id)}
-                    style={[
-                      styles.themeOption,
-                      selectedThemeId === t.id && { borderColor: theme.colors.primary, borderWidth: 2 }
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={t.colors}
-                      style={styles.themePreview}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    />
-                    <Text variant="labelSmall" style={{ textAlign: 'center', marginTop: 4 }}>{t.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </ScrollView>
+              {shareIncludeTamil && (
+                <View style={styles.textContainer}>
+                  <Text style={[styles.tamilText, { color: selectedTheme.textColor }]}>
+                    {kural.line1}
+                  </Text>
+                  <Text style={[styles.tamilText, { color: selectedTheme.textColor }]}>
+                    {kural.line2}
+                  </Text>
+                </View>
+              )}
 
-            <View style={styles.actions}>
-              <Button mode="contained" icon="share-variant" onPress={handleShare} style={styles.shareButton}>
-                Share Image
-              </Button>
-            </View>
+              {shareIncludeTamil && shareIncludeEnglish && (
+                <View style={[styles.divider, { backgroundColor: selectedTheme.subTextColor, opacity: 0.3 }]} />
+              )}
+
+              {shareIncludeEnglish && (
+                <Text style={[styles.englishText, { color: selectedTheme.textColor }]}>
+                  {kural.eng}
+                </Text>
+              )}
+
+              {shareIncludeExplanation && (
+                <View style={styles.explanation}>
+                  {shareIncludeTamil && (
+                    <Text style={[styles.explanationText, { color: selectedTheme.textColor }]}>
+                      {kural.tam_exp}
+                    </Text>
+                  )}
+                  {shareIncludeEnglish && (
+                    <Text style={[styles.explanationText, { color: selectedTheme.textColor }]}>
+                      {kural.eng_exp}
+                    </Text>
+                  )}
+                </View>
+              )}
+
+              <Text style={[styles.footer, { color: selectedTheme.subTextColor }]}>
+                Thirukkural Daily
+              </Text>
+            </LinearGradient>
           </View>
         </View>
-      </Modal>
-    </Portal>
+
+        {/* Content options (saved for next time) */}
+        <Text variant="titleMedium" style={styles.sectionTitle}>Include</Text>
+        <View style={styles.optionRow}>
+          <Chip selected={shareIncludeTamil} showSelectedCheck onPress={onToggleTamil} style={styles.optionChip}>
+            Tamil
+          </Chip>
+          <Chip selected={shareIncludeEnglish} showSelectedCheck onPress={onToggleEnglish} style={styles.optionChip}>
+            English
+          </Chip>
+          <Chip selected={shareIncludeExplanation} showSelectedCheck onPress={toggleShareIncludeExplanation} style={styles.optionChip}>
+            Explanation
+          </Chip>
+        </View>
+
+        {/* Theme Selector */}
+        <Text variant="titleMedium" style={styles.sectionTitle}>Choose Style</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeSelector}>
+          {THEMES.map((t) => (
+            <TouchableOpacity
+              key={t.id}
+              onPress={() => setSelectedThemeId(t.id)}
+              accessibilityLabel={`${t.name} style`}
+              style={[
+                styles.themeOption,
+                selectedThemeId === t.id && { borderColor: theme.colors.primary, borderWidth: 2 }
+              ]}
+            >
+              <LinearGradient
+                colors={t.colors}
+                style={styles.themePreview}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              />
+              <Text variant="labelSmall" style={{ textAlign: 'center', marginTop: 4 }}>{t.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </ScrollView>
+
+      <View style={[styles.actions, { borderTopColor: theme.colors.outlineVariant }]}>
+        {error && (
+          <Text variant="bodySmall" style={{ color: theme.colors.error, textAlign: 'center', marginBottom: 8 }}>
+            {error}
+          </Text>
+        )}
+        <Button
+          mode="contained"
+          icon="image-outline"
+          onPress={handleShareImage}
+          loading={sharing}
+          disabled={sharing}
+          style={styles.shareButton}
+        >
+          Share Image
+        </Button>
+        <Button mode="outlined" icon="text" onPress={handleShareText} style={styles.shareButton}>
+          Share as Text
+        </Button>
+      </View>
+    </SheetModal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: '85%',
-    paddingBottom: 20,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
   contentScroll: {
     flex: 1,
   },
   previewContainer: {
     padding: 20,
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
   },
   cardWrapper: {
     width: '100%',
-    aspectRatio: 4/5, // Portrait aspect ratio for social media
     maxWidth: 320,
+    minHeight: 400,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -172,9 +239,14 @@ const styles = StyleSheet.create({
     shadowRadius: 4.65,
     elevation: 8,
   },
+  cardWrapperFixed: {
+    aspectRatio: 4 / 5, // Portrait aspect ratio for social media
+    minHeight: undefined,
+  },
   card: {
     flex: 1,
     padding: 24,
+    paddingBottom: 48,
     borderRadius: 16,
     justifyContent: 'center',
   },
@@ -182,6 +254,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 24,
+    gap: 12,
   },
   kuralNumber: {
     fontSize: 14,
@@ -192,6 +265,7 @@ const styles = StyleSheet.create({
   chapter: {
     fontSize: 14,
     fontWeight: '500',
+    flexShrink: 1,
   },
   textContainer: {
     marginBottom: 20,
@@ -216,6 +290,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  explanation: {
+    marginTop: 20,
+    gap: 10,
+  },
+  explanationText: {
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
+    opacity: 0.9,
+  },
   footer: {
     position: 'absolute',
     bottom: 20,
@@ -227,6 +311,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 20,
     marginBottom: 10,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  optionChip: {
+    marginRight: 0,
   },
   themeSelector: {
     paddingHorizontal: 16,
@@ -244,10 +337,10 @@ const styles = StyleSheet.create({
   },
   actions: {
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+    gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   shareButton: {
-    paddingVertical: 6,
+    paddingVertical: 2,
   },
 });

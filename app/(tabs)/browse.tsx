@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { Text, List, useTheme, Divider, Card, Portal, IconButton } from 'react-native-paper';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { View, StyleSheet, FlatList, TouchableOpacity, BackHandler } from 'react-native';
+import { Text, List, useTheme, Divider, Card } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getChapters, getKuralsByChapter } from '../../services/DataService';
+import { Chapter, getChapters, getKuralsByChapter } from '../../services/DataService';
 import { Kural } from '../../types/kural';
-import { KuralCard } from '../../components/KuralCard';
+import { KuralDetailModal } from '../../components/KuralDetailModal';
 
 export default function BrowseScreen() {
   const theme = useTheme();
-  const [chapters, setChapters] = useState<string[]>([]);
-  const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [chapterKurals, setChapterKurals] = useState<Kural[]>([]);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
 
@@ -18,8 +19,8 @@ export default function BrowseScreen() {
     setChapters(allChapters);
   }, []);
 
-  const handleChapterPress = (chapter: string) => {
-    const kurals = getKuralsByChapter(chapter);
+  const handleChapterPress = (chapter: Chapter) => {
+    const kurals = getKuralsByChapter(chapter.number);
     setChapterKurals(kurals);
     setSelectedChapter(chapter);
   };
@@ -28,6 +29,18 @@ export default function BrowseScreen() {
     setSelectedChapter(null);
     setChapterKurals([]);
   };
+
+  // Android back returns to the chapter list instead of leaving the tab
+  useFocusEffect(
+    useCallback(() => {
+      if (!selectedChapter) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        handleBack();
+        return true;
+      });
+      return () => sub.remove();
+    }, [selectedChapter])
+  );
 
   const renderKuralItem = ({ item }: { item: Kural }) => (
     <Card style={styles.card} onPress={() => setSelectedKural(item)}>
@@ -54,7 +67,7 @@ export default function BrowseScreen() {
             <Text variant="labelLarge" style={{ color: theme.colors.primary }}>← Back</Text>
           </TouchableOpacity>
           <Text variant="headlineSmall" style={styles.headerTitle} numberOfLines={1}>
-            {selectedChapter}
+            {selectedChapter.number}. {selectedChapter.name}
           </Text>
         </View>
         <FlatList
@@ -64,28 +77,7 @@ export default function BrowseScreen() {
           contentContainerStyle={styles.listContent}
         />
 
-        {/* Full Kural Modal */}
-        <Portal>
-          <Modal
-            visible={!!selectedKural}
-            onDismiss={() => setSelectedKural(null)}
-            animationType="slide"
-            transparent={true}
-          >
-            <View style={styles.modalContainer}>
-              <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-                <View style={styles.modalHeader}>
-                  <Text variant="titleMedium">Kural Detail</Text>
-                  <IconButton icon="close" onPress={() => setSelectedKural(null)} />
-                </View>
-                <ScrollView>
-                  {selectedKural && <KuralCard kural={selectedKural} />}
-                  <View style={{ height: 20 }} />
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-        </Portal>
+        <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} />
       </SafeAreaView>
     );
   }
@@ -97,11 +89,12 @@ export default function BrowseScreen() {
       </View>
       <FlatList
         data={chapters}
-        keyExtractor={(item) => item}
+        keyExtractor={(item) => item.number.toString()}
         renderItem={({ item }) => (
           <>
             <List.Item
-              title={item}
+              title={`${item.number}. ${item.name}`}
+              description={item.nameEnglish}
               left={props => <List.Icon {...props} icon="book-open-variant" />}
               right={props => <List.Icon {...props} icon="chevron-right" />}
               onPress={() => handleChapterPress(item)}
@@ -150,25 +143,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    height: '90%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
 });
