@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Share } from 'react-native';
-import { Text, Button, Chip, useTheme } from 'react-native-paper';
+import { Text, Button, Chip } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -8,6 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { SheetModal } from './SheetModal';
+import { useAppTheme, useType } from '../theme';
 
 interface ShareModalProps {
   visible: boolean;
@@ -40,7 +41,8 @@ export const buildShareText = (
 };
 
 export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kural }) => {
-  const theme = useTheme();
+  const theme = useAppTheme();
+  const type = useType();
   const {
     shareIncludeTamil, shareIncludeEnglish, shareIncludeExplanation,
     toggleShareIncludeTamil, toggleShareIncludeEnglish, toggleShareIncludeExplanation,
@@ -113,20 +115,20 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
               end={{ x: 1, y: 1 }}
             >
               <View style={styles.cardHeader}>
-                <Text style={[styles.kuralNumber, { color: selectedTheme.subTextColor }]}>
+                <Text style={[type.uiStrong, styles.kuralNumber, { color: selectedTheme.subTextColor }]}>
                   Kural {kural.number}
                 </Text>
-                <Text style={[styles.chapter, { color: selectedTheme.subTextColor }]} numberOfLines={1}>
+                <Text style={[type.tamilLabel, styles.chapter, { color: selectedTheme.subTextColor }]} numberOfLines={1}>
                   {shareIncludeTamil ? kural.chap_tam : kural.chap_eng ?? kural.chap_tam}
                 </Text>
               </View>
 
               {shareIncludeTamil && (
                 <View style={styles.textContainer}>
-                  <Text style={[styles.tamilText, { color: selectedTheme.textColor }]}>
+                  <Text style={[type.kural(20), styles.tamilText, { color: selectedTheme.textColor }]}>
                     {kural.line1}
                   </Text>
-                  <Text style={[styles.tamilText, { color: selectedTheme.textColor }]}>
+                  <Text style={[type.kural(20), styles.tamilText, { color: selectedTheme.textColor }]}>
                     {kural.line2}
                   </Text>
                 </View>
@@ -137,7 +139,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
               )}
 
               {shareIncludeEnglish && (
-                <Text style={[styles.englishText, { color: selectedTheme.textColor }]}>
+                <Text style={[type.translation, styles.englishText, { color: selectedTheme.textColor }]}>
                   {kural.eng}
                 </Text>
               )}
@@ -145,12 +147,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
               {shareIncludeExplanation && (
                 <View style={styles.explanation}>
                   {shareIncludeTamil && (
-                    <Text style={[styles.explanationText, { color: selectedTheme.textColor, fontFamily: 'NotoSerifTamil_400Regular' }]}>
+                    <Text style={[type.tamilBody, styles.explanationText, { color: selectedTheme.textColor }]}>
                       {kural.tam_exp}
                     </Text>
                   )}
                   {shareIncludeEnglish && (
-                    <Text style={[styles.explanationText, { color: selectedTheme.textColor, fontFamily: 'Lora_400Regular' }]}>
+                    <Text style={[type.englishBody, styles.explanationText, { color: selectedTheme.textColor }]}>
                       {kural.eng_exp}
                     </Text>
                   )}
@@ -279,13 +281,11 @@ const styles = StyleSheet.create({
   },
   kuralNumber: {
     fontSize: 14,
-    fontFamily: 'Inter_600SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   chapter: {
     fontSize: 14,
-    fontFamily: 'NotoSansTamil_400Regular',
     flexShrink: 1,
   },
   textContainer: {
@@ -296,7 +296,6 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     textAlign: 'center',
     marginBottom: 8,
-    fontFamily: 'NotoSerifTamil_600SemiBold',
   },
   divider: {
     height: 1,
@@ -306,7 +305,6 @@ const styles = StyleSheet.create({
   },
   englishText: {
     fontSize: 16,
-    fontFamily: 'Lora_400Regular_Italic',
     textAlign: 'center',
     lineHeight: 24,
   },

@@ -18,7 +18,7 @@ import { completedChapters } from '../../utils/milestones';
 import { learningSummary } from '../../utils/srs';
 import { toLocalDateKey } from '../../utils/date';
 import { SHARE_APP_MESSAGE } from '../../constants/app';
-import { useAppTheme, space, radius, tamilText } from '../../theme';
+import { useAppTheme, space, radius, useType } from '../../theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -46,6 +46,7 @@ const Tile: React.FC<{ icon: IconName; title: string; subtitle: string; onPress:
 
 export default function TodayScreen() {
   const theme = useAppTheme();
+  const type = useType();
   const router = useRouter();
   const streak = useSettingsStore((s) => s.streak);
   const bestStreak = useSettingsStore((s) => s.bestStreak);
@@ -135,7 +136,7 @@ export default function TodayScreen() {
         {/* Greeting */}
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[tamilText.labelStrong, { color: theme.colors.primary }]}>வணக்கம்</Text>
+            <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>வணக்கம்</Text>
             <Text variant="headlineMedium" accessibilityRole="header" style={{ color: theme.colors.onBackground }}>
               {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
@@ -205,7 +206,7 @@ export default function TodayScreen() {
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
                 {chapterRead >= 10 ? 'Chapter complete · read again' : 'Keep reading this chapter'}
               </Text>
-              <Text style={[tamilText.title, { color: theme.colors.onSurface }]}>{dailyKural.chap_tam}</Text>
+              <Text style={[type.tamilTitle, { color: theme.colors.onSurface }]}>{dailyKural.chap_tam}</Text>
               <View style={styles.chapterProgress}>
                 {chapterKurals.map((k) => (
                   <View
@@ -234,7 +235,7 @@ export default function TodayScreen() {
           style={[styles.journey, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
         >
           <View style={styles.journeyRow}>
-            <Text style={[styles.journeyNumber, { color: theme.colors.onSurface }]}>{readSet.size}</Text>
+            <Text style={[type.display(28), { color: theme.colors.onSurface }]}>{readSet.size}</Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, flex: 1 }}>
               of {TOTAL_KURALS} Kurals read
             </Text>
@@ -359,11 +360,6 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: space.sm,
     marginBottom: space.md,
-  },
-  journeyNumber: {
-    fontFamily: 'Lora_600SemiBold',
-    fontSize: 28,
-    lineHeight: 34,
   },
   progressTrack: {
     height: 6,

@@ -36,3 +36,34 @@ describe('themes', () => {
     expect(resolveAppearance('palm', 'dark')).toBe('palm');
   });
 });
+
+describe('reading fonts', () => {
+  it('Classic uses the serif faces for reading', () => {
+    const { type } = buildTheme('paper', 'indigo', 'classic');
+    expect(type.kural(24)).toMatchObject({ fontFamily: 'NotoSerifTamil_600SemiBold', fontSize: 24 });
+    expect(type.translation.fontFamily).toBe('Lora_400Regular_Italic');
+  });
+
+  it('Modern uses the sans faces', () => {
+    const { type } = buildTheme('paper', 'indigo', 'modern');
+    expect(type.kural(24).fontFamily).toBe('NotoSansTamil_600SemiBold');
+    expect(type.englishBody.fontFamily).toBe('Inter_400Regular');
+  });
+
+  it('Device uses the system font with real weights, everywhere', () => {
+    const theme = buildTheme('paper', 'indigo', 'device');
+    const styles = [theme.type.kural(24), theme.type.tamilBody, theme.type.translation, theme.type.display(30), theme.type.ui];
+    for (const style of styles) expect(style.fontFamily).toBeUndefined();
+    expect(theme.type.kural(24).fontWeight).toBe('600');
+    expect(theme.type.translation.fontStyle).toBe('italic');
+    expect(theme.fonts.bodyMedium.fontFamily).not.toMatch(/Inter|Lora|Noto/);
+  });
+
+  it('bundled fonts never pair a family with a bold weight', () => {
+    for (const font of ['classic', 'modern'] as const) {
+      const { type, fonts } = buildTheme('paper', 'indigo', font);
+      expect(type.kural(24).fontWeight).toBeUndefined();
+      expect(fonts.headlineMedium.fontWeight).toBe('400');
+    }
+  });
+});

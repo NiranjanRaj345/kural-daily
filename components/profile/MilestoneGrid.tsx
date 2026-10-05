@@ -3,12 +3,13 @@ import { View, StyleSheet } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Milestone } from '../../utils/milestones';
-import { useAppTheme, space, radius, tamilText } from '../../theme';
+import { useAppTheme, space, radius, useType } from '../../theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 export const MilestoneGrid: React.FC<{ milestones: Milestone[] }> = ({ milestones }) => {
   const theme = useAppTheme();
+  const type = useType();
   return (
     <View style={styles.grid}>
       {milestones.map((m) => (
@@ -36,7 +37,7 @@ export const MilestoneGrid: React.FC<{ milestones: Milestone[] }> = ({ milestone
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{m.progressLabel}</Text>
             )}
           </View>
-          <Text style={[tamilText.labelStrong, { color: m.earned ? theme.colors.onFlameContainer : theme.colors.onSurface }]} numberOfLines={1}>
+          <Text style={[type.tamilLabelStrong, { color: m.earned ? theme.colors.onFlameContainer : theme.colors.onSurface }]} numberOfLines={1}>
             {m.tamil}
           </Text>
           <Text variant="labelSmall" style={{ color: m.earned ? theme.colors.onFlameContainer : theme.colors.onSurfaceVariant }} numberOfLines={2}>

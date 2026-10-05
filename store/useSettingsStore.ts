@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { computeStreak, toLocalDateKey } from '../utils/date';
 import { LearningMap, newCard, reviewCard } from '../utils/srs';
-import type { Accent, Appearance } from '../theme';
+import type { Accent, Appearance, ReadingFont } from '../theme';
 
 export type ReadingLanguage = 'both' | 'tamil' | 'english';
 
@@ -17,6 +17,7 @@ export interface SettingsState {
   // Appearance
   appearance: Appearance;
   accent: Accent;
+  readingFont: ReadingFont;
   fontSize: number;
   showTamil: boolean;
   showEnglish: boolean;
@@ -51,6 +52,7 @@ export interface SettingsState {
   // Actions
   setAppearance: (appearance: Appearance) => void;
   setAccent: (accent: Accent) => void;
+  setReadingFont: (font: ReadingFont) => void;
   setFontSize: (size: number) => void;
   setReadingLanguage: (language: ReadingLanguage) => void;
   toggleTamil: () => void;
@@ -113,6 +115,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       appearance: 'auto',
       accent: 'indigo',
+      readingFont: 'classic',
       fontSize: 24,
       showTamil: true,
       showEnglish: true,
@@ -142,6 +145,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       setAppearance: (appearance) => set({ appearance }),
       setAccent: (accent) => set({ accent }),
+      setReadingFont: (readingFont) => set({ readingFont }),
       setFontSize: (size) => set({ fontSize: size }),
       setReadingLanguage: (language) => set({
         showTamil: language !== 'english',

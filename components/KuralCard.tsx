@@ -2,16 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Text, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { getChapterNumber, getPositionInChapter } from '../services/DataService';
 import { ShareModal } from './ShareModal';
+import { hasTamilVoice, speakKural, stopSpeaking } from '../services/SpeechService';
+import { showNoTamilVoiceAlert } from './voiceHelp';
 import { KuralVerse } from './KuralVerse';
 import { MemorizeSheet, MemorizeMode } from './MemorizeSheet';
-import { useAppTheme, space, radius, tamilText, englishText } from '../theme';
+import { useAppTheme, space, radius, useType } from '../theme';
 
 interface KuralCardProps {
   kural: Kural;
@@ -53,6 +54,7 @@ const ActionButton: React.FC<{
 
 export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = false }) => {
   const theme = useAppTheme();
+  const type = useType();
   const showEnglish = useSettingsStore((s) => s.showEnglish);
   const showTamil = useSettingsStore((s) => s.showTamil);
   const isFavorite = useSettingsStore((s) => s.favorites.includes(kural.number));
@@ -90,29 +92,25 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
   // Don't keep reading aloud after the card is closed or replaced
   useEffect(() => {
     return () => {
-      if (isSpeakingRef.current) {
-        isSpeakingRef.current = false;
-        Speech.stop();
-      }
+      if (isSpeakingRef.current) stopSpeaking();
     };
   }, [kural.number]);
 
-  const handleSpeak = () => {
+  const handleSpeak = async () => {
     haptic();
     if (isSpeaking) {
-      Speech.stop();
-      updateSpeaking(false);
+      stopSpeaking();
       return;
     }
-
+    if (!(await hasTamilVoice())) {
+      showNoTamilVoiceAlert();
+      return;
+    }
     updateSpeaking(true);
-    Speech.speak(`${kural.line1} ... ${kural.line2}`, {
-      language: 'ta-IN',
-      voice: selectedVoiceIdentifier || undefined,
+    speakKural(kural, {
+      voice: selectedVoiceIdentifier,
       rate: speechRate,
-      onDone: () => updateSpeaking(false),
-      onStopped: () => updateSpeaking(false),
-      onError: () => updateSpeaking(false),
+      onEnd: () => updateSpeaking(false),
     });
   };
 
@@ -135,7 +133,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
         {/* Folio: where this couplet sits in the book */}
         <View style={styles.folio}>
           <Text
-            style={[styles.number, { color: theme.colors.primary }]}
+            style={[type.display(34), styles.number, { color: theme.colors.primary }]}
             accessibilityLabel={`Kural ${kural.number}`}
           >
             {kural.number}
@@ -144,7 +142,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
               அதிகாரம் {chapterNumber} · {position}/10
             </Text>
-            <Text style={[tamilText.labelStrong, { color: theme.colors.onSurface }]} numberOfLines={1}>
+            <Text style={[type.tamilLabelStrong, { color: theme.colors.onSurface }]} numberOfLines={1}>
               {kural.chap_tam}
             </Text>
             {kural.chap_eng && (
@@ -166,10 +164,10 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
           <Text
             selectable
             style={[
-              englishText.translation,
+              type.translation,
               styles.translation,
               { color: showTamil ? theme.colors.onSurfaceVariant : theme.colors.ink },
-              !showTamil && styles.translationPrimary,
+              !showTamil && [type.englishBody, styles.translationPrimary],
             ]}
           >
             {kural.eng}
@@ -183,7 +181,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
           accessibilityState={{ expanded: showExplanation }}
           style={[styles.explainToggle, { borderTopColor: theme.colors.rule }]}
         >
-          <Text style={[tamilText.labelStrong, { color: theme.colors.primary }]}>பொருள்</Text>
+          <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>பொருள்</Text>
           <Text variant="labelLarge" style={[styles.explainLabel, { color: theme.colors.primary }]}>
             Meaning
           </Text>
@@ -210,7 +208,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             )}
             <Text
               selectable
-              style={[explanationLang === 'ta' ? tamilText.body : englishText.body, { color: theme.colors.onSurface }]}
+              style={[explanationLang === 'ta' ? type.tamilBody : type.englishBody, { color: theme.colors.onSurface }]}
             >
               {explanation}
             </Text>
@@ -274,9 +272,6 @@ const styles = StyleSheet.create({
     paddingTop: space.xl,
   },
   number: {
-    fontFamily: 'Lora_600SemiBold',
-    fontSize: 34,
-    lineHeight: 40,
     minWidth: 48,
     fontVariant: ['tabular-nums'],
   },
@@ -294,7 +289,6 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl,
   },
   translationPrimary: {
-    fontFamily: 'Lora_400Regular',
     fontSize: 20,
     lineHeight: 31,
     paddingTop: space.xxl,

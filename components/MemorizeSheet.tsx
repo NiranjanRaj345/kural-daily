@@ -2,13 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { getKuralByNumber } from '../services/DataService';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { SheetModal } from './SheetModal';
-import { useAppTheme, space, radius, tamilText, englishText } from '../theme';
+import { hasTamilVoice, speakKural, stopSpeaking } from '../services/SpeechService';
+import { showNoTamilVoiceAlert } from './voiceHelp';
+import { useAppTheme, space, radius, useType } from '../theme';
 
 /** learn: first time (joins the review list) · review: due today (graded) · practice: ungraded run-through */
 export type MemorizeMode = 'learn' | 'review' | 'practice';
@@ -49,6 +50,7 @@ const haptic = () => {
 
 export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClose }) => {
   const theme = useAppTheme();
+  const type = useType();
   const reviewKural = useSettingsStore((s) => s.reviewKural);
   const startLearning = useSettingsStore((s) => s.startLearning);
   const speechRate = useSettingsStore((s) => s.speechRate);
@@ -84,7 +86,7 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
   }, [index, queue, mode]);
 
   useEffect(() => () => {
-    if (speaking.current) Speech.stop();
+    if (speaking.current) stopSpeaking();
   }, []);
 
   const lines = useMemo(
@@ -93,25 +95,19 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
   );
 
   const close = () => {
-    if (speaking.current) {
-      Speech.stop();
-      speaking.current = false;
-    }
+    if (speaking.current) stopSpeaking();
     onClose();
   };
 
-  const listen = () => {
+  const listen = async () => {
     if (!kural) return;
-    Speech.stop();
+    if (!(await hasTamilVoice())) {
+      showNoTamilVoiceAlert();
+      return;
+    }
     speaking.current = true;
-    Speech.speak(`${kural.line1} ... ${kural.line2}`, {
-      language: 'ta-IN',
-      voice: voice ?? undefined,
-      rate: speechRate,
-      onDone: () => { speaking.current = false; },
-      onStopped: () => { speaking.current = false; },
-      onError: () => { speaking.current = false; },
-    });
+    // Slower than the reading speed: easier to repeat after
+    speakKural(kural, { voice, rate: Math.max(0.5, speechRate - 0.15), onEnd: () => { speaking.current = false; } });
   };
 
   const grade = (remembered: boolean) => {
@@ -255,7 +251,7 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
                     >
                       <Text
                         style={[
-                          tamilText.kural(20),
+                          type.kural(20),
                           { color: hidden ? 'transparent' : theme.colors.ink },
                         ]}
                       >
@@ -283,12 +279,12 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
           </View>
 
           {(showMeaning || (step === 0 && showEnglish)) && (
-            <Text style={[englishText.translation, styles.meaning, { color: theme.colors.onSurfaceVariant }]}>
+            <Text style={[type.translation, styles.meaning, { color: theme.colors.onSurfaceVariant }]}>
               {kural.eng}
             </Text>
           )}
 
-          <Text style={[tamilText.label, styles.source, { color: theme.colors.onSurfaceVariant }]}>
+          <Text style={[type.tamilLabel, styles.source, { color: theme.colors.onSurfaceVariant }]}>
             {kural.chap_tam} · {kural.sect_tam}
           </Text>
         </Animated.View>

@@ -12,6 +12,13 @@
 - **Page** (Auto, Paper, Palm leaf, Night) and **Accent** (Indigo, Kumkum, Leaf, Saffron) choices, previewed in their own colours. Every combination meets WCAG AA contrast.
 - Each Kural shows its place in the book: chapter number, position in the chapter (9/10), book.
 - **Reading language** (Both / தமிழ் / English) and **reading speed** for Listen.
+- **Font** choice: Classic (book serif), Modern (clean sans) or Device (the phone's own font throughout the app). Shared images follow it too.
+
+### Listening
+- **Most natural Tamil voice by default**: Automatic picks the best Tamil voice installed (higher-quality and neural voices first, offline voices preferred), instead of whatever the phone defaults to.
+- Couplets are recited line by line with a short pause between, without reading out punctuation; Memorize plays a little slower to repeat after.
+- Voice picker lists Tamil voices best first, marks the natural-sounding ones, previews each with the first Kural, and explains how to install a better Tamil voice (with a shortcut to the text-to-speech settings on Android).
+- If the phone has no Tamil voice at all, Listen explains how to add one instead of reading Tamil with an English voice.
 - Browse shows the parts (இயல்) of each book; Today offers the rest of today's chapter with a 10-dot progress line.
 - **About the Thirukkural**: the poet, the couplet form (with the seven feet marked) and the full structure of books, parts and chapters.
 

@@ -1,5 +1,6 @@
 import { MD3DarkTheme, MD3LightTheme, configureFonts, useTheme } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
+import type { TextStyle } from 'react-native';
 
 /*
  * Visual identity: a page of a book, not a dashboard.
@@ -27,29 +28,135 @@ export const ACCENTS: { value: Accent; label: string; tamil: string; swatch: str
   { value: 'saffron', label: 'Saffron', tamil: 'காவி', swatch: '#B4651A' },
 ];
 
-// Each font weight is its own file, so fontWeight stays at 400: pairing these
-// families with a bold fontWeight makes iOS and some Android versions fall
-// back to the system font.
-const w = '400' as const;
-const fontConfig = {
-  displayLarge: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
-  displayMedium: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
-  displaySmall: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
-  headlineLarge: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
-  headlineMedium: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
-  headlineSmall: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
-  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: w },
-  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: w },
-  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: w },
-  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: w },
-  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: w },
-  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: w },
-  bodyLarge: { fontFamily: 'Inter_400Regular', fontWeight: w },
-  bodyMedium: { fontFamily: 'Inter_400Regular', fontWeight: w },
-  bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: w },
-  default: { fontFamily: 'Inter_400Regular', fontWeight: w },
+export type ReadingFont = 'classic' | 'modern' | 'device';
+
+export const READING_FONTS: { value: ReadingFont; label: string; detail: string }[] = [
+  { value: 'classic', label: 'Classic', detail: 'Book serif' },
+  { value: 'modern', label: 'Modern', detail: 'Clean sans' },
+  { value: 'device', label: 'Device', detail: "Phone's font" },
+];
+
+interface FontFamilies {
+  kural: string;
+  tamilBody: string;
+  tamilPreview: string;
+  tamilUi: string;
+  tamilUiStrong: string;
+  translation: string;
+  englishBody: string;
+  display: string;
+  ui: string;
+  uiMedium: string;
+  uiStrong: string;
+}
+
+const FAMILIES: Record<Exclude<ReadingFont, 'device'>, FontFamilies> = {
+  classic: {
+    kural: 'NotoSerifTamil_600SemiBold',
+    tamilBody: 'NotoSerifTamil_400Regular',
+    tamilPreview: 'NotoSerifTamil_500Medium',
+    tamilUi: 'NotoSansTamil_400Regular',
+    tamilUiStrong: 'NotoSansTamil_600SemiBold',
+    translation: 'Lora_400Regular_Italic',
+    englishBody: 'Lora_400Regular',
+    display: 'Lora_600SemiBold',
+    ui: 'Inter_400Regular',
+    uiMedium: 'Inter_500Medium',
+    uiStrong: 'Inter_600SemiBold',
+  },
+  modern: {
+    kural: 'NotoSansTamil_600SemiBold',
+    tamilBody: 'NotoSansTamil_400Regular',
+    tamilPreview: 'NotoSansTamil_500Medium',
+    tamilUi: 'NotoSansTamil_400Regular',
+    tamilUiStrong: 'NotoSansTamil_600SemiBold',
+    translation: 'Inter_400Regular',
+    englishBody: 'Inter_400Regular',
+    display: 'Inter_700Bold',
+    ui: 'Inter_400Regular',
+    uiMedium: 'Inter_500Medium',
+    uiStrong: 'Inter_600SemiBold',
+  },
 };
-const fonts = configureFonts({ config: fontConfig });
+
+type Weight = '400' | '500' | '600' | '700';
+
+/**
+ * A font face. Bundled fonts are one file per weight, so the weight comes from
+ * fontFamily alone (pairing them with a bold fontWeight makes iOS and some
+ * Android versions fall back to the system font). The device font is a real
+ * family, so there the weight and style are set directly.
+ */
+const face = (family: string | undefined, weight: Weight, italic = false): TextStyle =>
+  family
+    ? { fontFamily: family }
+    : { fontWeight: weight, fontStyle: italic ? 'italic' : 'normal' };
+
+const paperFonts = (font: ReadingFont) => {
+  if (font === 'device') return MD3LightTheme.fonts;
+  const f = FAMILIES[font];
+  const w = '400' as const;
+  const config = {
+    displayLarge: { fontFamily: f.display, fontWeight: w },
+    displayMedium: { fontFamily: f.display, fontWeight: w },
+    displaySmall: { fontFamily: f.display, fontWeight: w },
+    headlineLarge: { fontFamily: f.display, fontWeight: w },
+    headlineMedium: { fontFamily: f.display, fontWeight: w },
+    headlineSmall: { fontFamily: f.display, fontWeight: w },
+    titleLarge: { fontFamily: f.uiStrong, fontWeight: w },
+    titleMedium: { fontFamily: f.uiStrong, fontWeight: w },
+    titleSmall: { fontFamily: f.uiStrong, fontWeight: w },
+    labelLarge: { fontFamily: f.uiMedium, fontWeight: w },
+    labelMedium: { fontFamily: f.uiMedium, fontWeight: w },
+    labelSmall: { fontFamily: f.uiMedium, fontWeight: w },
+    bodyLarge: { fontFamily: f.ui, fontWeight: w },
+    bodyMedium: { fontFamily: f.ui, fontWeight: w },
+    bodySmall: { fontFamily: f.ui, fontWeight: w },
+    default: { fontFamily: f.ui, fontWeight: w },
+  };
+  return configureFonts({ config });
+};
+
+/** Text styles for reading, chosen by the font setting. */
+export interface TypeScale {
+  /** The couplet itself. */
+  kural: (size: number) => TextStyle;
+  /** Tamil prose such as the explanation. */
+  tamilBody: TextStyle;
+  /** Couplet previews in lists. */
+  tamilPreview: TextStyle;
+  /** Tamil headings and list titles. */
+  tamilTitle: TextStyle;
+  tamilLabel: TextStyle;
+  tamilLabelStrong: TextStyle;
+  /** English translation of a couplet. */
+  translation: TextStyle;
+  /** English explanation. */
+  englishBody: TextStyle;
+  /** Large numerals and hero titles. */
+  display: (size: number) => TextStyle;
+  ui: TextStyle;
+  uiMedium: TextStyle;
+  uiStrong: TextStyle;
+}
+
+const buildTypeScale = (font: ReadingFont): TypeScale => {
+  const f = font === 'device' ? undefined : FAMILIES[font];
+  return {
+    kural: (size) => ({ ...face(f?.kural, '600'), fontSize: size, lineHeight: Math.round(size * 1.7) }),
+    tamilBody: { ...face(f?.tamilBody, '400'), fontSize: 16, lineHeight: 29 },
+    tamilPreview: { ...face(f?.tamilPreview, '500'), fontSize: 16, lineHeight: 27 },
+    tamilTitle: { ...face(f?.tamilUiStrong, '600'), fontSize: 16, lineHeight: 26 },
+    tamilLabel: { ...face(f?.tamilUi, '400'), fontSize: 13, lineHeight: 20 },
+    tamilLabelStrong: { ...face(f?.tamilUiStrong, '600'), fontSize: 13, lineHeight: 20 },
+    translation: { ...face(f?.translation, '400', true), fontSize: 17, lineHeight: 27 },
+    englishBody: { ...face(f?.englishBody, '400'), fontSize: 16, lineHeight: 27 },
+    display: (size) => ({ ...face(f?.display, '600'), fontSize: size, lineHeight: Math.round(size * 1.25) }),
+    ui: face(f?.ui, '400'),
+    uiMedium: face(f?.uiMedium, '500'),
+    uiStrong: face(f?.uiStrong, '600'),
+  };
+};
 
 /** Colours Paper doesn't define. */
 export interface ExtraColors {
@@ -70,6 +177,8 @@ export type AppTheme = MD3Theme & {
   colors: MD3Theme['colors'] & ExtraColors;
   appearance: ResolvedAppearance;
   accent: Accent;
+  readingFont: ReadingFont;
+  type: TypeScale;
 };
 
 interface BasePalette {
@@ -150,17 +259,19 @@ const ACCENT_PALETTES: Record<Accent, { light: AccentPalette; dark: AccentPalett
   },
 };
 
-export const buildTheme = (appearance: ResolvedAppearance, accent: Accent): AppTheme => {
+export const buildTheme = (appearance: ResolvedAppearance, accent: Accent, readingFont: ReadingFont = 'classic'): AppTheme => {
   const base = BASES[appearance];
   const a = ACCENT_PALETTES[accent][base.dark ? 'dark' : 'light'];
   const md3 = base.dark ? MD3DarkTheme : MD3LightTheme;
 
   return {
     ...md3,
-    fonts,
+    fonts: paperFonts(readingFont),
     roundness: 4,
     appearance,
     accent,
+    readingFont,
+    type: buildTypeScale(readingFont),
     colors: {
       ...md3.colors,
       ...a,
@@ -224,26 +335,5 @@ export const useAppTheme = () => useTheme<AppTheme>();
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const;
 export const radius = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 } as const;
 
-/** Reading typography. Tamil needs generous line height for its tall vowel signs. */
-export const tamilText = {
-  /** The couplet itself, set like a printed verse. */
-  kural: (size: number) => ({
-    fontFamily: 'NotoSerifTamil_600SemiBold',
-    fontSize: size,
-    lineHeight: Math.round(size * 1.7),
-  }),
-  /** Tamil prose such as the explanation. */
-  body: { fontFamily: 'NotoSerifTamil_400Regular', fontSize: 16, lineHeight: 29 },
-  /** Small Tamil interface labels. */
-  label: { fontFamily: 'NotoSansTamil_400Regular', fontSize: 13, lineHeight: 20 },
-  labelStrong: { fontFamily: 'NotoSansTamil_600SemiBold', fontSize: 13, lineHeight: 20 },
-  /** Tamil headings and list titles. */
-  title: { fontFamily: 'NotoSansTamil_600SemiBold', fontSize: 16, lineHeight: 26 },
-  /** List previews of a couplet. */
-  preview: { fontFamily: 'NotoSerifTamil_500Medium', fontSize: 16, lineHeight: 27 },
-} as const;
-
-export const englishText = {
-  translation: { fontFamily: 'Lora_400Regular_Italic', fontSize: 17, lineHeight: 27 },
-  body: { fontFamily: 'Lora_400Regular', fontSize: 16, lineHeight: 27 },
-} as const;
+/** Reading text styles for the current font setting. */
+export const useType = () => useAppTheme().type;

@@ -10,7 +10,7 @@ import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { KuralListItem } from '../../components/ui/KuralListItem';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { useAppTheme, space, radius, tamilText } from '../../theme';
+import { useAppTheme, space, radius, useType } from '../../theme';
 
 interface Book {
   title: string;
@@ -33,6 +33,7 @@ const ChapterRow = React.memo(function ChapterRow({
   chapter, readCount, onPress,
 }: { chapter: Chapter; readCount: number; onPress: (c: Chapter) => void }) {
   const theme = useAppTheme();
+  const type = useType();
   const complete = readCount >= 10;
   return (
     <Pressable
@@ -55,7 +56,7 @@ const ChapterRow = React.memo(function ChapterRow({
         )}
       </View>
       <View style={styles.chapterText}>
-        <Text style={[tamilText.title, { color: theme.colors.onSurface }]} numberOfLines={1}>{chapter.name}</Text>
+        <Text style={[type.tamilTitle, { color: theme.colors.onSurface }]} numberOfLines={1}>{chapter.name}</Text>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
           {chapter.nameEnglish}
         </Text>
@@ -70,6 +71,7 @@ const ChapterRow = React.memo(function ChapterRow({
 
 export default function BrowseScreen() {
   const theme = useAppTheme();
+  const type = useType();
   const router = useRouter();
   const history = useSettingsStore((s) => s.history);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
@@ -121,7 +123,7 @@ export default function BrowseScreen() {
             <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
               Chapter {index} · {selectedChapter.sectionEnglish}
             </Text>
-            <Text style={[tamilText.title, { fontSize: 20, lineHeight: 30, color: theme.colors.onBackground }]} numberOfLines={1}>
+            <Text style={[type.tamilTitle, { fontSize: 20, lineHeight: 30, color: theme.colors.onBackground }]} numberOfLines={1}>
               {selectedChapter.name}
             </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
@@ -194,7 +196,7 @@ export default function BrowseScreen() {
         stickySectionHeadersEnabled
         renderSectionHeader={({ section }) => (
           <View style={[styles.bookHeader, { backgroundColor: theme.colors.background }]}>
-            <Text style={[tamilText.title, { color: theme.colors.primary }]}>{section.title}</Text>
+            <Text style={[type.tamilTitle, { color: theme.colors.primary }]}>{section.title}</Text>
             <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
               {section.titleEnglish} · {section.data.length} chapters
             </Text>
@@ -218,7 +220,7 @@ export default function BrowseScreen() {
           >
             {(index === 0 || section.data[index - 1].group !== item.group) ? (
               <View style={[styles.groupLabel, index > 0 && { borderTopColor: theme.colors.outlineVariant, borderTopWidth: StyleSheet.hairlineWidth }]}>
-                <Text style={[tamilText.labelStrong, { color: theme.colors.primary }]}>{item.group}</Text>
+                <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>{item.group}</Text>
                 <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{item.groupEnglish}</Text>
               </View>
             ) : (

@@ -14,7 +14,7 @@ import {
 } from '../services/QuizService';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { StatTile } from './ui/StatTile';
-import { useAppTheme, space, radius, tamilText } from '../theme';
+import { useAppTheme, space, radius, useType } from '../theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -46,6 +46,7 @@ interface QuizPanelProps {
 
 export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
   const theme = useAppTheme();
+  const type = useType();
   const quizStats = useSettingsStore((s) => s.quizStats);
   const updateQuizStats = useSettingsStore((s) => s.updateQuizStats);
   const [gameMode, setGameMode] = useState<QuizType>('missing-word');
@@ -96,7 +97,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
     : 0;
 
   // Meaning options are whole explanations, so they use the smaller body size
-  const optionTextStyle = gameMode === 'meaning-match' ? tamilText.label : tamilText.title;
+  const optionTextStyle = gameMode === 'meaning-match' ? type.tamilLabel : type.tamilTitle;
 
   return (
     <View>
@@ -144,7 +145,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
                       disabled={isAnswered}
                       onPress={() => setJumbledSelection((sel) => sel.filter((_, i) => i !== position))}
                       style={{ backgroundColor: theme.colors.primaryContainer }}
-                      textStyle={[tamilText.label, { color: theme.colors.onPrimaryContainer }]}
+                      textStyle={[type.tamilLabel, { color: theme.colors.onPrimaryContainer }]}
                       accessibilityLabel={`Remove ${question.jumbledWords![wordIndex]}`}
                     >
                       {question.jumbledWords![wordIndex]}
@@ -153,7 +154,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
                 )}
               </View>
             ) : (
-              <Text style={[tamilText.kural(19), styles.questionText, { color: theme.colors.onSurface }]}>
+              <Text style={[type.kural(19), styles.questionText, { color: theme.colors.onSurface }]}>
                 {question.questionText}
               </Text>
             )}
@@ -177,7 +178,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
                       disabled={used || isAnswered}
                       onPress={() => setJumbledSelection((sel) => [...sel, index])}
                       style={{ opacity: used ? 0.35 : 1 }}
-                      textStyle={tamilText.label}
+                      textStyle={type.tamilLabel}
                     >
                       {word}
                     </Chip>
@@ -253,13 +254,13 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
               </View>
 
               <View style={[styles.reveal, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
-                <Text style={[tamilText.title, { color: theme.colors.onSurface, textAlign: 'center' }]}>
+                <Text style={[type.tamilTitle, { color: theme.colors.onSurface, textAlign: 'center' }]}>
                   {question.kural.line1}{'\n'}{question.kural.line2}
                 </Text>
                 <Text variant="labelMedium" style={[styles.revealMeta, { color: theme.colors.primary }]}>
                   Kural {question.kural.number} · {question.kural.chap_tam}
                 </Text>
-                <Text style={[tamilText.body, { color: theme.colors.onSurfaceVariant }]}>{question.kural.tam_exp}</Text>
+                <Text style={[type.tamilBody, { color: theme.colors.onSurfaceVariant }]}>{question.kural.tam_exp}</Text>
               </View>
 
               <Button

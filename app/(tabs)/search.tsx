@@ -11,7 +11,7 @@ import { KuralListItem } from '../../components/ui/KuralListItem';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SectionLabel } from '../../components/ui/SectionLabel';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { useAppTheme, space } from '../../theme';
+import { useAppTheme, useType, space } from '../../theme';
 
 const SUGGESTIONS = ['அன்பு', 'கல்வி', 'நட்பு', 'Friendship', 'Truth', 'Patience', 'Wealth', 'Kindness'];
 
@@ -32,6 +32,7 @@ const useDebounced = <T,>(value: T, delay: number) => {
 
 export default function SearchScreen() {
   const theme = useAppTheme();
+  const type = useType();
   const router = useRouter();
   const recentSearches = useSettingsStore((s) => s.recentSearches);
   const addRecentSearch = useSettingsStore((s) => s.addRecentSearch);
@@ -106,7 +107,7 @@ export default function SearchScreen() {
         onSubmitEditing={() => isSearchable(searchQuery) && addRecentSearch(searchQuery)}
         value={searchQuery}
         style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant }]}
-        inputStyle={styles.searchInput}
+        inputStyle={type.ui}
         returnKeyType="search"
         autoCorrect={false}
         autoFocus
@@ -163,9 +164,6 @@ const styles = StyleSheet.create({
     marginHorizontal: space.lg,
     marginBottom: space.sm,
     elevation: 0,
-  },
-  searchInput: {
-    fontFamily: 'Inter_400Regular',
   },
   listContent: {
     paddingTop: space.sm,

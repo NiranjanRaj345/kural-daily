@@ -9,10 +9,10 @@ An offline mobile app for reading the **Thirukkural**: all 1330 couplets in 133 
 - **Quiz**: Missing Word, Meaning Match, Find Chapter, Jumbled Kural
 - **Browse** by book, part (இயல்) and chapter; **search** by Tamil or English text, chapter name, or Kural number
 - **Saved** Kurals, reading history and milestones
-- **Listen** (Tamil text-to-speech with voice and speed choices)
+- **Listen**: Tamil text-to-speech that picks the most natural installed voice, recites line by line, with voice and speed choices
 - **Share** as a styled image or as text; share the app
 - **Daily reminder** (optional, local only) showing that day's Kural, at a time you choose
-- Page styles (Paper, Palm leaf, Night, Auto) × accent colours; adjustable text size; Tamil, English or both
+- Page styles (Paper, Palm leaf, Night, Auto) × accent colours; Classic, Modern or device font; adjustable text size; Tamil, English or both
 
 There is no backend, account, analytics or network use. All settings are stored on the device.
 
@@ -30,9 +30,9 @@ components/          KuralCard, KuralVerse, MemorizeSheet, QuizPanel, ShareModal
 constants/app.ts     App name, version and the store link used by "Share the app"
 theme/               Page × accent theme builder, spacing, radii and reading typography
 services/            DataService (bundled data, search, chapters), DailyService (daily pick),
-                     QuizService, NotificationService (daily reminders)
+                     QuizService, NotificationService (daily reminders), SpeechService (Listen)
 store/               useSettingsStore: persisted settings, favorites, history, streaks
-utils/               date (local-timezone dates, streaks), srs (spaced review), milestones
+utils/               date (local-timezone dates, streaks), srs (spaced review), milestones, voices (Tamil voice ranking)
 assets/data/         thirukkural.json, the full text (generated, see below)
 scripts/             transform_data.js, which rebuilds the data file from raw sources
 __tests__/           Unit tests

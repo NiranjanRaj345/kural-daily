@@ -15,7 +15,7 @@ import { SectionLabel } from '../../components/ui/SectionLabel';
 import { StatTile } from '../../components/ui/StatTile';
 import { BOX_INTERVALS, MASTERED_BOX, dueKurals, learningSummary } from '../../utils/srs';
 import { toLocalDateKey } from '../../utils/date';
-import { useAppTheme, space, radius } from '../../theme';
+import { useAppTheme, useType, space, radius } from '../../theme';
 
 const formatDue = (dueKey: string, todayKey: string) => {
   if (dueKey <= todayKey) return 'Due now';
@@ -52,6 +52,7 @@ const BoxDots: React.FC<{ box: number }> = ({ box }) => {
 
 export default function LearnScreen() {
   const theme = useAppTheme();
+  const type = useType();
   const learning = useSettingsStore((s) => s.learning);
   const scrollRef = useRef<ScrollView>(null);
   const [tab, setTab] = useState<'heart' | 'quiz'>('heart');
@@ -98,7 +99,7 @@ export default function LearnScreen() {
               {summary.due > 0 ? (
                 <>
                   <Text variant="labelLarge" style={{ color: theme.colors.onPrimaryContainer }}>Today&apos;s review</Text>
-                  <Text style={[styles.heroNumber, { color: theme.colors.onPrimaryContainer }]}>
+                  <Text style={[type.display(34), { color: theme.colors.onPrimaryContainer }]}>
                     {summary.due} {summary.due === 1 ? 'Kural' : 'Kurals'}
                   </Text>
                   <Text variant="bodyMedium" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.85 }}>
@@ -111,7 +112,7 @@ export default function LearnScreen() {
               ) : summary.total === 0 ? (
                 <>
                   <Text variant="labelLarge" style={{ color: theme.colors.onPrimaryContainer }}>Start here</Text>
-                  <Text style={[styles.heroTitle, { color: theme.colors.onPrimaryContainer }]}>Learn your first Kural</Text>
+                  <Text style={[type.display(24), { color: theme.colors.onPrimaryContainer }]}>Learn your first Kural</Text>
                   <Text variant="bodyMedium" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.85 }}>
                     Read it, then recite it with more and more words hidden. We bring it back at the right time so it stays with you.
                   </Text>
@@ -122,7 +123,7 @@ export default function LearnScreen() {
               ) : (
                 <>
                   <Text variant="labelLarge" style={{ color: theme.colors.onPrimaryContainer }}>All caught up</Text>
-                  <Text style={[styles.heroTitle, { color: theme.colors.onPrimaryContainer }]}>
+                  <Text style={[type.display(24), { color: theme.colors.onPrimaryContainer }]}>
                     Next review: {nextDue ? formatDue(nextDue, todayKey).toLowerCase() : '—'}
                   </Text>
                   <Text variant="bodyMedium" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.85 }}>
@@ -205,16 +206,6 @@ const styles = StyleSheet.create({
     padding: space.xl,
     borderRadius: radius.xl,
     gap: space.xs,
-  },
-  heroNumber: {
-    fontFamily: 'Lora_600SemiBold',
-    fontSize: 34,
-    lineHeight: 42,
-  },
-  heroTitle: {
-    fontFamily: 'Lora_600SemiBold',
-    fontSize: 24,
-    lineHeight: 32,
   },
   heroButton: {
     alignSelf: 'flex-start',

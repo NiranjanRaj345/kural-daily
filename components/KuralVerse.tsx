@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text as RNText } from 'react-native';
 import { Kural } from '../types/kural';
-import { useAppTheme, tamilText, space } from '../theme';
+import { useAppTheme, space, useType } from '../theme';
 
 interface KuralVerseProps {
   kural: Kural;
@@ -16,7 +16,8 @@ interface KuralVerseProps {
  */
 export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = false }) => {
   const theme = useAppTheme();
-  const style = [tamilText.kural(size), { color: theme.colors.ink }];
+  const type = useType();
+  const style = [type.kural(size), { color: theme.colors.ink }];
   const renderLine = (line: string) => {
     if (!showFeet) return line;
     const words = line.trim().split(/\s+/);

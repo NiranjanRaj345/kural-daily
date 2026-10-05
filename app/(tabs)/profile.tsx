@@ -5,7 +5,6 @@ import {
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import * as Speech from 'expo-speech';
 import { useSettingsStore, ReadingLanguage } from '../../store/useSettingsStore';
 import {
   enableDailyReminders, disableDailyReminders, syncDailyReminders, formatReminderTime,
@@ -23,6 +22,9 @@ import { KuralVerse } from '../../components/KuralVerse';
 import { AboutKuralSheet } from '../../components/AboutKuralSheet';
 import { AppearancePicker } from '../../components/profile/AppearancePicker';
 import { MilestoneGrid } from '../../components/profile/MilestoneGrid';
+import { FontPicker } from '../../components/profile/FontPicker';
+import { VoicePickerSheet } from '../../components/profile/VoicePickerSheet';
+import { getTamilVoices } from '../../services/SpeechService';
 import { computeMilestones } from '../../utils/milestones';
 import { MASTERED_BOX } from '../../utils/srs';
 import { APP_NAME, APP_VERSION, SHARE_APP_MESSAGE } from '../../constants/app';
@@ -62,7 +64,7 @@ export default function ProfileScreen() {
     notificationsEnabled, notificationHour, notificationMinute, setNotificationTime,
     fontSize, setFontSize, speechRate, setSpeechRate,
     streak, bestStreak, history, learning,
-    selectedVoiceIdentifier, setSelectedVoiceIdentifier,
+    selectedVoiceIdentifier,
     resetProgress,
   } = useSettingsStore();
 
@@ -74,8 +76,6 @@ export default function ProfileScreen() {
 
   const [showHistory, setShowHistory] = useState(false);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
-  const [allVoices, setAllVoices] = useState<Speech.Voice[]>([]);
-  const [showAllVoices, setShowAllVoices] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showTimeDialog, setShowTimeDialog] = useState(false);
@@ -88,38 +88,15 @@ export default function ProfileScreen() {
     [history]
   );
 
-  const loadVoices = async () => {
-    try {
-      setAllVoices(await Speech.getAvailableVoicesAsync());
-    } catch (error) {
-      console.error("Failed to load voices", error);
-    }
-  };
-
-  const displayedVoices = useMemo(() => {
-    if (showAllVoices) return allVoices;
-    const tamil = allVoices.filter(v =>
-      (v.language && v.language.toLowerCase().startsWith('ta')) ||
-      (v.name && v.name.toLowerCase().includes('tamil'))
-    );
-    // If no Tamil voices found, show all by default so the list isn't empty
-    return tamil.length > 0 ? tamil : allVoices;
-  }, [allVoices, showAllVoices]);
-
-  const selectedVoiceName = allVoices.find((v) => v.identifier === selectedVoiceIdentifier)?.name;
-
+  // Name shown on the Reading voice row
+  const [voiceName, setVoiceName] = useState<string | null>(null);
   useEffect(() => {
-    loadVoices();
-  }, []);
-
-  useEffect(() => {
-    if (showVoiceModal) loadVoices();
-  }, [showVoiceModal]);
-
-  const handleVoicePreview = (voiceIdentifier: string) => {
-    Speech.stop();
-    Speech.speak('வணக்கம், இது திருக்குறள்', { language: 'ta-IN', voice: voiceIdentifier });
-  };
+    if (showVoiceModal) return;
+    getTamilVoices().then((voices) => {
+      const chosen = selectedVoiceIdentifier ? voices.find((v) => v.identifier === selectedVoiceIdentifier) : voices[0];
+      setVoiceName(chosen?.name ?? null);
+    });
+  }, [selectedVoiceIdentifier, showVoiceModal]);
 
   const onToggleNotifications = async () => {
     if (notificationsEnabled) {
@@ -223,6 +200,8 @@ export default function ProfileScreen() {
         <SectionLabel>Look</SectionLabel>
         <Group>
           <AppearancePicker />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <FontPicker />
         </Group>
 
         <SectionLabel>Reading</SectionLabel>
@@ -289,7 +268,7 @@ export default function ProfileScreen() {
           )}
           <List.Item
             title="Reading voice"
-            description={selectedVoiceIdentifier ? selectedVoiceName ?? 'Custom voice' : 'System default'}
+            description={selectedVoiceIdentifier ? voiceName ?? 'Custom voice' : voiceName ? `Automatic · ${voiceName}` : 'Automatic'}
             left={(props) => <List.Icon {...props} icon="account-voice" />}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowVoiceModal(true)}
@@ -358,65 +337,7 @@ export default function ProfileScreen() {
         </View>
       </SheetModal>
 
-      {/* Voice Selection */}
-      <SheetModal
-        visible={showVoiceModal}
-        onClose={() => { Speech.stop(); setShowVoiceModal(false); }}
-        title="Reading voice"
-        scrollable={false}
-        headerRight={<IconButton icon="refresh" onPress={loadVoices} accessibilityLabel="Refresh voices" />}
-      >
-        <List.Item
-          title="Show all languages"
-          description={`${allVoices.length} voices on this device`}
-          right={() => <Switch value={showAllVoices} onValueChange={setShowAllVoices} />}
-          style={{ backgroundColor: theme.colors.surfaceVariant }}
-        />
-        <FlatList
-          data={displayedVoices}
-          keyExtractor={(item) => item.identifier}
-          contentContainerStyle={{ paddingBottom: space.xl }}
-          ListHeaderComponent={
-            <List.Item
-              title="System default"
-              description="Use the device's Tamil voice"
-              onPress={() => setSelectedVoiceIdentifier(null)}
-              left={(props) => (
-                <List.Icon {...props} icon={!selectedVoiceIdentifier ? 'radiobox-marked' : 'radiobox-blank'} color={theme.colors.primary} />
-              )}
-            />
-          }
-          ItemSeparatorComponent={() => <Divider style={{ marginLeft: 56 }} />}
-          renderItem={({ item }) => (
-            <List.Item
-              title={item.name}
-              description={item.language}
-              onPress={() => setSelectedVoiceIdentifier(item.identifier)}
-              left={(props) => (
-                <List.Icon
-                  {...props}
-                  icon={selectedVoiceIdentifier === item.identifier ? 'radiobox-marked' : 'radiobox-blank'}
-                  color={theme.colors.primary}
-                />
-              )}
-              right={() => (
-                <IconButton
-                  icon="play-circle-outline"
-                  onPress={() => handleVoicePreview(item.identifier)}
-                  accessibilityLabel={`Preview ${item.name}`}
-                />
-              )}
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="account-voice-off"
-              title="No voices found"
-              message="Install a Tamil text-to-speech voice in your device settings, then tap refresh."
-            />
-          }
-        />
-      </SheetModal>
+      <VoicePickerSheet visible={showVoiceModal} onClose={() => setShowVoiceModal(false)} />
 
       <Portal>
         {/* Reminder Time */}

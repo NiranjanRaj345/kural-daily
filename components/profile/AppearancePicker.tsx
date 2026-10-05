@@ -3,11 +3,12 @@ import { View, StyleSheet, Pressable, useColorScheme } from 'react-native';
 import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { ACCENTS, APPEARANCES, buildTheme, resolveAppearance, useAppTheme, space, radius } from '../../theme';
+import { ACCENTS, APPEARANCES, buildTheme, resolveAppearance, useAppTheme, useType, space, radius } from '../../theme';
 
 /** Paper colour and accent swatches, each previewed in its own colours. */
 export const AppearancePicker: React.FC = () => {
   const theme = useAppTheme();
+  const type = useType();
   const systemScheme = useColorScheme();
   const appearance = useSettingsStore((s) => s.appearance);
   const accent = useSettingsStore((s) => s.accent);
@@ -43,15 +44,15 @@ export const AppearancePicker: React.FC = () => {
                 {a.value === 'auto' ? (
                   <View style={styles.autoSplit}>
                     <View style={[styles.autoHalf, { backgroundColor: buildTheme('paper', accent).colors.background }]}>
-                      <Text style={[styles.autoLetter, { color: buildTheme('paper', accent).colors.ink }]}>அ</Text>
+                      <Text style={[type.kural(14), styles.autoLetter, { color: buildTheme('paper', accent).colors.ink }]}>அ</Text>
                     </View>
                     <View style={[styles.autoHalf, { backgroundColor: buildTheme('night', accent).colors.background }]}>
-                      <Text style={[styles.autoLetter, { color: buildTheme('night', accent).colors.ink }]}>அ</Text>
+                      <Text style={[type.kural(14), styles.autoLetter, { color: buildTheme('night', accent).colors.ink }]}>அ</Text>
                     </View>
                   </View>
                 ) : (
                   <>
-                    <Text style={[styles.pageLetter, { color: preview.colors.ink }]}>அ</Text>
+                    <Text style={[type.kural(22), styles.pageLetter, { color: preview.colors.ink }]}>அ</Text>
                     <View style={[styles.pageRule, { backgroundColor: preview.colors.primary }]} />
                   </>
                 )}
@@ -121,13 +122,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   pageLetter: {
-    fontFamily: 'NotoSerifTamil_600SemiBold',
-    fontSize: 22,
     lineHeight: 34,
   },
   autoLetter: {
-    fontFamily: 'NotoSerifTamil_600SemiBold',
-    fontSize: 14,
     lineHeight: 24,
   },
   pageRule: {

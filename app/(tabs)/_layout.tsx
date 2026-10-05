@@ -3,7 +3,7 @@ import React from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
-import { useAppTheme } from '../../theme';
+import { useAppTheme, useType } from '../../theme';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { learningSummary } from '../../utils/srs';
 import { toLocalDateKey } from '../../utils/date';
@@ -19,6 +19,7 @@ const tabIcon = (active: IconName, inactive: IconName) => {
 
 export default function TabLayout() {
   const theme = useAppTheme();
+  const type = useType();
   const learning = useSettingsStore((s) => s.learning);
   const dueCount = learningSummary(learning, toLocalDateKey(new Date())).due;
 
@@ -34,7 +35,7 @@ export default function TabLayout() {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.outlineVariant,
         },
-        tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 11 },
+        tabBarLabelStyle: { ...type.uiMedium, fontSize: 11 },
         sceneStyle: { backgroundColor: theme.colors.background },
       }}
       screenListeners={{

@@ -8,7 +8,7 @@ import { useSettingsStore, ReadingLanguage } from '../store/useSettingsStore';
 import { getKuralByNumber } from '../services/DataService';
 import { enableDailyReminders, formatReminderTime } from '../services/NotificationService';
 import { KuralVerse } from './KuralVerse';
-import { useAppTheme, space, radius, tamilText, englishText } from '../theme';
+import { useAppTheme, space, radius, useType } from '../theme';
 
 const LANGUAGES: { value: ReadingLanguage; title: string; detail: string }[] = [
   { value: 'both', title: 'Tamil and English', detail: 'The original couplet with a translation' },
@@ -25,6 +25,7 @@ const FACTS = [
 /** First-launch introduction: what the Thirukkural is, how to read it, and a daily habit. */
 export const WelcomeScreen: React.FC = () => {
   const theme = useAppTheme();
+  const type = useType();
   const showTamil = useSettingsStore((s) => s.showTamil);
   const showEnglish = useSettingsStore((s) => s.showEnglish);
   const setReadingLanguage = useSettingsStore((s) => s.setReadingLanguage);
@@ -68,7 +69,7 @@ export const WelcomeScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.content}>
         {step === 0 && (
           <Animated.View entering={FadeIn.duration(400)} style={styles.page}>
-            <Text style={[styles.tamilTitle, { color: theme.colors.primary }]}>திருக்குறள்</Text>
+            <Text style={[type.kural(40), { color: theme.colors.primary }]}>திருக்குறள்</Text>
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>
               Two lines of wisdom, every day
             </Text>
@@ -79,7 +80,7 @@ export const WelcomeScreen: React.FC = () => {
             <View style={styles.facts}>
               {FACTS.map((f) => (
                 <View key={f.label} style={[styles.fact, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
-                  <Text style={[styles.factValue, { color: theme.colors.primary }]}>{f.value}</Text>
+                  <Text style={[type.display(26), { color: theme.colors.primary }]}>{f.value}</Text>
                   <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{f.label}</Text>
                 </View>
               ))}
@@ -89,7 +90,7 @@ export const WelcomeScreen: React.FC = () => {
                 The first Kural
               </Text>
               <KuralVerse kural={sample} size={20} />
-              <Text style={[englishText.translation, styles.sampleEnglish, { color: theme.colors.onSurfaceVariant }]}>
+              <Text style={[type.translation, styles.sampleEnglish, { color: theme.colors.onSurfaceVariant }]}>
                 {sample.eng}
               </Text>
             </View>
@@ -122,7 +123,7 @@ export const WelcomeScreen: React.FC = () => {
                     <View style={{ flex: 1 }}>
                       <Text
                         style={[
-                          l.value === 'tamil' ? tamilText.title : styles.optionTitle,
+                          l.value === 'tamil' ? type.tamilTitle : [type.uiStrong, styles.optionTitle],
                           { color: selected ? theme.colors.onPrimaryContainer : theme.colors.onSurface },
                         ]}
                       >
@@ -214,11 +215,6 @@ const styles = StyleSheet.create({
   page: {
     gap: space.md,
   },
-  tamilTitle: {
-    fontFamily: 'NotoSerifTamil_600SemiBold',
-    fontSize: 40,
-    lineHeight: 64,
-  },
   lead: {
     lineHeight: 26,
   },
@@ -233,11 +229,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-  },
-  factValue: {
-    fontFamily: 'Lora_600SemiBold',
-    fontSize: 26,
-    lineHeight: 32,
   },
   sample: {
     marginTop: space.md,
@@ -268,7 +259,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   optionTitle: {
-    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
     lineHeight: 24,
   },

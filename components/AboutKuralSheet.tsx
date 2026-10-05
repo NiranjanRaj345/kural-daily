@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { getBookStructure, getKuralByNumber } from '../services/DataService';
 import { SheetModal } from './SheetModal';
 import { KuralVerse } from './KuralVerse';
-import { useAppTheme, space, radius, tamilText } from '../theme';
+import { useAppTheme, space, radius, useType } from '../theme';
 
 interface AboutKuralSheetProps {
   visible: boolean;
@@ -14,6 +14,7 @@ interface AboutKuralSheetProps {
 /** What the Thirukkural is and how it is arranged. The structure is read from the data itself. */
 export const AboutKuralSheet: React.FC<AboutKuralSheetProps> = ({ visible, onClose }) => {
   const theme = useAppTheme();
+  const type = useType();
   const books = useMemo(() => getBookStructure(), []);
   const example = getKuralByNumber(391)!;
 
@@ -47,14 +48,14 @@ export const AboutKuralSheet: React.FC<AboutKuralSheetProps> = ({ visible, onClo
         {books.map((book) => (
           <View key={book.name} style={[styles.book, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
             <View style={styles.bookHead}>
-              <Text style={[tamilText.title, { color: theme.colors.primary }]}>{book.name}</Text>
+              <Text style={[type.tamilTitle, { color: theme.colors.primary }]}>{book.name}</Text>
               <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
                 {book.nameEnglish} · {book.chapters} chapters · {book.kurals} Kurals
               </Text>
             </View>
             {book.groups.map((g) => (
               <View key={g.name} style={[styles.group, { borderTopColor: theme.colors.outlineVariant }]}>
-                <Text style={[tamilText.label, { color: theme.colors.onSurface, flex: 1 }]}>
+                <Text style={[type.tamilLabel, { color: theme.colors.onSurface, flex: 1 }]}>
                   {g.name} <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{g.nameEnglish}</Text>
                 </Text>
                 <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
