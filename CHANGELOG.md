@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Redesign
+- New design system: brand colours from the app icon (ink blue + saffron) with matched light, dark and sepia themes, Inter for UI text and Noto Sans Tamil for Kurals. Fixes low-contrast hard-coded greys in dark/sepia.
+- **Auto theme** follows the system light/dark setting (new default); status bar matches the theme.
+- **Today**: greeting and date, streak badge, explanation open by default, reading progress (X of 1330), quick actions for a random Kural and the quiz.
+- **Kural card**: chapter and book shown in Tamil and English, labelled actions (Save, Listen, Share, Copy), explanation with a Tamil/English switch.
+- **Previous/Next** in every Kural sheet, stepping through the chapter, search results, saved list or history you opened it from.
+- **Browse**: chapters grouped by book with filters, English chapter names, and per-chapter reading progress; previous/next chapter buttons.
+- **Search**: recent searches, suggested topics, result count, results show the full couplet and chapter.
+- **Saved** (was Favorites): newest first, remove with Undo.
+- **Quiz**: modes as visible chips, A–D options with clear right/wrong states, Jumbled words can be tapped to take back, scrolls to the result.
+- **You** (was Profile): streak, best streak, read and saved tiles; grouped settings; live text-size preview with an extra-large size; Reset progress.
+- Tab bar: theme colours and haptic feedback; fixed content scrolling under a transparent bar on iOS.
+
 ## 1.1.0 (2026-10-05)
 
 ### New

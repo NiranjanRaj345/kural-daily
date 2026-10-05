@@ -1,34 +1,102 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { View, StyleSheet, FlatList, TouchableOpacity, BackHandler } from 'react-native';
-import { Text, List, useTheme, Divider, Card } from 'react-native-paper';
+import { View, StyleSheet, FlatList, SectionList, Pressable, BackHandler } from 'react-native';
+import { Text, IconButton, Chip } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Chapter, getChapters, getKuralsByChapter } from '../../services/DataService';
 import { Kural } from '../../types/kural';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
+import { KuralListItem } from '../../components/ui/KuralListItem';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { useAppTheme, space, radius, tamilText } from '../../theme';
+
+interface Book {
+  title: string;
+  titleEnglish?: string;
+  data: Chapter[];
+}
+
+// The three books (பால்): Virtue, Wealth, Love
+const books: Book[] = getChapters().reduce<Book[]>((acc, chapter) => {
+  const last = acc[acc.length - 1];
+  if (last && last.title === chapter.section) {
+    last.data.push(chapter);
+  } else {
+    acc.push({ title: chapter.section, titleEnglish: chapter.sectionEnglish, data: [chapter] });
+  }
+  return acc;
+}, []);
+
+const ChapterRow = React.memo(function ChapterRow({
+  chapter, readCount, onPress,
+}: { chapter: Chapter; readCount: number; onPress: (c: Chapter) => void }) {
+  const theme = useAppTheme();
+  const complete = readCount >= 10;
+  return (
+    <Pressable
+      onPress={() => onPress(chapter)}
+      accessibilityRole="button"
+      accessibilityLabel={`Chapter ${chapter.number}, ${chapter.name}, ${chapter.nameEnglish ?? ''}. ${readCount} of 10 read`}
+      android_ripple={{ color: theme.colors.primaryContainer }}
+      style={({ pressed }) => [styles.chapterRow, { opacity: pressed ? 0.7 : 1 }]}
+    >
+      <View
+        style={[
+          styles.chapterBadge,
+          { backgroundColor: complete ? theme.colors.successContainer : theme.colors.surfaceVariant },
+        ]}
+      >
+        {complete ? (
+          <MaterialCommunityIcons name="check" size={18} color={theme.colors.onSuccessContainer} />
+        ) : (
+          <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{chapter.number}</Text>
+        )}
+      </View>
+      <View style={styles.chapterText}>
+        <Text style={[tamilText.title, { color: theme.colors.onSurface }]} numberOfLines={1}>{chapter.name}</Text>
+        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+          {chapter.nameEnglish}
+        </Text>
+      </View>
+      {readCount > 0 && !complete && (
+        <Text variant="labelSmall" style={{ color: theme.colors.primary }}>{readCount}/10</Text>
+      )}
+      <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.outline} />
+    </Pressable>
+  );
+});
 
 export default function BrowseScreen() {
-  const theme = useTheme();
-  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const theme = useAppTheme();
+  const history = useSettingsStore((s) => s.history);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
-  const [chapterKurals, setChapterKurals] = useState<Kural[]>([]);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
+  const [bookFilter, setBookFilter] = useState<string | null>(null);
+  const visibleBooks = useMemo(
+    () => (bookFilter ? books.filter((b) => b.title === bookFilter) : books),
+    [bookFilter]
+  );
 
-  useEffect(() => {
-    const allChapters = getChapters();
-    setChapters(allChapters);
-  }, []);
+  const readSet = useMemo(() => new Set(history), [history]);
+  const readByChapter = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const n of history) {
+      const chapter = Math.ceil(n / 10);
+      counts.set(chapter, (counts.get(chapter) ?? 0) + 1);
+    }
+    return counts;
+  }, [history]);
 
-  const handleChapterPress = (chapter: Chapter) => {
-    const kurals = getKuralsByChapter(chapter.number);
-    setChapterKurals(kurals);
-    setSelectedChapter(chapter);
-  };
+  const chapterKurals = useMemo(
+    () => (selectedChapter ? getKuralsByChapter(selectedChapter.number) : []),
+    [selectedChapter]
+  );
 
-  const handleBack = () => {
-    setSelectedChapter(null);
-    setChapterKurals([]);
-  };
+  const handleBack = useCallback(() => setSelectedChapter(null), []);
+  const openChapter = useCallback((chapter: Chapter) => setSelectedChapter(chapter), []);
+  const openKural = useCallback((kural: Kural) => setSelectedKural(kural), []);
 
   // Android back returns to the chapter list instead of leaving the tab
   useFocusEffect(
@@ -39,69 +107,108 @@ export default function BrowseScreen() {
         return true;
       });
       return () => sub.remove();
-    }, [selectedChapter])
-  );
-
-  const renderKuralItem = ({ item }: { item: Kural }) => (
-    <Card style={styles.card} onPress={() => setSelectedKural(item)}>
-      <Card.Content style={styles.cardContent}>
-        <View>
-          <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-            Kural {item.number}
-          </Text>
-        </View>
-        <View style={{ alignItems: 'flex-end', flex: 1, marginLeft: 16 }}>
-          <Text variant="bodyMedium" numberOfLines={1} style={{ color: theme.colors.onSurface }}>
-            {item.line1}
-          </Text>
-        </View>
-      </Card.Content>
-    </Card>
+    }, [selectedChapter, handleBack])
   );
 
   if (selectedChapter) {
+    const index = selectedChapter.number;
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Text variant="labelLarge" style={{ color: theme.colors.primary }}>← Back</Text>
-          </TouchableOpacity>
-          <Text variant="headlineSmall" style={styles.headerTitle} numberOfLines={1}>
-            {selectedChapter.number}. {selectedChapter.name}
-          </Text>
+      <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.chapterHeader}>
+          <IconButton icon="arrow-left" onPress={handleBack} accessibilityLabel="Back to chapters" />
+          <View style={{ flex: 1 }}>
+            <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
+              Chapter {index} · {selectedChapter.sectionEnglish}
+            </Text>
+            <Text style={[tamilText.title, { fontSize: 20, lineHeight: 30, color: theme.colors.onBackground }]} numberOfLines={1}>
+              {selectedChapter.name}
+            </Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+              {selectedChapter.nameEnglish}
+            </Text>
+          </View>
+          <IconButton
+            icon="chevron-left"
+            disabled={index <= 1}
+            onPress={() => setSelectedChapter(getChapters()[index - 2])}
+            accessibilityLabel="Previous chapter"
+          />
+          <IconButton
+            icon="chevron-right"
+            disabled={index >= getChapters().length}
+            onPress={() => setSelectedChapter(getChapters()[index])}
+            accessibilityLabel="Next chapter"
+          />
         </View>
         <FlatList
+          key={index}
           data={chapterKurals}
           keyExtractor={(item) => item.number.toString()}
-          renderItem={renderKuralItem}
+          renderItem={({ item }) => (
+            <KuralListItem kural={item} onPress={openKural} read={readSet.has(item.number)} />
+          )}
           contentContainerStyle={styles.listContent}
         />
 
-        <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} />
+        <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} sequence={chapterKurals} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>Browse Chapters</Text>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ScreenHeader title="Browse" subtitle="3 books · 133 chapters · 1330 Kurals" />
+      <View style={styles.bookChips}>
+        <Chip compact selected={!bookFilter} showSelectedOverlay onPress={() => setBookFilter(null)} style={styles.bookChip}>
+          All
+        </Chip>
+        {books.map((book) => (
+          <Chip
+            key={book.title}
+            compact
+            selected={bookFilter === book.title}
+            showSelectedOverlay
+            onPress={() => setBookFilter(bookFilter === book.title ? null : book.title)}
+            style={styles.bookChip}
+          >
+            {book.titleEnglish ?? book.title}
+          </Chip>
+        ))}
       </View>
-      <FlatList
-        data={chapters}
+      <SectionList
+        key={bookFilter ?? 'all'}
+        sections={visibleBooks}
         keyExtractor={(item) => item.number.toString()}
-        renderItem={({ item }) => (
-          <>
-            <List.Item
-              title={`${item.number}. ${item.name}`}
-              description={item.nameEnglish}
-              left={props => <List.Icon {...props} icon="book-open-variant" />}
-              right={props => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => handleChapterPress(item)}
-            />
-            <Divider />
-          </>
+        stickySectionHeadersEnabled
+        renderSectionHeader={({ section }) => (
+          <View style={[styles.bookHeader, { backgroundColor: theme.colors.background }]}>
+            <Text style={[tamilText.title, { color: theme.colors.primary }]}>{section.title}</Text>
+            <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              {section.titleEnglish} · {section.data.length} chapters
+            </Text>
+          </View>
         )}
+        renderItem={({ item, index, section }) => (
+          <View
+            style={[
+              styles.chapterGroup,
+              {
+                backgroundColor: theme.colors.surface,
+                borderColor: theme.colors.outlineVariant,
+                borderTopLeftRadius: index === 0 ? radius.lg : 0,
+                borderTopRightRadius: index === 0 ? radius.lg : 0,
+                borderBottomLeftRadius: index === section.data.length - 1 ? radius.lg : 0,
+                borderBottomRightRadius: index === section.data.length - 1 ? radius.lg : 0,
+                borderTopWidth: index === 0 ? StyleSheet.hairlineWidth : 0,
+                borderBottomWidth: index === section.data.length - 1 ? StyleSheet.hairlineWidth : 0,
+              },
+            ]}
+          >
+            {index > 0 && <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />}
+            <ChapterRow chapter={item} readCount={readByChapter.get(item.number) ?? 0} onPress={openChapter} />
+          </View>
+        )}
+        contentContainerStyle={styles.listContent}
       />
     </SafeAreaView>
   );
@@ -111,37 +218,56 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  listContent: {
+    paddingBottom: space.xxxl,
+  },
+  bookChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    paddingHorizontal: space.xl,
+    paddingBottom: space.sm,
+  },
+  bookChip: {
+    borderRadius: radius.pill,
+  },
+  bookHeader: {
+    paddingHorizontal: space.xl,
+    paddingTop: space.lg,
+    paddingBottom: space.sm,
+  },
+  chapterGroup: {
+    marginHorizontal: space.lg,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 68,
+  },
+  chapterRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
   },
-  title: {
-    fontFamily: 'Inter_700Bold',
-    fontWeight: 'bold',
+  chapterBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerTitle: {
-    fontFamily: 'Inter_700Bold',
-    marginLeft: 16,
+  chapterText: {
     flex: 1,
   },
-  backButton: {
-    padding: 8,
-  },
-  listContent: {
-    paddingBottom: 20,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  card: {
-    marginBottom: 12,
-    elevation: 1,
-  },
-  cardContent: {
+  chapterHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    paddingRight: space.xs,
+    paddingTop: space.sm,
+    paddingBottom: space.md,
   },
 });
