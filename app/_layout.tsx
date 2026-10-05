@@ -2,14 +2,25 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts, NotoSansTamil_400Regular, NotoSansTamil_700Bold } from '@expo-google-fonts/noto-sans-tamil';
 import { Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-import { PaperProvider, MD3DarkTheme, MD3LightTheme, adaptNavigationTheme, configureFonts } from 'react-native-paper';
-import { useColorScheme } from 'react-native';
+import { PaperProvider, MD3DarkTheme, MD3LightTheme, adaptNavigationTheme } from 'react-native-paper';
+import { AppState, Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { registerForPushNotificationsAsync, scheduleDailyNotification } from '../services/NotificationService';
+import { syncDailyReminders } from '../services/NotificationService';
+
+const useStoreHydrated = () => {
+  const [hydrated, setHydrated] = useState(useSettingsStore.persist.hasHydrated());
+  useEffect(() => {
+    const unsub = useSettingsStore.persist.onFinishHydration(() => setHydrated(true));
+    setHydrated(useSettingsStore.persist.hasHydrated());
+    return unsub;
+  }, []);
+  return hydrated;
+};
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -38,31 +49,29 @@ export default function RootLayout() {
     if (error) throw error;
   }, [error]);
 
+  // Saved settings load asynchronously; wait for them so the streak, theme and
+  // favorites aren't computed from defaults and then overwritten.
+  const hydrated = useStoreHydrated();
+  const ready = loaded && hydrated;
+
   useEffect(() => {
-    if (loaded) {
+    if (ready) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [ready]);
 
   useEffect(() => {
-    const setupNotifications = async () => {
-      const hasPermission = await registerForPushNotificationsAsync();
-      if (hasPermission) {
-        // Ensure daily notification is scheduled if enabled
-        // We could check store here, but scheduling is idempotent-ish (cancels old ones)
-        // For now, let's just ensure the channel/perms are ready.
-        // Ideally, we check the store state.
-        const state = useSettingsStore.getState();
-        if (state.notificationsEnabled) {
-          await scheduleDailyNotification();
-        }
-      }
-    };
+    if (!hydrated) return;
+    // Never prompts here; permission is only requested when the user opts in.
+    // Re-syncing on every foreground keeps the next two weeks of reminders scheduled.
+    syncDailyReminders();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') syncDailyReminders();
+    });
+    return () => sub.remove();
+  }, [hydrated]);
 
-    setupNotifications();
-  }, []);
-
-  if (!loaded) {
+  if (!ready) {
     return null;
   }
 
@@ -70,8 +79,17 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const router = useRouter();
   const { themeMode } = useSettingsStore();
+
+  // Tapping a daily reminder opens today's Kural
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      router.navigate('/');
+    });
+    return () => sub.remove();
+  }, [router]);
 
   const { LightTheme, DarkTheme } = adaptNavigationTheme({
     reactNavigationLight: NavigationDefaultTheme,

@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, FlatList, Modal, ScrollView } from 'react-native';
-import { Searchbar, Text, useTheme, Card, Portal, IconButton } from 'react-native-paper';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { Searchbar, Text, useTheme, Card } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { searchKurals } from '../../services/DataService';
 import { getRandomKural } from '../../services/DailyService';
 import { Kural } from '../../types/kural';
-import { KuralCard } from '../../components/KuralCard';
+import { KuralDetailModal } from '../../components/KuralDetailModal';
+
+const isSearchable = (query: string) => {
+  const trimmed = query.trim();
+  return trimmed.length > 2 || /^\d+$/.test(trimmed);
+};
 
 export default function SearchScreen() {
   const theme = useTheme();
@@ -15,7 +20,7 @@ export default function SearchScreen() {
 
   const onChangeSearch = (query: string) => {
     setSearchQuery(query);
-    if (query.length > 2) {
+    if (isSearchable(query)) {
       const searchResults = searchKurals(query);
       setResults(searchResults);
     } else {
@@ -57,12 +62,13 @@ export default function SearchScreen() {
         keyExtractor={(item) => item.number.toString()}
         renderItem={renderKuralItem}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
-          searchQuery.length > 2 ? (
+          isSearchable(searchQuery) ? (
             <Text style={styles.emptyText}>No results found.</Text>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Type at least 3 characters to search.</Text>
+              <Text style={styles.emptyText}>Type a Kural number, or at least 3 characters to search.</Text>
               <View style={styles.suggestionContainer}>
                 <Text variant="titleMedium" style={styles.suggestionTitle}>Or try a random Kural:</Text>
                 <Card style={styles.card} onPress={() => setSelectedKural(getRandomKural())}>
@@ -85,28 +91,7 @@ export default function SearchScreen() {
         }
       />
 
-      {/* Full Kural Modal */}
-      <Portal>
-        <Modal
-          visible={!!selectedKural}
-          onDismiss={() => setSelectedKural(null)}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-              <View style={styles.modalHeader}>
-                <Text variant="titleMedium">Kural Detail</Text>
-                <IconButton icon="close" onPress={() => setSelectedKural(null)} />
-              </View>
-              <ScrollView>
-                {selectedKural && <KuralCard kural={selectedKural} />}
-                <View style={{ height: 20 }} />
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      </Portal>
+      <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} />
     </SafeAreaView>
   );
 }
@@ -154,25 +139,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    height: '90%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
 });

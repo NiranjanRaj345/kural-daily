@@ -1,13 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, FlatList, Modal } from 'react-native';
-import { List, Switch, Text, useTheme, Divider, SegmentedButtons, Avatar, Card, IconButton, Portal, RadioButton, TouchableRipple } from 'react-native-paper';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, FlatList, BackHandler, Linking, Platform } from 'react-native';
+import { List, Switch, Text, useTheme, Divider, SegmentedButtons, Avatar, Card, IconButton, Portal, Dialog, RadioButton, Button, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
+import Constants from 'expo-constants';
 import * as Speech from 'expo-speech';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { scheduleDailyNotification, cancelAllNotifications } from '../../services/NotificationService';
+import {
+  enableDailyReminders, disableDailyReminders, syncDailyReminders, formatReminderTime,
+} from '../../services/NotificationService';
 import { getKuralByNumber } from '../../services/DataService';
 import { Kural } from '../../types/kural';
-import { KuralCard } from '../../components/KuralCard';
+import { KuralDetailModal } from '../../components/KuralDetailModal';
+import { SheetModal } from '../../components/SheetModal';
+
+const REMINDER_TIMES: [number, number][] = [
+  [6, 0], [7, 0], [8, 0], [9, 0], [12, 0], [18, 0], [20, 0], [21, 0],
+];
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -15,7 +26,7 @@ export default function ProfileScreen() {
     themeMode, setThemeMode,
     showEnglish, toggleEnglish,
     showTamil, toggleTamil,
-    notificationsEnabled, toggleNotifications,
+    notificationsEnabled, notificationHour, notificationMinute, setNotificationTime,
     fontSize, setFontSize,
     streak, history,
     selectedVoiceIdentifier, setSelectedVoiceIdentifier
@@ -28,6 +39,8 @@ export default function ProfileScreen() {
   const [showAllVoices, setShowAllVoices] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTimeDialog, setShowTimeDialog] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ message: string; openSettings?: boolean } | null>(null);
 
   const loadVoices = async () => {
     try {
@@ -67,14 +80,34 @@ export default function ProfileScreen() {
   };
 
   const onToggleNotifications = async () => {
-    const newState = !notificationsEnabled;
-    toggleNotifications();
-    if (newState) {
-      await scheduleDailyNotification();
-    } else {
-      await cancelAllNotifications();
+    if (notificationsEnabled) {
+      await disableDailyReminders();
+      return;
+    }
+    const enabled = await enableDailyReminders();
+    if (!enabled) {
+      setSnackbar({ message: 'Notifications are blocked for this app.', openSettings: Platform.OS !== 'web' });
     }
   };
+
+  const onSelectReminderTime = async (value: string) => {
+    const [hour, minute] = value.split(':').map(Number);
+    setNotificationTime(hour, minute);
+    setShowTimeDialog(false);
+    await syncDailyReminders();
+  };
+
+  // Android back closes the history view instead of leaving the tab
+  useFocusEffect(
+    useCallback(() => {
+      if (!showHistory) return;
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+        setShowHistory(false);
+        return true;
+      });
+      return () => sub.remove();
+    }, [showHistory])
+  );
 
   const handleHistoryPress = () => {
     const kurals = history
@@ -122,28 +155,7 @@ export default function ProfileScreen() {
           contentContainerStyle={styles.listContent}
         />
 
-        {/* Full Kural Modal */}
-        <Portal>
-          <Modal
-            visible={!!selectedKural}
-            onDismiss={() => setSelectedKural(null)}
-            animationType="slide"
-            transparent={true}
-          >
-            <View style={styles.modalContainer}>
-              <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-                <View style={styles.modalHeader}>
-                  <Text variant="titleMedium">Kural Detail</Text>
-                  <IconButton icon="close" onPress={() => setSelectedKural(null)} />
-                </View>
-                <ScrollView>
-                  {selectedKural && <KuralCard kural={selectedKural} />}
-                  <View style={{ height: 20 }} />
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-        </Portal>
+        <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} />
 
       </SafeAreaView>
     );
@@ -225,11 +237,22 @@ export default function ProfileScreen() {
         <List.Section>
           <List.Subheader>Preferences</List.Subheader>
           <List.Item
-            title="Daily Notifications"
-            description="Get reminded at 9:00 AM"
+            title="Daily Reminder"
+            description={notificationsEnabled
+              ? `Today's Kural at ${formatReminderTime(notificationHour, notificationMinute)}`
+              : 'Off'}
             left={() => <List.Icon icon="bell-outline" />}
             right={() => <Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />}
           />
+          {notificationsEnabled && (
+            <List.Item
+              title="Reminder Time"
+              description={formatReminderTime(notificationHour, notificationMinute)}
+              left={() => <List.Icon icon="clock-outline" />}
+              right={props => <List.Icon {...props} icon="chevron-right" />}
+              onPress={() => setShowTimeDialog(true)}
+            />
+          )}
           <List.Item
             title="Show Tamil"
             left={() => <List.Icon icon="syllabary-hangul" />}
@@ -240,14 +263,13 @@ export default function ProfileScreen() {
             left={() => <List.Icon icon="translate" />}
             right={() => <Switch value={showEnglish} onValueChange={toggleEnglish} />}
           />
-          <TouchableRipple onPress={() => setShowVoiceModal(true)}>
-            <List.Item
-              title="Audio Voice"
-              description={selectedVoiceIdentifier ? "Custom voice selected" : "Default system voice"}
-              left={props => <List.Icon {...props} icon="account-voice" />}
-              right={props => <List.Icon {...props} icon="chevron-right" />}
-            />
-          </TouchableRipple>
+          <List.Item
+            title="Audio Voice"
+            description={selectedVoiceIdentifier ? "Custom voice selected" : "Default system voice"}
+            left={props => <List.Icon {...props} icon="account-voice" />}
+            right={props => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setShowVoiceModal(true)}
+          />
         </List.Section>
 
         <Divider />
@@ -263,7 +285,7 @@ export default function ProfileScreen() {
           />
           <List.Item
             title="Version"
-            description="1.0.0"
+            description={APP_VERSION}
             left={() => <List.Icon icon="information-outline" />}
           />
         </List.Section>
@@ -272,123 +294,130 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Privacy Policy Modal */}
-      <Portal>
-        <Modal
-          visible={showPrivacyModal}
-          onDismiss={() => setShowPrivacyModal(false)}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-              <View style={styles.modalHeader}>
-                <Text variant="titleMedium">Privacy Policy</Text>
-                <IconButton icon="close" onPress={() => setShowPrivacyModal(false)} />
-              </View>
-              <ScrollView contentContainerStyle={{ padding: 20 }}>
-                <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Data Collection</Text>
-                <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
-                  We do not collect, store, or share any personal information. You can use the entire application without creating an account.
-                </Text>
+      <SheetModal visible={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} title="Privacy Policy">
+        <View style={{ padding: 20 }}>
+          <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Data Collection</Text>
+          <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
+            We do not collect, store, or share any personal information. There are no accounts, ads, analytics or tracking. The app works fully offline.
+          </Text>
 
-                <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Local Storage</Text>
-                <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
-                  All user preferences (theme, history, favorites, streaks) are stored locally on your device. This data never leaves your phone.
-                </Text>
+          <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Local Storage</Text>
+          <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
+            All user preferences (theme, history, favorites, streaks, quiz scores) are stored locally on your device. This data never leaves your phone and is removed when you uninstall the app.
+          </Text>
 
-                <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Permissions</Text>
-                <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
-                  • Notifications: Used only for daily reminders scheduled locally.{'\n'}
-                  • Storage: Used temporarily when you share a Kural image.
-                </Text>
+          <Text variant="titleLarge" style={{ marginBottom: 10, fontWeight: 'bold' }}>Permissions</Text>
+          <Text variant="bodyMedium" style={{ marginBottom: 20 }}>
+            • Notifications (optional): Used only for the daily reminder, scheduled locally on your device. Requested only when you turn reminders on.{'\n'}
+            • Sharing: Kural images are created on your device and passed to the share sheet you choose. No storage permission is needed.
+          </Text>
 
-                <Text variant="bodySmall" style={{ marginTop: 20, color: theme.colors.secondary, textAlign: 'center' }}>
-                  Last Updated: November 30, 2025
-                </Text>
-                <View style={{ height: 40 }} />
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      </Portal>
+          <Text variant="bodySmall" style={{ marginTop: 20, color: theme.colors.secondary, textAlign: 'center' }}>
+            Last Updated: October 5, 2026
+          </Text>
+        </View>
+      </SheetModal>
 
       {/* Voice Selection Modal */}
-      <Portal>
-        <Modal
-          visible={showVoiceModal}
-          onDismiss={() => setShowVoiceModal(false)}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-              <View style={styles.modalHeader}>
-                <Text variant="titleMedium">Select Voice</Text>
-                <View style={{ flexDirection: 'row' }}>
-                  <IconButton icon="refresh" onPress={loadVoices} />
-                  <IconButton icon="close" onPress={() => setShowVoiceModal(false)} />
-                </View>
-              </View>
-              <View style={{ paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surfaceVariant }}>
-                <Text variant="bodyMedium">Show all languages</Text>
-                <Switch value={showAllVoices} onValueChange={setShowAllVoices} />
-              </View>
-              <FlatList
-                data={displayedVoices}
-                keyExtractor={(item) => item.identifier}
-                contentContainerStyle={{ paddingBottom: 20 }}
-                ListHeaderComponent={() => (
-                  <>
-                    <View style={{ padding: 16, paddingBottom: 8 }}>
-                      <Text variant="labelSmall" style={{ color: theme.colors.secondary }}>
-                        Found {allVoices.length} voices available
-                      </Text>
-                    </View>
-                    <List.Item
-                      title="System Default"
-                      description="Use device preference"
-                      onPress={() => setSelectedVoiceIdentifier(null)}
-                      right={props => !selectedVoiceIdentifier ? <List.Icon {...props} icon="check" color={theme.colors.primary} /> : null}
-                    />
-                    <Divider />
-                  </>
-                )}
-                renderItem={({ item }) => (
-                  <>
-                    <List.Item
-                      title={item.name}
-                      description={item.language}
-                      onPress={() => setSelectedVoiceIdentifier(item.identifier)}
-                      right={props => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <IconButton
-                            icon="play-circle-outline"
-                            onPress={() => handleVoicePreview(item.identifier)}
-                          />
-                          {selectedVoiceIdentifier === item.identifier && (
-                            <List.Icon {...props} icon="check" color={theme.colors.primary} />
-                          )}
-                        </View>
-                      )}
-                    />
-                    <Divider />
-                  </>
-                )}
-                ListEmptyComponent={() => (
-                  <View style={{ alignItems: 'center', marginTop: 20, padding: 16 }}>
-                    <Text style={{ textAlign: 'center', color: theme.colors.secondary, marginBottom: 10 }}>
-                      No voices detected.
-                    </Text>
-                    <Text variant="bodySmall" style={{ textAlign: 'center', color: theme.colors.outline }}>
-                      Try tapping the refresh button above.
-                    </Text>
-                  </View>
-                )}
-              />
-            </View>
+      <SheetModal
+        visible={showVoiceModal}
+        onClose={() => { Speech.stop(); setShowVoiceModal(false); }}
+        title="Select Voice"
+        scrollable={false}
+        headerRight={<IconButton icon="refresh" onPress={loadVoices} accessibilityLabel="Refresh voices" />}
+      >
+          <View style={{ paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: theme.colors.surfaceVariant }}>
+            <Text variant="bodyMedium">Show all languages</Text>
+            <Switch value={showAllVoices} onValueChange={setShowAllVoices} />
           </View>
-        </Modal>
+          <FlatList
+            data={displayedVoices}
+            keyExtractor={(item) => item.identifier}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            ListHeaderComponent={() => (
+              <>
+                <View style={{ padding: 16, paddingBottom: 8 }}>
+                  <Text variant="labelSmall" style={{ color: theme.colors.secondary }}>
+                    Found {allVoices.length} voices available
+                  </Text>
+                </View>
+                <List.Item
+                  title="System Default"
+                  description="Use device preference"
+                  onPress={() => setSelectedVoiceIdentifier(null)}
+                  right={props => !selectedVoiceIdentifier ? <List.Icon {...props} icon="check" color={theme.colors.primary} /> : null}
+                />
+                <Divider />
+              </>
+            )}
+            renderItem={({ item }) => (
+              <>
+                <List.Item
+                  title={item.name}
+                  description={item.language}
+                  onPress={() => setSelectedVoiceIdentifier(item.identifier)}
+                  right={props => (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <IconButton
+                        icon="play-circle-outline"
+                        onPress={() => handleVoicePreview(item.identifier)}
+                      />
+                      {selectedVoiceIdentifier === item.identifier && (
+                        <List.Icon {...props} icon="check" color={theme.colors.primary} />
+                      )}
+                    </View>
+                  )}
+                />
+                <Divider />
+              </>
+            )}
+            ListEmptyComponent={() => (
+              <View style={{ alignItems: 'center', marginTop: 20, padding: 16 }}>
+                <Text style={{ textAlign: 'center', color: theme.colors.secondary, marginBottom: 10 }}>
+                  No voices detected.
+                </Text>
+                <Text variant="bodySmall" style={{ textAlign: 'center', color: theme.colors.outline }}>
+                  Try tapping the refresh button above.
+                </Text>
+              </View>
+            )}
+          />
+      </SheetModal>
+
+      {/* Reminder Time Dialog */}
+      <Portal>
+        <Dialog visible={showTimeDialog} onDismiss={() => setShowTimeDialog(false)}>
+          <Dialog.Title>Reminder Time</Dialog.Title>
+          <Dialog.ScrollArea style={{ maxHeight: 360 }}>
+            <ScrollView>
+              <RadioButton.Group
+                onValueChange={onSelectReminderTime}
+                value={`${notificationHour}:${notificationMinute}`}
+              >
+                {REMINDER_TIMES.map(([hour, minute]) => (
+                  <RadioButton.Item
+                    key={`${hour}:${minute}`}
+                    label={formatReminderTime(hour, minute)}
+                    value={`${hour}:${minute}`}
+                  />
+                ))}
+              </RadioButton.Group>
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setShowTimeDialog(false)}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
+
+      <Snackbar
+        visible={!!snackbar}
+        onDismiss={() => setSnackbar(null)}
+        duration={5000}
+        action={snackbar?.openSettings ? { label: 'Settings', onPress: () => Linking.openSettings() } : undefined}
+      >
+        {snackbar?.message}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -462,25 +491,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 4,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    height: '90%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
 });

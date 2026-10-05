@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { computeStreak } from '../utils/date';
 
 interface SettingsState {
   themeMode: 'light' | 'dark' | 'sepia';
   showTamil: boolean;
   showEnglish: boolean;
   notificationsEnabled: boolean;
+  notificationHour: number;
+  notificationMinute: number;
+  notificationPromptDismissed: boolean;
   favorites: number[];
   history: number[];
   shareIncludeTamil: boolean;
@@ -25,7 +29,9 @@ interface SettingsState {
   setSelectedVoiceIdentifier: (identifier: string | null) => void;
   toggleTamil: () => void;
   toggleEnglish: () => void;
-  toggleNotifications: () => void;
+  setNotificationsEnabled: (enabled: boolean) => void;
+  setNotificationTime: (hour: number, minute: number) => void;
+  dismissNotificationPrompt: () => void;
   toggleFavorite: (kuralNumber: number) => void;
   addToHistory: (kuralNumber: number) => void;
   toggleShareIncludeTamil: () => void;
@@ -42,7 +48,11 @@ export const useSettingsStore = create<SettingsState>()(
       themeMode: 'light',
       showTamil: true,
       showEnglish: true,
-      notificationsEnabled: true,
+      // Off until the user opts in, so we never ask for permission on first launch
+      notificationsEnabled: false,
+      notificationHour: 9,
+      notificationMinute: 0,
+      notificationPromptDismissed: false,
       favorites: [],
       history: [],
       shareIncludeTamil: true,
@@ -61,7 +71,9 @@ export const useSettingsStore = create<SettingsState>()(
       setSelectedVoiceIdentifier: (identifier) => set({ selectedVoiceIdentifier: identifier }),
       toggleTamil: () => set((state) => ({ showTamil: !state.showTamil })),
       toggleEnglish: () => set((state) => ({ showEnglish: !state.showEnglish })),
-      toggleNotifications: () => set((state) => ({ notificationsEnabled: !state.notificationsEnabled })),
+      setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
+      setNotificationTime: (hour, minute) => set({ notificationHour: hour, notificationMinute: minute }),
+      dismissNotificationPrompt: () => set({ notificationPromptDismissed: true }),
       toggleFavorite: (kuralNumber) => set((state) => {
         const isFavorite = state.favorites.includes(kuralNumber);
         return {
@@ -79,23 +91,11 @@ export const useSettingsStore = create<SettingsState>()(
       toggleShareIncludeEnglish: () => set((state) => ({ shareIncludeEnglish: !state.shareIncludeEnglish })),
       toggleShareIncludeExplanation: () => set((state) => ({ shareIncludeExplanation: !state.shareIncludeExplanation })),
       updateStreak: () => set((state) => {
-        const today = new Date().toISOString().split('T')[0];
-        
-        if (state.lastReadDate === today) {
+        const next = computeStreak(state.lastReadDate, state.streak, new Date());
+        if (next.lastReadDate === state.lastReadDate && next.streak === state.streak) {
           return state; // Already read today
         }
-
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        if (state.lastReadDate === yesterdayStr) {
-          // Streak continues
-          return { streak: state.streak + 1, lastReadDate: today };
-        } else {
-          // Streak broken or first time
-          return { streak: 1, lastReadDate: today };
-        }
+        return next;
       }),
       setFontSize: (size) => set({ fontSize: size }),
       updateQuizStats: (isCorrect) => set((state) => ({
@@ -109,6 +109,16 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persisted, version) => {
+        const state = (persisted ?? {}) as Partial<SettingsState>;
+        if (version < 1) {
+          // v0 users already went through the permission prompt, so keep their
+          // choice and don't show the opt-in banner again.
+          return { ...state, notificationPromptDismissed: true } as SettingsState;
+        }
+        return state as SettingsState;
+      },
     }
   )
 );

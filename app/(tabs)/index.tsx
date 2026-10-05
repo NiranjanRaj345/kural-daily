@@ -1,24 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal } from 'react-native';
-import { Text, useTheme, ActivityIndicator, Chip, Button, Portal, IconButton } from 'react-native-paper';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl, AppState } from 'react-native';
+import { Text, useTheme, ActivityIndicator, Chip, Button, Card, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { KuralCard } from '../../components/KuralCard';
+import { KuralDetailModal } from '../../components/KuralDetailModal';
+import { enableDailyReminders, formatReminderTime } from '../../services/NotificationService';
 import { getDailyKural, getRandomKural } from '../../services/DailyService';
 import { Kural } from '../../types/kural';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const { streak, updateStreak } = useSettingsStore();
+  const {
+    streak, updateStreak,
+    notificationsEnabled, notificationPromptDismissed, dismissNotificationPrompt,
+    notificationHour, notificationMinute,
+  } = useSettingsStore();
   const [dailyKural, setDailyKural] = useState<Kural | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [randomKural, setRandomKural] = useState<Kural | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [snackbar, setSnackbar] = useState<string | null>(null);
 
-  const loadKural = async () => {
+  const loadKural = useCallback(() => {
     try {
       const kural = getDailyKural();
       setDailyKural(kural);
@@ -29,31 +35,41 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [updateStreak]);
 
   useEffect(() => {
     loadKural();
-  }, []);
+    // Pick up the new day's Kural if the app was left open past midnight
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') loadKural();
+    });
+    return () => sub.remove();
+  }, [loadKural]);
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // In a real app, this might fetch new data from a server
-    // For now, it just re-runs the local logic
     loadKural();
-  }, []);
+  }, [loadKural]);
 
   const handleRandomKural = () => {
-    const kural = getRandomKural();
-    setRandomKural(kural);
-    setModalVisible(true);
+    setRandomKural(getRandomKural());
   };
+
+  const handleEnableReminders = async () => {
+    const enabled = await enableDailyReminders();
+    setSnackbar(enabled
+      ? `Daily reminder set for ${formatReminderTime(notificationHour, notificationMinute)}`
+      : 'Notifications are blocked. You can allow them in system settings.');
+  };
+
+  const showReminderPrompt = !notificationsEnabled && !notificationPromptDismissed;
 
   if (loading) {
     return (
       <View style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text variant="bodyLarge" style={{ marginTop: 16, color: theme.colors.secondary }}>
-          Loading today's wisdom...
+          Loading today&apos;s wisdom...
         </Text>
       </View>
     );
@@ -89,10 +105,25 @@ export default function HomeScreen() {
           </Text>
         </LinearGradient>
 
+        {showReminderPrompt && (
+          <Card style={styles.reminderCard} mode="contained">
+            <Card.Title
+              title="Get a daily reminder?"
+              subtitle={`We'll send today's Kural at ${formatReminderTime(notificationHour, notificationMinute)}`}
+              subtitleNumberOfLines={2}
+              left={() => <MaterialCommunityIcons name="bell-ring-outline" size={28} color={theme.colors.primary} />}
+            />
+            <Card.Actions>
+              <Button onPress={dismissNotificationPrompt}>Not now</Button>
+              <Button mode="contained" onPress={handleEnableReminders}>Enable</Button>
+            </Card.Actions>
+          </Card>
+        )}
+
         {dailyKural ? (
           <KuralCard kural={dailyKural} />
         ) : (
-          <Text style={styles.errorText}>Could not load today's Kural.</Text>
+          <Text style={styles.errorText}>Could not load today&apos;s Kural.</Text>
         )}
 
         <View style={styles.footer}>
@@ -107,27 +138,11 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      <Portal>
-        <Modal
-          visible={modalVisible}
-          onDismiss={() => setModalVisible(false)}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-              <View style={styles.modalHeader}>
-                <Text variant="titleLarge" style={{ fontWeight: 'bold' }}>Random Kural</Text>
-                <IconButton icon="close" onPress={() => setModalVisible(false)} />
-              </View>
-              <ScrollView>
-                {randomKural && <KuralCard kural={randomKural} />}
-                <View style={{ height: 20 }} />
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      </Portal>
+      <KuralDetailModal kural={randomKural} onClose={() => setRandomKural(null)} title="Random Kural" />
+
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar(null)} duration={4000}>
+        {snackbar}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -175,23 +190,8 @@ const styles = StyleSheet.create({
   randomButton: {
     width: '100%',
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    height: '90%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  reminderCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
   },
 });
