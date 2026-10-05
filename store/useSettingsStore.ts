@@ -2,9 +2,10 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { computeStreak } from '../utils/date';
+import type { ThemeMode } from '../theme';
 
 interface SettingsState {
-  themeMode: 'light' | 'dark' | 'sepia';
+  themeMode: ThemeMode;
   showTamil: boolean;
   showEnglish: boolean;
   notificationsEnabled: boolean;
@@ -17,6 +18,8 @@ interface SettingsState {
   shareIncludeEnglish: boolean;
   shareIncludeExplanation: boolean;
   streak: number;
+  bestStreak: number;
+  recentSearches: string[];
   lastReadDate: string | null;
   fontSize: number;
   selectedVoiceIdentifier: string | null;
@@ -25,7 +28,10 @@ interface SettingsState {
     correctAnswers: number;
     currentStreak: number;
   };
-  setThemeMode: (mode: 'light' | 'dark' | 'sepia') => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  addRecentSearch: (query: string) => void;
+  clearRecentSearches: () => void;
+  resetProgress: () => void;
   setSelectedVoiceIdentifier: (identifier: string | null) => void;
   toggleTamil: () => void;
   toggleEnglish: () => void;
@@ -45,7 +51,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      themeMode: 'light',
+      themeMode: 'system',
       showTamil: true,
       showEnglish: true,
       // Off until the user opts in, so we never ask for permission on first launch
@@ -59,6 +65,8 @@ export const useSettingsStore = create<SettingsState>()(
       shareIncludeEnglish: true,
       shareIncludeExplanation: false,
       streak: 0,
+      bestStreak: 0,
+      recentSearches: [],
       lastReadDate: null,
       fontSize: 24,
       selectedVoiceIdentifier: null,
@@ -68,6 +76,19 @@ export const useSettingsStore = create<SettingsState>()(
         currentStreak: 0,
       },
       setThemeMode: (mode) => set({ themeMode: mode }),
+      addRecentSearch: (query) => set((state) => {
+        const q = query.trim();
+        if (!q) return state;
+        return { recentSearches: [q, ...state.recentSearches.filter(s => s.toLowerCase() !== q.toLowerCase())].slice(0, 8) };
+      }),
+      clearRecentSearches: () => set({ recentSearches: [] }),
+      resetProgress: () => set({
+        history: [],
+        streak: 0,
+        bestStreak: 0,
+        lastReadDate: null,
+        quizStats: { totalAnswered: 0, correctAnswers: 0, currentStreak: 0 },
+      }),
       setSelectedVoiceIdentifier: (identifier) => set({ selectedVoiceIdentifier: identifier }),
       toggleTamil: () => set((state) => ({ showTamil: !state.showTamil })),
       toggleEnglish: () => set((state) => ({ showEnglish: !state.showEnglish })),
@@ -95,7 +116,7 @@ export const useSettingsStore = create<SettingsState>()(
         if (next.lastReadDate === state.lastReadDate && next.streak === state.streak) {
           return state; // Already read today
         }
-        return next;
+        return { ...next, bestStreak: Math.max(state.bestStreak, next.streak) };
       }),
       setFontSize: (size) => set({ fontSize: size }),
       updateQuizStats: (isCorrect) => set((state) => ({
@@ -109,15 +130,19 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => {
         const state = (persisted ?? {}) as Partial<SettingsState>;
+        let next = { ...state };
         if (version < 1) {
           // v0 users already went through the permission prompt, so keep their
           // choice and don't show the opt-in banner again.
-          return { ...state, notificationPromptDismissed: true } as SettingsState;
+          next = { ...next, notificationPromptDismissed: true };
         }
-        return state as SettingsState;
+        if (version < 2) {
+          next = { ...next, bestStreak: Math.max(next.bestStreak ?? 0, next.streak ?? 0) };
+        }
+        return next as SettingsState;
       },
     }
   )

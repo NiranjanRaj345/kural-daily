@@ -11,12 +11,17 @@ interface SheetModalProps {
   /** Wrap children in a ScrollView. Turn off when the content is its own list. */
   scrollable?: boolean;
   headerRight?: React.ReactNode;
+  /** Pinned below the scrolling content. */
+  footer?: React.ReactNode;
+  subtitle?: string;
+  /** Changing this resets the scroll position (e.g. when showing a different item). */
+  contentKey?: string | number;
   height?: `${number}%`;
 }
 
 /** Bottom sheet used for all detail/settings popups. Closes on Android back and backdrop tap. */
 export const SheetModal: React.FC<SheetModalProps> = ({
-  visible, onClose, title, children, scrollable = true, headerRight, height = '90%',
+  visible, onClose, title, children, scrollable = true, headerRight, footer, subtitle, contentKey, height = '90%',
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -33,18 +38,27 @@ export const SheetModal: React.FC<SheetModalProps> = ({
       <View style={styles.container}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
         <View style={[styles.content, { height, backgroundColor: theme.colors.background, paddingBottom: insets.bottom }]}>
+          <View style={[styles.grabber, { backgroundColor: theme.colors.outline }]} />
           <View style={[styles.header, { borderBottomColor: theme.colors.outlineVariant }]}>
-            <Text variant="titleMedium" style={styles.title} numberOfLines={1}>{title}</Text>
+            <View style={styles.title}>
+              <Text variant="titleMedium" numberOfLines={1} accessibilityRole="header">{title}</Text>
+              {subtitle && (
+                <Text variant="labelSmall" numberOfLines={1} style={{ color: theme.colors.onSurfaceVariant }}>
+                  {subtitle}
+                </Text>
+              )}
+            </View>
             <View style={styles.headerActions}>
               {headerRight}
               <IconButton icon="close" onPress={onClose} accessibilityLabel="Close" />
             </View>
           </View>
           {scrollable ? (
-            <ScrollView contentContainerStyle={styles.scrollContent}>{children}</ScrollView>
+            <ScrollView key={contentKey} contentContainerStyle={styles.scrollContent}>{children}</ScrollView>
           ) : (
             <View style={styles.flex}>{children}</View>
           )}
+          {footer}
         </View>
       </View>
     </Modal>
@@ -58,8 +72,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   content: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     overflow: 'hidden',
   },
   header: {
@@ -79,7 +93,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  grabber: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 8,
+    opacity: 0.4,
   },
   flex: {
     flex: 1,

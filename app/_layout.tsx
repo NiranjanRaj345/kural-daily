@@ -1,15 +1,17 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts, NotoSansTamil_400Regular, NotoSansTamil_700Bold } from '@expo-google-fonts/noto-sans-tamil';
-import { Inter_400Regular, Inter_700Bold } from '@expo-google-fonts/inter';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import 'react-native-reanimated';
-import { PaperProvider, MD3DarkTheme, MD3LightTheme, adaptNavigationTheme } from 'react-native-paper';
-import { AppState, Platform } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
+import { StatusBar } from 'expo-status-bar';
+import { AppState, Platform, useColorScheme } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { resolveTheme } from '../theme';
 import { syncDailyReminders } from '../services/NotificationService';
 
 const useStoreHydrated = () => {
@@ -40,6 +42,8 @@ export default function RootLayout() {
     NotoSansTamil_400Regular,
     NotoSansTamil_700Bold,
     Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
     Inter_700Bold,
     ...FontAwesome.font,
   });
@@ -80,7 +84,9 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const router = useRouter();
-  const { themeMode } = useSettingsStore();
+  const themeMode = useSettingsStore((state) => state.themeMode);
+  const systemScheme = useColorScheme();
+  const theme = resolveTheme(themeMode, systemScheme);
 
   // Tapping a daily reminder opens today's Kural
   useEffect(() => {
@@ -91,57 +97,27 @@ function RootLayoutNav() {
     return () => sub.remove();
   }, [router]);
 
-  const { LightTheme, DarkTheme } = adaptNavigationTheme({
-    reactNavigationLight: NavigationDefaultTheme,
-    reactNavigationDark: NavigationDarkTheme,
-  });
-
-  const SepiaTheme = {
-    ...MD3LightTheme,
-    colors: {
-      ...MD3LightTheme.colors,
-      background: '#f4ecd8',
-      surface: '#fdf6e3',
-      surfaceVariant: '#eaddcf',
-      onSurface: '#5b4636',
-      primary: '#8c6b5d',
-      secondary: '#5b4636',
-      elevation: {
-        level0: 'transparent',
-        level1: '#fdf6e3',
-        level2: '#f8f0dc',
-        level3: '#f4ecd8',
-        level4: '#f0e8d4',
-        level5: '#ece4d0',
-      },
-    },
-  };
-
-  let paperTheme = MD3LightTheme;
-  let navTheme = LightTheme;
-
-  if (themeMode === 'dark') {
-    paperTheme = MD3DarkTheme;
-    navTheme = DarkTheme;
-  } else if (themeMode === 'sepia') {
-    paperTheme = SepiaTheme;
-    // For navigation, we can reuse LightTheme but maybe tweak background if possible,
-    // but standard LightTheme is usually fine for navigation headers in Sepia.
-    navTheme = {
-      ...LightTheme,
+  const navTheme = useMemo(() => {
+    const base = theme.dark ? NavigationDarkTheme : NavigationDefaultTheme;
+    return {
+      ...base,
       colors: {
-        ...LightTheme.colors,
-        background: '#f4ecd8',
-        card: '#fdf6e3',
-        text: '#5b4636',
-      }
+        ...base.colors,
+        primary: theme.colors.primary,
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        text: theme.colors.onSurface,
+        border: theme.colors.outlineVariant,
+        notification: theme.colors.error,
+      },
     };
-  }
+  }, [theme]);
 
   return (
-    <PaperProvider theme={paperTheme}>
+    <PaperProvider theme={theme}>
       <ThemeProvider value={navTheme}>
-        <Stack>
+        <StatusBar style={theme.dark ? 'light' : 'dark'} />
+        <Stack screenOptions={{ contentStyle: { backgroundColor: theme.colors.background } }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </ThemeProvider>

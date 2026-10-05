@@ -1,344 +1,281 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native';
-import { Text, Button, Card, useTheme, Surface, IconButton, Chip, Portal, Dialog, RadioButton } from 'react-native-paper';
+import { StyleSheet, View, ScrollView, Pressable, Platform } from 'react-native';
+import { Text, Button, Chip } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import {
   generateMissingWordQuestion,
   generateMeaningMatchQuestion,
   generateFindChapterQuestion,
   generateJumbledKuralQuestion,
   QuizQuestion,
-  QuizType
+  QuizType,
 } from '../../services/QuizService';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { StatTile } from '../../components/ui/StatTile';
+import { useAppTheme, space, radius, tamilText } from '../../theme';
+
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+const MODES: { type: QuizType; label: string; icon: IconName; instruction: string }[] = [
+  { type: 'missing-word', label: 'Missing word', icon: 'form-textbox', instruction: 'Choose the word that completes the Kural.' },
+  { type: 'meaning-match', label: 'Meaning', icon: 'text-box-check-outline', instruction: 'Which explanation matches this Kural?' },
+  { type: 'find-chapter', label: 'Chapter', icon: 'book-search-outline', instruction: 'Which chapter is this Kural from?' },
+  { type: 'jumbled-kural', label: 'Jumbled', icon: 'swap-horizontal', instruction: 'Tap the words in the right order.' },
+];
+
+const GENERATORS: Record<QuizType, () => QuizQuestion> = {
+  'missing-word': generateMissingWordQuestion,
+  'meaning-match': generateMeaningMatchQuestion,
+  'find-chapter': generateFindChapterQuestion,
+  'jumbled-kural': generateJumbledKuralQuestion,
+};
+
+const LETTERS = ['A', 'B', 'C', 'D'];
+
+const feedback = (correct: boolean) => {
+  if (Platform.OS === 'web') return;
+  Haptics.notificationAsync(correct ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+};
 
 export default function QuizScreen() {
-  const theme = useTheme();
-  const { quizStats, updateQuizStats } = useSettingsStore();
+  const theme = useAppTheme();
+  const quizStats = useSettingsStore((s) => s.quizStats);
+  const updateQuizStats = useSettingsStore((s) => s.updateQuizStats);
+  const [gameMode, setGameMode] = useState<QuizType>('missing-word');
   const [question, setQuestion] = useState<QuizQuestion | null>(null);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  
-  // Game Mode State
-  const [gameMode, setGameMode] = useState<QuizType>('missing-word');
-  const [showModeSelector, setShowModeSelector] = useState(false);
-
-  // Jumbled Kural State
-  const [jumbledSelection, setJumbledSelection] = useState<number[]>([]); // Store indices of selected words
+  const [jumbledSelection, setJumbledSelection] = useState<number[]>([]);
+  const scrollRef = React.useRef<ScrollView>(null);
 
   const loadNewQuestion = useCallback(() => {
-    let newQuestion: QuizQuestion;
-    switch (gameMode) {
-      case 'meaning-match':
-        newQuestion = generateMeaningMatchQuestion();
-        break;
-      case 'find-chapter':
-        newQuestion = generateFindChapterQuestion();
-        break;
-      case 'jumbled-kural':
-        newQuestion = generateJumbledKuralQuestion();
-        break;
-      case 'missing-word':
-      default:
-        newQuestion = generateMissingWordQuestion();
-        break;
-    }
-    setQuestion(newQuestion);
+    setQuestion(GENERATORS[gameMode]());
     setSelectedOption(null);
     setJumbledSelection([]);
     setIsAnswered(false);
     setIsCorrect(false);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [gameMode]);
 
   useEffect(() => {
     loadNewQuestion();
   }, [loadNewQuestion]);
 
-  const handleOptionSelect = (index: number) => {
-    if (isAnswered || !question) return;
-
-    setSelectedOption(index);
-    const correct = index === question.correctAnswerIndex;
+  const answer = (correct: boolean) => {
     setIsCorrect(correct);
     setIsAnswered(true);
     updateQuizStats(correct);
-
-    if (correct) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
+    feedback(correct);
+    // Bring the result and the Next button into view
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 150);
   };
 
-  const handleJumbledWordSelect = (index: number) => {
-    if (isAnswered) return;
-    setJumbledSelection(prev => [...prev, index]);
-  };
-
-  const handleJumbledReset = () => {
-    if (isAnswered) return;
-    setJumbledSelection([]);
+  const handleOptionSelect = (index: number) => {
+    if (isAnswered || !question) return;
+    setSelectedOption(index);
+    answer(index === question.correctAnswerIndex);
   };
 
   const checkJumbledAnswer = () => {
-    if (!question || !question.kural || !question.jumbledWords) return;
-    
-    const correctLine1 = question.kural.line1.split(/\s+/).filter(w => w.length > 0).join(' ');
-    const correctLine2 = question.kural.line2.split(/\s+/).filter(w => w.length > 0).join(' ');
-    const correctFull = `${correctLine1} ${correctLine2}`;
-    
-    const userFull = jumbledSelection.map(idx => question.jumbledWords![idx]).join(' ');
-    
-    // Simple check: remove spaces and compare to handle minor spacing diffs
-    const isMatch = userFull.replace(/\s+/g, '') === correctFull.replace(/\s+/g, '');
-    
-    setIsCorrect(isMatch);
-    setIsAnswered(true);
-    updateQuizStats(isMatch);
-
-    if (isMatch) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
+    if (!question?.jumbledWords) return;
+    const correct = `${question.kural.line1} ${question.kural.line2}`.replace(/\s+/g, '');
+    const attempt = jumbledSelection.map((i) => question.jumbledWords![i]).join('').replace(/\s+/g, '');
+    answer(attempt === correct);
   };
 
-  const getModeTitle = (mode: QuizType) => {
-    switch(mode) {
-      case 'missing-word': return 'Missing Word';
-      case 'meaning-match': return 'Meaning Match';
-      case 'find-chapter': return 'Find Chapter';
-      case 'jumbled-kural': return 'Jumbled Kural';
-      default: return 'Quiz';
-    }
-  };
+  const mode = MODES.find((m) => m.type === gameMode)!;
+  const accuracy = quizStats.totalAnswered > 0
+    ? Math.round((quizStats.correctAnswers / quizStats.totalAnswered) * 100)
+    : 0;
 
-  const getInstruction = (mode: QuizType) => {
-    switch(mode) {
-      case 'missing-word': return 'Fill in the missing word to complete the Kural.';
-      case 'meaning-match': return 'Select the correct meaning for the Kural.';
-      case 'find-chapter': return 'Identify the chapter this Kural belongs to.';
-      case 'jumbled-kural': return 'Tap words in the correct order to form the Kural.';
-      default: return '';
-    }
-  };
-
-  if (!question) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  // Meaning options are whole explanations, so they use the smaller body size
+  const optionTextStyle = gameMode === 'meaning-match' ? tamilText.label : tamilText.title;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Header Stats */}
-        <Surface style={[styles.statsContainer, { backgroundColor: theme.colors.surfaceVariant }]} elevation={1}>
-          <View style={styles.statItem}>
-            <Text variant="labelMedium">Streak</Text>
-            <View style={styles.statValueContainer}>
-              <MaterialCommunityIcons name="fire" size={20} color={theme.colors.error} />
-              <Text variant="titleMedium" style={{ color: theme.colors.error }}>{quizStats.currentStreak}</Text>
-            </View>
-          </View>
-          <View style={styles.statItem}>
-            <Text variant="labelMedium">Total</Text>
-            <Text variant="titleMedium">{quizStats.totalAnswered}</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text variant="labelMedium">Accuracy</Text>
-            <Text variant="titleMedium">
-              {quizStats.totalAnswered > 0 
-                ? Math.round((quizStats.correctAnswers / quizStats.totalAnswered) * 100) 
-                : 0}%
-            </Text>
-          </View>
-        </Surface>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
+        <ScreenHeader title="Quiz" subtitle="Learn the Kural by heart, one question at a time" />
 
-        {/* Mode Selector Button */}
-        <View style={styles.modeHeader}>
-          <Text variant="headlineMedium" style={[styles.title, { color: theme.colors.primary }]}>
-            {getModeTitle(gameMode)}
-          </Text>
-          <IconButton 
-            icon="tune" 
-            mode="contained-tonal" 
-            onPress={() => setShowModeSelector(true)} 
-          />
+        <View style={styles.stats}>
+          <StatTile icon="fire" iconColor={theme.colors.tertiary} value={quizStats.currentStreak} label="In a row" />
+          <StatTile icon="check-all" value={quizStats.totalAnswered} label="Answered" />
+          <StatTile icon="target" iconColor={theme.colors.success} value={`${accuracy}%`} label="Accuracy" />
         </View>
-        
-        <Text variant="bodyLarge" style={styles.instruction}>
-          {getInstruction(gameMode)}
-        </Text>
 
-        {/* Question Card */}
-        <Card style={styles.questionCard}>
-          <Card.Content>
-            {gameMode === 'jumbled-kural' ? (
-               <View style={styles.jumbledDisplay}>
-                 <Text variant="titleLarge" style={[styles.kuralText, { textAlign: 'center', lineHeight: 32, minHeight: 64 }]}>
-                   {jumbledSelection.length > 0
-                     ? jumbledSelection.map(idx => question.jumbledWords![idx]).join(' ')
-                     : 'Tap words below...'}
-                 </Text>
-                 {!isAnswered && jumbledSelection.length > 0 && (
-                   <Button onPress={handleJumbledReset} compact>Clear</Button>
-                 )}
-               </View>
-            ) : (
-              <Text variant="titleLarge" style={[styles.kuralText, { textAlign: 'center', lineHeight: 32 }]}>
-                {question.questionText}
-              </Text>
-            )}
-            
-            {gameMode !== 'find-chapter' && (
-               <Text variant="labelMedium" style={{ textAlign: 'center', marginTop: 8, opacity: 0.6 }}>
-                 Kural {question.kural.number}
-               </Text>
-            )}
-          </Card.Content>
-        </Card>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modes}>
+          {MODES.map((m) => (
+            <Chip
+              key={m.type}
+              icon={m.icon}
+              selected={gameMode === m.type}
+              showSelectedOverlay
+              onPress={() => setGameMode(m.type)}
+              accessibilityLabel={`${m.label} mode`}
+            >
+              {m.label}
+            </Chip>
+          ))}
+        </ScrollView>
 
-        {/* Options Area */}
-        <View style={styles.optionsContainer}>
-          {gameMode === 'jumbled-kural' ? (
-            <View style={styles.jumbledWordsContainer}>
-              {question.jumbledWords?.map((word, index) => {
-                const isSelected = jumbledSelection.includes(index);
-                
-                return (
-                  <Chip
-                    key={index}
-                    mode="outlined"
-                    style={{ margin: 4, opacity: isSelected ? 0.3 : 1 }}
-                    onPress={() => handleJumbledWordSelect(index)}
-                    disabled={isSelected || isAnswered}
-                  >
-                    {word}
-                  </Chip>
-                );
-              })}
-              {!isAnswered && (
-                 <Button
-                   mode="contained"
-                   onPress={checkJumbledAnswer}
-                   style={{ marginTop: 16, width: '100%' }}
-                   disabled={jumbledSelection.length === 0}
-                 >
-                   Check Answer
-                 </Button>
+        {question && (
+          <Animated.View key={question.id} entering={FadeInDown.duration(300)}>
+            <Text variant="titleMedium" style={[styles.instruction, { color: theme.colors.onSurface }]}>
+              {mode.instruction}
+            </Text>
+
+            {/* Question */}
+            <View style={[styles.questionCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+              {gameMode === 'jumbled-kural' ? (
+                <View style={styles.jumbledAnswer}>
+                  {jumbledSelection.length === 0 ? (
+                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                      Your answer appears here
+                    </Text>
+                  ) : (
+                    jumbledSelection.map((wordIndex, position) => (
+                      <Chip
+                        key={`${wordIndex}-${position}`}
+                        compact
+                        disabled={isAnswered}
+                        onPress={() => setJumbledSelection((sel) => sel.filter((_, i) => i !== position))}
+                        style={{ backgroundColor: theme.colors.primaryContainer }}
+                        textStyle={[tamilText.label, { color: theme.colors.onPrimaryContainer }]}
+                        accessibilityLabel={`Remove ${question.jumbledWords![wordIndex]}`}
+                      >
+                        {question.jumbledWords![wordIndex]}
+                      </Chip>
+                    ))
+                  )}
+                </View>
+              ) : (
+                <Text style={[tamilText.kural(19), styles.questionText, { color: theme.colors.onSurface }]}>
+                  {question.questionText}
+                </Text>
+              )}
+              {gameMode !== 'find-chapter' && (
+                <Text variant="labelSmall" style={[styles.questionMeta, { color: theme.colors.onSurfaceVariant }]}>
+                  Kural {question.kural.number}
+                </Text>
               )}
             </View>
-          ) : (
-            question.options.map((option, index) => {
-              let buttonColor = theme.colors.surface;
-              let textColor = theme.colors.onSurface;
-              let borderColor = theme.colors.outline;
 
-              if (isAnswered) {
-                if (index === question.correctAnswerIndex) {
-                  buttonColor = theme.colors.primaryContainer;
-                  borderColor = theme.colors.primary;
-                } else if (index === selectedOption) {
-                  buttonColor = theme.colors.errorContainer;
-                  borderColor = theme.colors.error;
-                }
-              } else if (index === selectedOption) {
-                 buttonColor = theme.colors.secondaryContainer;
-              }
+            {/* Answers */}
+            {gameMode === 'jumbled-kural' ? (
+              <View>
+                <View style={styles.wordBank}>
+                  {question.jumbledWords?.map((word, index) => {
+                    const used = jumbledSelection.includes(index);
+                    return (
+                      <Chip
+                        key={index}
+                        mode="outlined"
+                        disabled={used || isAnswered}
+                        onPress={() => setJumbledSelection((sel) => [...sel, index])}
+                        style={{ opacity: used ? 0.35 : 1 }}
+                        textStyle={tamilText.label}
+                      >
+                        {word}
+                      </Chip>
+                    );
+                  })}
+                </View>
+                {!isAnswered && (
+                  <Button
+                    mode="contained"
+                    onPress={checkJumbledAnswer}
+                    disabled={jumbledSelection.length !== (question.jumbledWords?.length ?? 0)}
+                    style={styles.primaryButton}
+                    contentStyle={styles.primaryButtonContent}
+                  >
+                    Check answer
+                  </Button>
+                )}
+              </View>
+            ) : (
+              <View style={styles.options}>
+                {question.options.map((option, index) => {
+                  const isRight = index === question.correctAnswerIndex;
+                  const isPicked = index === selectedOption;
+                  let bg = theme.colors.surface;
+                  let border = theme.colors.outlineVariant;
+                  let fg = theme.colors.onSurface;
+                  let icon: IconName | null = null;
+                  if (isAnswered && isRight) {
+                    bg = theme.colors.successContainer; border = theme.colors.success; fg = theme.colors.onSuccessContainer; icon = 'check-circle';
+                  } else if (isAnswered && isPicked) {
+                    bg = theme.colors.errorContainer; border = theme.colors.error; fg = theme.colors.onErrorContainer; icon = 'close-circle';
+                  }
+                  const dimmed = isAnswered && !isRight && !isPicked;
+                  return (
+                    <Pressable
+                      key={index}
+                      onPress={() => handleOptionSelect(index)}
+                      disabled={isAnswered}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Option ${LETTERS[index]}: ${option}`}
+                      accessibilityState={{ disabled: isAnswered, selected: isPicked }}
+                      android_ripple={{ color: theme.colors.primaryContainer }}
+                      style={({ pressed }) => [
+                        styles.option,
+                        { backgroundColor: bg, borderColor: border, opacity: dimmed ? 0.55 : pressed ? 0.8 : 1 },
+                      ]}
+                    >
+                      <View style={[styles.letter, { borderColor: isAnswered && (isRight || isPicked) ? border : theme.colors.outline }]}>
+                        <Text variant="labelMedium" style={{ color: fg }}>{LETTERS[index]}</Text>
+                      </View>
+                      <Text style={[optionTextStyle, styles.optionText, { color: fg }]}>{option}</Text>
+                      {icon && <MaterialCommunityIcons name={icon} size={22} color={border} />}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
 
-              return (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.optionButton,
-                    { 
-                      backgroundColor: buttonColor,
-                      borderColor: borderColor,
-                      borderWidth: 1
-                    }
-                  ]}
-                  onPress={() => handleOptionSelect(index)}
-                  disabled={isAnswered}
-                >
-                  <Text variant="bodyLarge" style={{ color: textColor, textAlign: 'center' }}>
-                    {option}
+            {/* Result */}
+            {isAnswered && (
+              <Animated.View entering={FadeIn.duration(250)} style={styles.result}>
+                <View style={[styles.resultBanner, { backgroundColor: isCorrect ? theme.colors.successContainer : theme.colors.errorContainer }]}>
+                  <MaterialCommunityIcons
+                    name={isCorrect ? 'party-popper' : 'lightbulb-outline'}
+                    size={22}
+                    color={isCorrect ? theme.colors.onSuccessContainer : theme.colors.onErrorContainer}
+                  />
+                  <Text variant="titleSmall" style={{ color: isCorrect ? theme.colors.onSuccessContainer : theme.colors.onErrorContainer, flex: 1 }}>
+                    {isCorrect
+                      ? quizStats.currentStreak > 2 ? `Correct! ${quizStats.currentStreak} in a row.` : 'Correct!'
+                      : 'Not quite. Here is the Kural:'}
                   </Text>
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </View>
+                </View>
 
-        {/* Feedback & Next Button */}
-        {isAnswered && (
-          <View style={styles.feedbackContainer}>
-            <View style={[styles.feedbackMessage, { backgroundColor: isCorrect ? theme.colors.primaryContainer : theme.colors.errorContainer }]}>
-               <MaterialCommunityIcons 
-                  name={isCorrect ? "check-circle" : "close-circle"} 
-                  size={24} 
-                  color={isCorrect ? theme.colors.primary : theme.colors.error} 
-               />
-               <Text variant="titleMedium" style={{ marginLeft: 8, color: isCorrect ? theme.colors.onPrimaryContainer : theme.colors.onErrorContainer }}>
-                 {isCorrect ? "Correct! Well done." : "Incorrect. Try the next one!"}
-               </Text>
-            </View>
-            
-            <View style={styles.explanationContainer}>
-               {gameMode === 'jumbled-kural' && (
-                 <View style={{marginBottom: 8}}>
-                    <Text variant="labelLarge">Correct Order:</Text>
-                    <Text variant="bodyMedium" style={{fontWeight: 'bold'}}>{question.kural.line1} {question.kural.line2}</Text>
-                 </View>
-               )}
-               <Text variant="labelLarge" style={{marginBottom: 4}}>Meaning:</Text>
-               <Text variant="bodyMedium">{question.kural.tam_exp}</Text>
-               {gameMode === 'find-chapter' && (
-                  <Text variant="bodySmall" style={{marginTop: 8, opacity: 0.7}}>Chapter: {question.kural.chap_tam}</Text>
-               )}
-            </View>
+                <View style={[styles.reveal, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+                  <Text style={[tamilText.title, { color: theme.colors.onSurface, textAlign: 'center' }]}>
+                    {question.kural.line1}{'\n'}{question.kural.line2}
+                  </Text>
+                  <Text variant="labelMedium" style={[styles.revealMeta, { color: theme.colors.primary }]}>
+                    Kural {question.kural.number} · {question.kural.chap_tam}
+                  </Text>
+                  <Text style={[tamilText.body, { color: theme.colors.onSurfaceVariant }]}>{question.kural.tam_exp}</Text>
+                </View>
 
-            <Button 
-              mode="contained" 
-              onPress={loadNewQuestion} 
-              style={styles.nextButton}
-              icon="arrow-right"
-              contentStyle={{ flexDirection: 'row-reverse' }}
-            >
-              Next Question
-            </Button>
-          </View>
+                <Button
+                  mode="contained"
+                  onPress={loadNewQuestion}
+                  icon="arrow-right"
+                  style={styles.primaryButton}
+                  contentStyle={[styles.primaryButtonContent, { flexDirection: 'row-reverse' }]}
+                >
+                  Next question
+                </Button>
+              </Animated.View>
+            )}
+          </Animated.View>
         )}
-
       </ScrollView>
-
-      {/* Mode Selector Dialog */}
-      <Portal>
-        <Dialog visible={showModeSelector} onDismiss={() => setShowModeSelector(false)}>
-          <Dialog.Title>Select Game Mode</Dialog.Title>
-          <Dialog.Content>
-            <RadioButton.Group onValueChange={value => {
-              setGameMode(value as QuizType);
-              setShowModeSelector(false);
-            }} value={gameMode}>
-              <RadioButton.Item label="Missing Word" value="missing-word" />
-              <RadioButton.Item label="Meaning Match" value="meaning-match" />
-              <RadioButton.Item label="Find Chapter" value="find-chapter" />
-              <RadioButton.Item label="Jumbled Kural" value="jumbled-kural" />
-            </RadioButton.Group>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setShowModeSelector(false)}>Cancel</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-
     </SafeAreaView>
   );
 }
@@ -348,82 +285,108 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 32,
+    paddingBottom: space.xxxl,
   },
-  statsContainer: {
+  stats: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 24,
+    gap: space.sm,
+    paddingHorizontal: space.lg,
   },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  modeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    position: 'relative',
-  },
-  title: {
-    fontWeight: 'bold',
-    marginRight: 8,
+  modes: {
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.lg,
   },
   instruction: {
-    textAlign: 'center',
-    marginBottom: 24,
-    opacity: 0.7,
+    paddingHorizontal: space.xl,
+    marginBottom: space.md,
   },
   questionCard: {
-    marginBottom: 24,
-    paddingVertical: 16,
-  },
-  kuralText: {
-    fontWeight: '500',
-  },
-  optionsContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  optionButton: {
-    padding: 16,
-    borderRadius: 8,
-    elevation: 1,
-    minHeight: 60,
+    marginHorizontal: space.lg,
+    padding: space.xl,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    minHeight: 120,
     justifyContent: 'center',
   },
-  feedbackContainer: {
-    gap: 16,
+  questionText: {
+    textAlign: 'center',
   },
-  feedbackMessage: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 8,
-    justifyContent: 'center',
+  questionMeta: {
+    textAlign: 'center',
+    marginTop: space.md,
   },
-  explanationContainer: {
-    padding: 16,
-    backgroundColor: 'rgba(0,0,0,0.03)',
-    borderRadius: 8,
-  },
-  nextButton: {
-    marginTop: 8,
-  },
-  jumbledDisplay: {
-    alignItems: 'center',
-  },
-  jumbledWordsContainer: {
+  jumbledAnswer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-  }
+    gap: space.sm,
+    minHeight: 64,
+    alignItems: 'center',
+  },
+  wordBank: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+  },
+  options: {
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    minHeight: 56,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  letter: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionText: {
+    flex: 1,
+  },
+  result: {
+    paddingTop: space.lg,
+    gap: space.md,
+  },
+  resultBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginHorizontal: space.lg,
+    padding: space.lg,
+    borderRadius: radius.lg,
+  },
+  reveal: {
+    marginHorizontal: space.lg,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  revealMeta: {
+    textAlign: 'center',
+    marginVertical: space.sm,
+  },
+  primaryButton: {
+    marginHorizontal: space.lg,
+    marginTop: space.lg,
+    borderRadius: radius.pill,
+  },
+  primaryButtonContent: {
+    paddingVertical: 6,
+  },
 });

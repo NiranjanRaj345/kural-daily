@@ -1,69 +1,95 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
-import { Text, useTheme, Card } from 'react-native-paper';
+import React, { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, FlatList } from 'react-native';
+import { IconButton, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { getKuralByNumber } from '../../services/DataService';
 import { Kural } from '../../types/kural';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
+import { KuralListItem } from '../../components/ui/KuralListItem';
+import { ScreenHeader } from '../../components/ui/ScreenHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { useAppTheme, space } from '../../theme';
 
 export default function FavoritesScreen() {
-  const theme = useTheme();
-  const { favorites } = useSettingsStore();
-  const [favoriteKurals, setFavoriteKurals] = useState<Kural[]>([]);
+  const theme = useAppTheme();
+  const router = useRouter();
+  const favorites = useSettingsStore((s) => s.favorites);
+  const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
+  const [removed, setRemoved] = useState<number | null>(null);
 
-  useEffect(() => {
-    const kurals = favorites
-      .map(id => getKuralByNumber(id))
-      .filter((k): k is Kural => k !== undefined);
-    setFavoriteKurals(kurals);
-  }, [favorites]);
-
-  const renderFavoriteItem = ({ item }: { item: Kural }) => (
-    <Card style={styles.card} onPress={() => setSelectedKural(item)}>
-      <Card.Content style={styles.cardContent}>
-        <View>
-          <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-            Kural {item.number}
-          </Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text variant="bodySmall" style={{ color: theme.colors.secondary }}>
-            {item.chap_tam}
-          </Text>
-          <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
-            {item.sect_tam}
-          </Text>
-        </View>
-      </Card.Content>
-    </Card>
+  // Most recently saved first
+  const favoriteKurals = useMemo(
+    () => [...favorites].reverse().map((id) => getKuralByNumber(id)).filter((k): k is Kural => k !== undefined),
+    [favorites]
   );
 
+  const openKural = useCallback((kural: Kural) => setSelectedKural(kural), []);
+
+  const remove = (kural: Kural) => {
+    toggleFavorite(kural.number);
+    setRemoved(kural.number);
+  };
+
+  const undo = () => {
+    if (removed !== null && !useSettingsStore.getState().favorites.includes(removed)) {
+      toggleFavorite(removed);
+    }
+    setRemoved(null);
+  };
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <Text variant="headlineMedium" style={styles.title}>Favorites</Text>
-      </View>
+    <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <ScreenHeader
+        title="Saved"
+        subtitle={favoriteKurals.length > 0 ? `${favoriteKurals.length} ${favoriteKurals.length === 1 ? 'Kural' : 'Kurals'}` : undefined}
+      />
 
       <FlatList
         data={favoriteKurals}
         keyExtractor={(item) => item.number.toString()}
-        renderItem={renderFavoriteItem}
+        renderItem={({ item }) => (
+          <KuralListItem
+            kural={item}
+            onPress={openKural}
+            showChapter
+            showEnglish={false}
+            right={
+              <IconButton
+                icon="bookmark"
+                iconColor={theme.colors.tertiary}
+                size={22}
+                style={styles.removeButton}
+                onPress={() => remove(item)}
+                accessibilityLabel={`Remove Kural ${item.number} from saved`}
+              />
+            }
+          />
+        )}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text variant="bodyLarge" style={styles.emptyText}>
-              No favorites yet.
-            </Text>
-            <Text variant="bodyMedium" style={styles.emptySubText}>
-              Tap the heart icon on a Kural to save it here.
-            </Text>
-          </View>
+          <EmptyState
+            icon="bookmark-outline"
+            title="Nothing saved yet"
+            message="Tap Save on any Kural to keep it here for later."
+            actionLabel="Read today's Kural"
+            onAction={() => router.navigate('/')}
+          />
         }
       />
 
-      <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} />
+      <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} sequence={favoriteKurals} />
+
+      <Snackbar
+        visible={removed !== null}
+        onDismiss={() => setRemoved(null)}
+        duration={4000}
+        action={{ label: 'Undo', onPress: undo }}
+      >
+        {`Removed Kural ${removed ?? ''}`}
+      </Snackbar>
     </SafeAreaView>
   );
 }
@@ -72,40 +98,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    padding: 16,
-  },
-  title: {
-    fontFamily: 'Inter_700Bold',
-    fontWeight: 'bold',
-  },
   listContent: {
-    paddingBottom: 20,
-    paddingHorizontal: 16,
+    paddingTop: space.sm,
+    paddingBottom: space.xxxl,
+    flexGrow: 1,
   },
-  card: {
-    marginBottom: 12,
-    elevation: 1,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 100,
-    padding: 20,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginBottom: 8,
-    fontWeight: 'bold',
-  },
-  emptySubText: {
-    textAlign: 'center',
-    color: '#888',
+  removeButton: {
+    margin: -8,
   },
 });
