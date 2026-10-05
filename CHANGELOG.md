@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 (2026-10-05)
 
 ### Redesign
 - New design system: brand colours from the app icon (ink blue + saffron) with matched light, dark and sepia themes, Inter for UI text and Noto Sans Tamil for Kurals. Fixes low-contrast hard-coded greys in dark/sepia.
@@ -14,6 +14,9 @@
 - **Quiz**: modes as visible chips, A–D options with clear right/wrong states, Jumbled words can be tapped to take back, scrolls to the result.
 - **You** (was Profile): streak, best streak, read and saved tiles; grouped settings; live text-size preview with an extra-large size; Reset progress.
 - Tab bar: theme colours and haptic feedback; fixed content scrolling under a transparent bar on iOS.
+
+### Fixed
+- Text no longer risks falling back to the system font on iOS/Android (single-weight fonts are no longer paired with a bold font weight).
 
 ## 1.1.0 (2026-10-05)
 
