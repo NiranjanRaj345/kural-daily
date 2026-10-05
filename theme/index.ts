@@ -6,19 +6,22 @@ import type { MD3Theme } from 'react-native-paper';
 export type ThemeMode = 'system' | 'light' | 'dark' | 'sepia';
 export type ResolvedThemeName = 'light' | 'dark' | 'sepia';
 
+// Each Inter weight is its own font file, so the weight comes from fontFamily.
+// Pairing these families with a bold fontWeight makes iOS (and some Android
+// versions) fall back to the system font, so fontWeight stays at 400.
 const fontConfig = {
-  displayLarge: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  displayMedium: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  displaySmall: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  headlineLarge: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  headlineMedium: { fontFamily: 'Inter_700Bold', fontWeight: '700' as const },
-  headlineSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '600' as const },
-  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
-  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
-  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: '500' as const },
+  displayLarge: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
+  displayMedium: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
+  displaySmall: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
+  headlineLarge: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
+  headlineMedium: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
+  headlineSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
+  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
+  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
+  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
+  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: '400' as const },
+  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: '400' as const },
+  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: '400' as const },
   bodyLarge: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
   bodyMedium: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
   bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },

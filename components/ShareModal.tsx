@@ -258,13 +258,13 @@ const styles = StyleSheet.create({
   },
   kuralNumber: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Inter_600SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   chapter: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'NotoSansTamil_400Regular',
     flexShrink: 1,
   },
   textContainer: {
@@ -272,7 +272,6 @@ const styles = StyleSheet.create({
   },
   tamilText: {
     fontSize: 20,
-    fontWeight: 'bold',
     lineHeight: 32,
     textAlign: 'center',
     marginBottom: 8,
