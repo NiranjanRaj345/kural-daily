@@ -35,3 +35,15 @@ export const computeStreak = (
 
   return { streak: 1, lastReadDate: todayKey };
 };
+
+/** Adds whole calendar days to a YYYY-MM-DD key. */
+export const addDaysToKey = (key: string, days: number): string => {
+  const [y, m, d] = key.split('-').map(Number);
+  return toLocalDateKey(new Date(y, m - 1, d + days));
+};
+
+/** The last `count` local date keys ending today, oldest first. */
+export const lastNDays = (today: Date, count: number): string[] =>
+  Array.from({ length: count }, (_, i) =>
+    toLocalDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - (count - 1 - i)))
+  );

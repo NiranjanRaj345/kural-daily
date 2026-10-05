@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+### Learn by heart (new)
+- **Memorize mode (மனப்பாடம்)**: read the couplet, then recite it as words are hidden step by step (every other word, first words only, nothing), tapping any word to peek. Listen slowly, see the meaning as a hint.
+- **Spaced review**: Kurals you learn come back after 1, 2, 4, 7, 15, 30 and 60 days (Leitner boxes). Forget one and it starts again; remembered after a 15-day gap counts as known by heart.
+- **Learn tab** with today's review, your Kurals and their progress, how it works, and the quiz. The tab shows a badge when reviews are due.
+
+### Reading
+- New look built for reading: Noto Serif Tamil for the couplets and Lora for English, set like a printed verse with a margin rule.
+- **Page** (Auto, Paper, Palm leaf, Night) and **Accent** (Indigo, Kumkum, Leaf, Saffron) choices, previewed in their own colours. Every combination meets WCAG AA contrast.
+- Each Kural shows its place in the book: chapter number, position in the chapter (9/10), book.
+- **Reading language** (Both / தமிழ் / English) and **reading speed** for Listen.
+- Browse shows the parts (இயல்) of each book; Today offers the rest of today's chapter with a 10-dot progress line.
+- **About the Thirukkural**: the poet, the couplet form (with the seven feet marked) and the full structure of books, parts and chapters.
+
+### Habit and sharing
+- **Welcome** on first launch: what the Thirukkural is, how you want to read, and an optional daily reminder.
+- **Week strip** on Today showing the days you read, current and best streak.
+- **Milestones**: ten reading goals from your first Kural to all 1330, with progress.
+- **Share the app** from Today and You; share sheet gains palm-leaf, ink, indigo, kumkum and leaf styles and a Copy text button.
+
+### Fixed
+- The data spelled the part படையியல் as "படையில்".
+- The web build no longer pre-renders pages (it showed hydration errors with saved settings).
+
 ## 1.2.0 (2026-10-05)
 
 ### Redesign

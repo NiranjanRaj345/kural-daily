@@ -1,220 +1,249 @@
 import { MD3DarkTheme, MD3LightTheme, configureFonts, useTheme } from 'react-native-paper';
 import type { MD3Theme } from 'react-native-paper';
 
-// Brand palette, taken from the app icon: deep "ink" blue with saffron palm leaves.
+/*
+ * Visual identity: a page of a book, not a dashboard.
+ *  - Three paper "bases": Paper (warm white), Palm leaf (ஓலைச்சுவடி tones), Night (warm ink-black).
+ *  - Four accents chosen from Tamil visual tradition; Indigo matches the app icon.
+ *  - Serif type for the text being read (Noto Serif Tamil for couplets, Lora for English),
+ *    a sans (Inter / Noto Sans Tamil) for interface chrome.
+ */
 
-export type ThemeMode = 'system' | 'light' | 'dark' | 'sepia';
-export type ResolvedThemeName = 'light' | 'dark' | 'sepia';
+export type Appearance = 'auto' | 'paper' | 'palm' | 'night';
+export type ResolvedAppearance = Exclude<Appearance, 'auto'>;
+export type Accent = 'indigo' | 'maroon' | 'green' | 'saffron';
 
-// Each Inter weight is its own font file, so the weight comes from fontFamily.
-// Pairing these families with a bold fontWeight makes iOS (and some Android
-// versions) fall back to the system font, so fontWeight stays at 400.
+export const APPEARANCES: { value: Appearance; label: string; tamil: string }[] = [
+  { value: 'auto', label: 'Auto', tamil: 'தானியங்கி' },
+  { value: 'paper', label: 'Paper', tamil: 'தாள்' },
+  { value: 'palm', label: 'Palm leaf', tamil: 'ஓலை' },
+  { value: 'night', label: 'Night', tamil: 'இரவு' },
+];
+
+export const ACCENTS: { value: Accent; label: string; tamil: string; swatch: string }[] = [
+  { value: 'indigo', label: 'Indigo', tamil: 'அவுரி', swatch: '#1F4E9E' },
+  { value: 'maroon', label: 'Kumkum', tamil: 'குங்குமம்', swatch: '#8E2B2B' },
+  { value: 'green', label: 'Leaf', tamil: 'இலை', swatch: '#2F6B3A' },
+  { value: 'saffron', label: 'Saffron', tamil: 'காவி', swatch: '#B4651A' },
+];
+
+// Each font weight is its own file, so fontWeight stays at 400: pairing these
+// families with a bold fontWeight makes iOS and some Android versions fall
+// back to the system font.
+const w = '400' as const;
 const fontConfig = {
-  displayLarge: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
-  displayMedium: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
-  displaySmall: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
-  headlineLarge: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
-  headlineMedium: { fontFamily: 'Inter_700Bold', fontWeight: '400' as const },
-  headlineSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
-  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
-  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
-  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: '400' as const },
-  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: '400' as const },
-  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: '400' as const },
-  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: '400' as const },
-  bodyLarge: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
-  bodyMedium: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
-  bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
-  default: { fontFamily: 'Inter_400Regular', fontWeight: '400' as const },
+  displayLarge: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
+  displayMedium: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
+  displaySmall: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
+  headlineLarge: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
+  headlineMedium: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
+  headlineSmall: { fontFamily: 'Lora_600SemiBold', fontWeight: w },
+  titleLarge: { fontFamily: 'Inter_600SemiBold', fontWeight: w },
+  titleMedium: { fontFamily: 'Inter_600SemiBold', fontWeight: w },
+  titleSmall: { fontFamily: 'Inter_600SemiBold', fontWeight: w },
+  labelLarge: { fontFamily: 'Inter_500Medium', fontWeight: w },
+  labelMedium: { fontFamily: 'Inter_500Medium', fontWeight: w },
+  labelSmall: { fontFamily: 'Inter_500Medium', fontWeight: w },
+  bodyLarge: { fontFamily: 'Inter_400Regular', fontWeight: w },
+  bodyMedium: { fontFamily: 'Inter_400Regular', fontWeight: w },
+  bodySmall: { fontFamily: 'Inter_400Regular', fontWeight: w },
+  default: { fontFamily: 'Inter_400Regular', fontWeight: w },
 };
-
 const fonts = configureFonts({ config: fontConfig });
 
-/** Colours Paper doesn't define, used for the brand accent and status states. */
+/** Colours Paper doesn't define. */
 export interface ExtraColors {
-  accent: string;
-  onAccent: string;
-  accentContainer: string;
-  onAccentContainer: string;
+  /** Saffron used for streaks and highlights, independent of the chosen accent. */
+  flame: string;
+  flameContainer: string;
+  onFlameContainer: string;
   success: string;
   successContainer: string;
   onSuccessContainer: string;
-  heroStart: string;
-  heroEnd: string;
-  onHero: string;
-  onHeroMuted: string;
+  /** Text colour for the couplet itself. */
+  ink: string;
+  /** Hairlines and the thin rules used in the manuscript layout. */
+  rule: string;
 }
 
-export type AppTheme = MD3Theme & { colors: MD3Theme['colors'] & ExtraColors; name: ResolvedThemeName };
+export type AppTheme = MD3Theme & {
+  colors: MD3Theme['colors'] & ExtraColors;
+  appearance: ResolvedAppearance;
+  accent: Accent;
+};
 
-const elevation = (l1: string, l2: string, l3: string, l4: string, l5: string) => ({
-  level0: 'transparent', level1: l1, level2: l2, level3: l3, level4: l4, level5: l5,
-});
+interface BasePalette {
+  dark: boolean;
+  background: string;
+  surface: string;
+  surfaceVariant: string;
+  onSurface: string;
+  onSurfaceVariant: string;
+  outline: string;
+  outlineVariant: string;
+  ink: string;
+  elevation: [string, string, string, string, string];
+}
 
-export const lightTheme: AppTheme = {
-  ...MD3LightTheme,
-  name: 'light',
-  fonts,
-  roundness: 4,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: '#1E4FA3',
-    onPrimary: '#FFFFFF',
-    primaryContainer: '#DCE6FA',
-    onPrimaryContainer: '#0B2559',
-    secondary: '#5B6477',
-    onSecondary: '#FFFFFF',
-    secondaryContainer: '#E3E8F2',
-    onSecondaryContainer: '#1A2233',
-    tertiary: '#9A5B00',
-    onTertiary: '#FFFFFF',
-    tertiaryContainer: '#FFE3B8',
-    onTertiaryContainer: '#3D2400',
-    background: '#F6F7FB',
-    onBackground: '#191C22',
-    surface: '#FFFFFF',
-    onSurface: '#191C22',
-    surfaceVariant: '#EEF1F7',
-    onSurfaceVariant: '#565D6D',
-    outline: '#8C93A3',
-    outlineVariant: '#E1E5EE',
-    inverseSurface: '#2D3038',
-    inverseOnSurface: '#F0F1F6',
-    inversePrimary: '#A9C3FF',
-    elevation: elevation('#FFFFFF', '#F7F9FD', '#F1F4FA', '#EEF2F9', '#EBEFF8'),
-    accent: '#E8A33D',
-    onAccent: '#3D2400',
-    accentContainer: '#FFF1DB',
-    onAccentContainer: '#6B3F00',
-    success: '#1E7A4A',
-    successContainer: '#DDF3E6',
-    onSuccessContainer: '#0B3B22',
-    heroStart: '#1E4FA3',
-    heroEnd: '#14306B',
-    onHero: '#FFFFFF',
-    onHeroMuted: 'rgba(255,255,255,0.72)',
+const BASES: Record<ResolvedAppearance, BasePalette> = {
+  paper: {
+    dark: false,
+    background: '#FAF6EE',
+    surface: '#FFFDF8',
+    surfaceVariant: '#F2ECE0',
+    onSurface: '#2A2119',
+    onSurfaceVariant: '#6B5E50',
+    outline: '#A3968A',
+    outlineVariant: '#E8E0D2',
+    ink: '#221A12',
+    elevation: ['#FFFDF8', '#FBF7EF', '#F7F2E8', '#F5EFE4', '#F3ECE0'],
+  },
+  palm: {
+    dark: false,
+    background: '#EEDFBE',
+    surface: '#F6EAD0',
+    surfaceVariant: '#E6D3AC',
+    onSurface: '#3A2916',
+    onSurfaceVariant: '#6A5235',
+    outline: '#A2865E',
+    outlineVariant: '#DAC49B',
+    ink: '#33230F',
+    elevation: ['#F6EAD0', '#F3E5C8', '#F0E1C1', '#EEDEBC', '#ECDBB7'],
+  },
+  night: {
+    dark: true,
+    background: '#121110',
+    surface: '#1C1A17',
+    surfaceVariant: '#2A2723',
+    onSurface: '#EDE6DA',
+    onSurfaceVariant: '#B5AB9C',
+    outline: '#706759',
+    outlineVariant: '#332F29',
+    ink: '#F3ECDF',
+    elevation: ['#1E1C19', '#23201C', '#27241F', '#292621', '#2C2924'],
   },
 };
 
-export const darkTheme: AppTheme = {
-  ...MD3DarkTheme,
-  name: 'dark',
-  fonts,
-  roundness: 4,
-  colors: {
-    ...MD3DarkTheme.colors,
-    primary: '#A9C3FF',
-    onPrimary: '#0A2A66',
-    primaryContainer: '#1F3D7A',
-    onPrimaryContainer: '#DCE6FA',
-    secondary: '#BBC3D6',
-    onSecondary: '#252D3D',
-    secondaryContainer: '#2C3446',
-    onSecondaryContainer: '#DCE2F0',
-    tertiary: '#FFC46B',
-    onTertiary: '#3D2400',
-    tertiaryContainer: '#5A3A00',
-    onTertiaryContainer: '#FFE3B8',
-    background: '#0E1117',
-    onBackground: '#E3E6ED',
-    surface: '#151922',
-    onSurface: '#E3E6ED',
-    surfaceVariant: '#222835',
-    onSurfaceVariant: '#A7AEBD',
-    outline: '#6B7385',
-    outlineVariant: '#2B3140',
-    inverseSurface: '#E3E6ED',
-    inverseOnSurface: '#2D3038',
-    inversePrimary: '#1E4FA3',
-    error: '#FFB4AB',
-    onError: '#690005',
-    errorContainer: '#4A1F1D',
-    onErrorContainer: '#FFDAD6',
-    elevation: elevation('#181D27', '#1C212C', '#202633', '#222836', '#252C3A'),
-    accent: '#FFC46B',
-    onAccent: '#3D2400',
-    accentContainer: '#3A2A12',
-    onAccentContainer: '#FFD89C',
-    success: '#7FD6A5',
-    successContainer: '#14382A',
-    onSuccessContainer: '#BDF0D3',
-    heroStart: '#1C3570',
-    heroEnd: '#101B3A',
-    onHero: '#F2F5FF',
-    onHeroMuted: 'rgba(242,245,255,0.7)',
+interface AccentPalette {
+  primary: string;
+  onPrimary: string;
+  primaryContainer: string;
+  onPrimaryContainer: string;
+}
+
+const ACCENT_PALETTES: Record<Accent, { light: AccentPalette; dark: AccentPalette }> = {
+  indigo: {
+    light: { primary: '#1F4E9E', onPrimary: '#FFFFFF', primaryContainer: '#DCE5F6', onPrimaryContainer: '#0E2A5C' },
+    dark: { primary: '#A8C2F5', onPrimary: '#0E2A5C', primaryContainer: '#25406E', onPrimaryContainer: '#DCE5F6' },
+  },
+  maroon: {
+    light: { primary: '#8E2B2B', onPrimary: '#FFFFFF', primaryContainer: '#F4DCD7', onPrimaryContainer: '#4A1010' },
+    dark: { primary: '#F2A79D', onPrimary: '#4A1010', primaryContainer: '#5C2420', onPrimaryContainer: '#F9DCD7' },
+  },
+  green: {
+    light: { primary: '#2F6B3A', onPrimary: '#FFFFFF', primaryContainer: '#DAEAD5', onPrimaryContainer: '#10331A' },
+    dark: { primary: '#9ED3A3', onPrimary: '#10331A', primaryContainer: '#25502D', onPrimaryContainer: '#D6EFD6' },
+  },
+  saffron: {
+    light: { primary: '#9A5400', onPrimary: '#FFFFFF', primaryContainer: '#F9E1C0', onPrimaryContainer: '#4A2800' },
+    dark: { primary: '#F5BC6C', onPrimary: '#4A2800', primaryContainer: '#64400F', onPrimaryContainer: '#FCE2BD' },
   },
 };
 
-export const sepiaTheme: AppTheme = {
-  ...MD3LightTheme,
-  name: 'sepia',
-  fonts,
-  roundness: 4,
-  colors: {
-    ...MD3LightTheme.colors,
-    primary: '#7A4E2D',
-    onPrimary: '#FFFFFF',
-    primaryContainer: '#EBD3B8',
-    onPrimaryContainer: '#3A2210',
-    secondary: '#6E5A47',
-    onSecondary: '#FFFFFF',
-    secondaryContainer: '#EADBC4',
-    onSecondaryContainer: '#2E2216',
-    tertiary: '#9A5B00',
-    onTertiary: '#FFFFFF',
-    tertiaryContainer: '#F3DDB5',
-    onTertiaryContainer: '#3D2400',
-    background: '#F4ECD8',
-    onBackground: '#3E2F22',
-    surface: '#FBF5E6',
-    onSurface: '#3E2F22',
-    surfaceVariant: '#EADFC8',
-    onSurfaceVariant: '#6E5A47',
-    outline: '#A8937A',
-    outlineVariant: '#E0D2B8',
-    inverseSurface: '#3E2F22',
-    inverseOnSurface: '#FBF5E6',
-    inversePrimary: '#E5C3A0',
-    elevation: elevation('#FBF5E6', '#F8F0DE', '#F5ECD8', '#F3E9D3', '#F1E6CF'),
-    accent: '#C77C1E',
-    onAccent: '#FFFFFF',
-    accentContainer: '#F6E2C0',
-    onAccentContainer: '#5C3500',
-    success: '#3F6B2F',
-    successContainer: '#E1EBCF',
-    onSuccessContainer: '#1F3515',
-    heroStart: '#7A4E2D',
-    heroEnd: '#553521',
-    onHero: '#FFF8EC',
-    onHeroMuted: 'rgba(255,248,236,0.75)',
-  },
+export const buildTheme = (appearance: ResolvedAppearance, accent: Accent): AppTheme => {
+  const base = BASES[appearance];
+  const a = ACCENT_PALETTES[accent][base.dark ? 'dark' : 'light'];
+  const md3 = base.dark ? MD3DarkTheme : MD3LightTheme;
+
+  return {
+    ...md3,
+    fonts,
+    roundness: 4,
+    appearance,
+    accent,
+    colors: {
+      ...md3.colors,
+      ...a,
+      secondary: base.onSurfaceVariant,
+      onSecondary: base.dark ? '#121110' : '#FFFFFF',
+      secondaryContainer: base.surfaceVariant,
+      onSecondaryContainer: base.onSurface,
+      tertiary: base.dark ? '#F5BC6C' : '#9A5400',
+      onTertiary: base.dark ? '#4A2800' : '#FFFFFF',
+      tertiaryContainer: base.dark ? '#4A3214' : '#FBE6C6',
+      onTertiaryContainer: base.dark ? '#FCE2BD' : '#4A2800',
+      background: base.background,
+      onBackground: base.onSurface,
+      surface: base.surface,
+      onSurface: base.onSurface,
+      surfaceVariant: base.surfaceVariant,
+      onSurfaceVariant: base.onSurfaceVariant,
+      surfaceDisabled: base.dark ? 'rgba(237,230,218,0.12)' : 'rgba(42,33,25,0.12)',
+      onSurfaceDisabled: base.dark ? 'rgba(237,230,218,0.38)' : 'rgba(42,33,25,0.38)',
+      outline: base.outline,
+      outlineVariant: base.outlineVariant,
+      inverseSurface: base.dark ? '#EDE6DA' : '#2F2820',
+      inverseOnSurface: base.dark ? '#2F2820' : '#F6F0E6',
+      inversePrimary: ACCENT_PALETTES[accent][base.dark ? 'light' : 'dark'].primary,
+      error: base.dark ? '#FFB4AB' : '#B3261E',
+      onError: base.dark ? '#690005' : '#FFFFFF',
+      errorContainer: base.dark ? '#4A1F1D' : '#F9DEDC',
+      onErrorContainer: base.dark ? '#FFDAD6' : '#410E0B',
+      backdrop: 'rgba(20,16,12,0.45)',
+      elevation: {
+        level0: 'transparent',
+        level1: base.elevation[0],
+        level2: base.elevation[1],
+        level3: base.elevation[2],
+        level4: base.elevation[3],
+        level5: base.elevation[4],
+      },
+      flame: base.dark ? '#F5BC6C' : '#B4651A',
+      flameContainer: base.dark ? '#3D2A12' : '#FBE9CF',
+      onFlameContainer: base.dark ? '#FCE2BD' : '#5C3300',
+      success: base.dark ? '#8FD19A' : '#2E6B3A',
+      successContainer: base.dark ? '#1D3A23' : '#DCEEDB',
+      onSuccessContainer: base.dark ? '#CDEFD0' : '#10331A',
+      ink: base.ink,
+      rule: base.outlineVariant,
+    },
+  };
 };
 
-export const THEMES: Record<ResolvedThemeName, AppTheme> = {
-  light: lightTheme,
-  dark: darkTheme,
-  sepia: sepiaTheme,
-};
-
-export const resolveTheme = (mode: ThemeMode, systemScheme: 'light' | 'dark' | null | undefined): AppTheme => {
-  if (mode === 'system') return systemScheme === 'dark' ? darkTheme : lightTheme;
-  return THEMES[mode];
+export const resolveAppearance = (
+  appearance: Appearance,
+  systemScheme: 'light' | 'dark' | null | undefined
+): ResolvedAppearance => {
+  if (appearance === 'auto') return systemScheme === 'dark' ? 'night' : 'paper';
+  return appearance;
 };
 
 export const useAppTheme = () => useTheme<AppTheme>();
 
 /** 4pt spacing scale and shared radii. */
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const;
-export const radius = { sm: 8, md: 12, lg: 16, xl: 24, pill: 999 } as const;
+export const radius = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 } as const;
 
-/** Tamil text styles. Noto Sans Tamil needs generous line height for its tall vowel signs. */
+/** Reading typography. Tamil needs generous line height for its tall vowel signs. */
 export const tamilText = {
+  /** The couplet itself, set like a printed verse. */
   kural: (size: number) => ({
-    fontFamily: 'NotoSansTamil_700Bold',
+    fontFamily: 'NotoSerifTamil_600SemiBold',
     fontSize: size,
-    lineHeight: Math.round(size * 1.6),
+    lineHeight: Math.round(size * 1.7),
   }),
-  body: { fontFamily: 'NotoSansTamil_400Regular', fontSize: 15, lineHeight: 26 },
+  /** Tamil prose such as the explanation. */
+  body: { fontFamily: 'NotoSerifTamil_400Regular', fontSize: 16, lineHeight: 29 },
+  /** Small Tamil interface labels. */
   label: { fontFamily: 'NotoSansTamil_400Regular', fontSize: 13, lineHeight: 20 },
-  title: { fontFamily: 'NotoSansTamil_700Bold', fontSize: 16, lineHeight: 26 },
+  labelStrong: { fontFamily: 'NotoSansTamil_600SemiBold', fontSize: 13, lineHeight: 20 },
+  /** Tamil headings and list titles. */
+  title: { fontFamily: 'NotoSansTamil_600SemiBold', fontSize: 16, lineHeight: 26 },
+  /** List previews of a couplet. */
+  preview: { fontFamily: 'NotoSerifTamil_500Medium', fontSize: 16, lineHeight: 27 },
+} as const;
+
+export const englishText = {
+  translation: { fontFamily: 'Lora_400Regular_Italic', fontSize: 17, lineHeight: 27 },
+  body: { fontFamily: 'Lora_400Regular', fontSize: 16, lineHeight: 27 },
 } as const;

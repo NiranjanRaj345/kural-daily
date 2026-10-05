@@ -1,6 +1,9 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts, NotoSansTamil_400Regular, NotoSansTamil_700Bold } from '@expo-google-fonts/noto-sans-tamil';
+import { useFonts } from 'expo-font';
+import { NotoSansTamil_400Regular, NotoSansTamil_600SemiBold, NotoSansTamil_700Bold } from '@expo-google-fonts/noto-sans-tamil';
+import { NotoSerifTamil_400Regular, NotoSerifTamil_500Medium, NotoSerifTamil_600SemiBold } from '@expo-google-fonts/noto-serif-tamil';
+import { Lora_400Regular, Lora_400Regular_Italic, Lora_600SemiBold } from '@expo-google-fonts/lora';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,10 +11,11 @@ import { useEffect, useMemo, useState } from 'react';
 import 'react-native-reanimated';
 import { PaperProvider } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
-import { AppState, Platform, useColorScheme } from 'react-native';
+import { AppState, Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { resolveTheme } from '../theme';
+import { buildTheme, resolveAppearance } from '../theme';
+import { WelcomeScreen } from '../components/WelcomeScreen';
 import { syncDailyReminders } from '../services/NotificationService';
 
 const useStoreHydrated = () => {
@@ -40,7 +44,14 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     NotoSansTamil_400Regular,
+    NotoSansTamil_600SemiBold,
     NotoSansTamil_700Bold,
+    NotoSerifTamil_400Regular,
+    NotoSerifTamil_500Medium,
+    NotoSerifTamil_600SemiBold,
+    Lora_400Regular,
+    Lora_400Regular_Italic,
+    Lora_600SemiBold,
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -84,9 +95,14 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const router = useRouter();
-  const themeMode = useSettingsStore((state) => state.themeMode);
+  const appearance = useSettingsStore((state) => state.appearance);
+  const accent = useSettingsStore((state) => state.accent);
+  const onboarded = useSettingsStore((state) => state.onboarded);
   const systemScheme = useColorScheme();
-  const theme = resolveTheme(themeMode, systemScheme);
+  const theme = useMemo(
+    () => buildTheme(resolveAppearance(appearance, systemScheme), accent),
+    [appearance, accent, systemScheme]
+  );
 
   // Tapping a daily reminder opens today's Kural
   useEffect(() => {
@@ -120,6 +136,12 @@ function RootLayoutNav() {
         <Stack screenOptions={{ contentStyle: { backgroundColor: theme.colors.background } }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
+        {/* First launch: the welcome flow covers the app until it's completed */}
+        {!onboarded && (
+          <View style={StyleSheet.absoluteFill}>
+            <WelcomeScreen />
+          </View>
+        )}
       </ThemeProvider>
     </PaperProvider>
   );

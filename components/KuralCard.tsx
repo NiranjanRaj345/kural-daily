@@ -3,13 +3,15 @@ import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Text, SegmentedButtons } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
-import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { ShareModal, buildShareText } from './ShareModal';
-import { useAppTheme, space, radius, tamilText } from '../theme';
+import { getChapterNumber, getPositionInChapter } from '../services/DataService';
+import { ShareModal } from './ShareModal';
+import { KuralVerse } from './KuralVerse';
+import { MemorizeSheet, MemorizeMode } from './MemorizeSheet';
+import { useAppTheme, space, radius, tamilText, englishText } from '../theme';
 
 interface KuralCardProps {
   kural: Kural;
@@ -54,17 +56,19 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
   const showEnglish = useSettingsStore((s) => s.showEnglish);
   const showTamil = useSettingsStore((s) => s.showTamil);
   const isFavorite = useSettingsStore((s) => s.favorites.includes(kural.number));
+  const isLearning = useSettingsStore((s) => !!s.learning[kural.number]);
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
   const addToHistory = useSettingsStore((s) => s.addToHistory);
   const fontSize = useSettingsStore((s) => s.fontSize);
+  const speechRate = useSettingsStore((s) => s.speechRate);
   const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
 
   const [showExplanation, setShowExplanation] = useState(defaultExpanded);
   const [explanationLang, setExplanationLang] = useState<'ta' | 'en'>(showTamil ? 'ta' : 'en');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const isSpeakingRef = useRef(false);
-  const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [memorizing, setMemorizing] = useState<{ queue: number[]; mode: MemorizeMode } | null>(null);
 
   // Reset per-kural state and record the read
   useEffect(() => {
@@ -93,12 +97,6 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
     };
   }, [kural.number]);
 
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timer);
-  }, [copied]);
-
   const handleSpeak = () => {
     haptic();
     if (isSpeaking) {
@@ -111,16 +109,11 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
     Speech.speak(`${kural.line1} ... ${kural.line2}`, {
       language: 'ta-IN',
       voice: selectedVoiceIdentifier || undefined,
+      rate: speechRate,
       onDone: () => updateSpeaking(false),
       onStopped: () => updateSpeaking(false),
       onError: () => updateSpeaking(false),
     });
-  };
-
-  const handleCopy = async () => {
-    haptic();
-    await Clipboard.setStringAsync(buildShareText(kural, { tamil: true, english: true, explanation: true }));
-    setCopied(true);
   };
 
   const handleFavoritePress = () => {
@@ -130,55 +123,52 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
 
   const bothLanguages = showTamil && showEnglish;
   const explanation = explanationLang === 'ta' ? kural.tam_exp : kural.eng_exp;
+  const chapterNumber = getChapterNumber(kural);
+  const position = getPositionInChapter(kural);
 
   return (
-    <Animated.View entering={FadeInDown.duration(400)}>
+    <Animated.View entering={FadeInDown.duration(350)}>
       <ShareModal visible={showShareModal} onDismiss={() => setShowShareModal(false)} kural={kural} />
+      <MemorizeSheet queue={memorizing?.queue ?? null} mode={memorizing?.mode ?? 'learn'} onClose={() => setMemorizing(null)} />
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
-        {/* Header: number + where it sits in the book */}
-        <View style={styles.header}>
-          <View style={[styles.numberPill, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text variant="labelLarge" style={{ color: theme.colors.onPrimaryContainer }}>
-              குறள் {kural.number}
+        {/* Folio: where this couplet sits in the book */}
+        <View style={styles.folio}>
+          <Text
+            style={[styles.number, { color: theme.colors.primary }]}
+            accessibilityLabel={`Kural ${kural.number}`}
+          >
+            {kural.number}
+          </Text>
+          <View style={styles.folioText}>
+            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              அதிகாரம் {chapterNumber} · {position}/10
             </Text>
-          </View>
-          <View style={styles.headerText}>
-            <Text style={[tamilText.label, { color: theme.colors.onSurface }]} numberOfLines={1}>
+            <Text style={[tamilText.labelStrong, { color: theme.colors.onSurface }]} numberOfLines={1}>
               {kural.chap_tam}
             </Text>
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-              {[kural.chap_eng, kural.sect_eng].filter(Boolean).join(' · ')}
-            </Text>
+            {kural.chap_eng && (
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+                {kural.chap_eng} · {kural.sect_eng}
+              </Text>
+            )}
           </View>
         </View>
 
         {/* The couplet */}
         {showTamil && (
-          <View style={styles.couplet}>
-            <View style={[styles.accentRule, { backgroundColor: theme.colors.accent }]} />
-            <Text
-              style={[tamilText.kural(fontSize), styles.coupletLine, { color: theme.colors.onSurface }]}
-              selectable
-            >
-              {kural.line1}
-            </Text>
-            <Text
-              style={[tamilText.kural(fontSize), styles.coupletLine, { color: theme.colors.onSurface }]}
-              selectable
-            >
-              {kural.line2}
-            </Text>
+          <View style={styles.verse}>
+            <KuralVerse kural={kural} size={fontSize} />
           </View>
         )}
 
         {showEnglish && (
           <Text
-            variant="bodyLarge"
             selectable
             style={[
+              englishText.translation,
               styles.translation,
-              { color: showTamil ? theme.colors.onSurfaceVariant : theme.colors.onSurface },
+              { color: showTamil ? theme.colors.onSurfaceVariant : theme.colors.ink },
               !showTamil && styles.translationPrimary,
             ]}
           >
@@ -186,16 +176,16 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
           </Text>
         )}
 
-        {/* Explanation */}
+        {/* Meaning */}
         <Pressable
           onPress={() => setShowExplanation((v) => !v)}
           accessibilityRole="button"
           accessibilityState={{ expanded: showExplanation }}
-          style={[styles.explainToggle, { borderTopColor: theme.colors.outlineVariant }]}
+          style={[styles.explainToggle, { borderTopColor: theme.colors.rule }]}
         >
-          <MaterialCommunityIcons name="text-box-outline" size={18} color={theme.colors.primary} />
+          <Text style={[tamilText.labelStrong, { color: theme.colors.primary }]}>பொருள்</Text>
           <Text variant="labelLarge" style={[styles.explainLabel, { color: theme.colors.primary }]}>
-            Explanation
+            Meaning
           </Text>
           <MaterialCommunityIcons
             name={showExplanation ? 'chevron-up' : 'chevron-down'}
@@ -220,10 +210,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             )}
             <Text
               selectable
-              style={[
-                explanationLang === 'ta' ? tamilText.body : styles.englishBody,
-                { color: theme.colors.onSurface },
-              ]}
+              style={[explanationLang === 'ta' ? tamilText.body : englishText.body, { color: theme.colors.onSurface }]}
             >
               {explanation}
             </Text>
@@ -236,12 +223,12 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
         )}
 
         {/* Actions */}
-        <View style={[styles.actions, { borderTopColor: theme.colors.outlineVariant }]}>
+        <View style={[styles.actions, { borderTopColor: theme.colors.rule }]}>
           <ActionButton
             icon={isFavorite ? 'bookmark' : 'bookmark-outline'}
             label={isFavorite ? 'Saved' : 'Save'}
             active={isFavorite}
-            activeColor={theme.colors.tertiary}
+            activeColor={theme.colors.flame}
             onPress={handleFavoritePress}
             accessibilityLabel={isFavorite ? 'Remove from saved' : 'Save Kural'}
           />
@@ -252,15 +239,20 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             onPress={handleSpeak}
             accessibilityLabel={isSpeaking ? 'Stop reading' : 'Read aloud'}
           />
-          <ActionButton icon="share-variant-outline" label="Share" onPress={() => setShowShareModal(true)} />
           <ActionButton
-            icon={copied ? 'check' : 'content-copy'}
-            label={copied ? 'Copied' : 'Copy'}
-            active={copied}
-            activeColor={theme.colors.success}
-            onPress={handleCopy}
-            accessibilityLabel="Copy text"
+            icon={isLearning ? 'school' : 'school-outline'}
+            label={isLearning ? 'Learning' : 'Learn'}
+            active={isLearning}
+            onPress={() => {
+              haptic();
+              // Fixed when the sheet opens: grading a new Kural adds it to the review list,
+              // which must not switch the open session into practice mode.
+              // Already learning: practise without changing its review schedule.
+              setMemorizing({ queue: [kural.number], mode: isLearning ? 'practice' : 'learn' });
+            }}
+            accessibilityLabel={isLearning ? 'Practise this Kural' : 'Learn this Kural by heart'}
           />
+          <ActionButton icon="share-variant-outline" label="Share" onPress={() => setShowShareModal(true)} />
         </View>
       </View>
     </Animated.View>
@@ -274,48 +266,37 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
-  header: {
+  folio: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
+    gap: space.lg,
     paddingHorizontal: space.xl,
     paddingTop: space.xl,
   },
-  numberPill: {
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
+  number: {
+    fontFamily: 'Lora_600SemiBold',
+    fontSize: 34,
+    lineHeight: 40,
+    minWidth: 48,
+    fontVariant: ['tabular-nums'],
   },
-  headerText: {
+  folioText: {
     flex: 1,
   },
-  couplet: {
-    alignItems: 'center',
+  verse: {
     paddingHorizontal: space.xl,
     paddingTop: space.xxl,
     paddingBottom: space.sm,
   },
-  accentRule: {
-    width: 32,
-    height: 3,
-    borderRadius: 2,
-    marginBottom: space.lg,
-  },
-  coupletLine: {
-    textAlign: 'center',
-  },
   translation: {
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 24,
-    paddingHorizontal: space.xxl,
+    paddingHorizontal: space.xl,
     paddingTop: space.md,
     paddingBottom: space.xl,
   },
   translationPrimary: {
-    fontStyle: 'normal',
-    fontSize: 19,
-    lineHeight: 28,
+    fontFamily: 'Lora_400Regular',
+    fontSize: 20,
+    lineHeight: 31,
     paddingTop: space.xxl,
   },
   explainToggle: {
@@ -335,11 +316,6 @@ const styles = StyleSheet.create({
   },
   langSwitch: {
     marginBottom: space.md,
-  },
-  englishBody: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    lineHeight: 24,
   },
   attribution: {
     marginTop: space.sm,

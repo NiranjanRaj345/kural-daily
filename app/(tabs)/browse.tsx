@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { View, StyleSheet, FlatList, SectionList, Pressable, BackHandler } from 'react-native';
 import { Text, IconButton, Chip } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -70,6 +70,7 @@ const ChapterRow = React.memo(function ChapterRow({
 
 export default function BrowseScreen() {
   const theme = useAppTheme();
+  const router = useRouter();
   const history = useSettingsStore((s) => s.history);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
@@ -157,7 +158,18 @@ export default function BrowseScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title="Browse" subtitle="3 books · 133 chapters · 1330 Kurals" />
+      <ScreenHeader
+        title="Browse"
+        subtitle="3 books · 133 chapters · 1330 Kurals"
+        right={
+          <IconButton
+            icon="magnify"
+            mode="contained-tonal"
+            onPress={() => router.navigate('/search')}
+            accessibilityLabel="Search Kurals"
+          />
+        }
+      />
       <View style={styles.bookChips}>
         <Chip compact selected={!bookFilter} showSelectedOverlay onPress={() => setBookFilter(null)} style={styles.bookChip}>
           All
@@ -204,7 +216,14 @@ export default function BrowseScreen() {
               },
             ]}
           >
-            {index > 0 && <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />}
+            {(index === 0 || section.data[index - 1].group !== item.group) ? (
+              <View style={[styles.groupLabel, index > 0 && { borderTopColor: theme.colors.outlineVariant, borderTopWidth: StyleSheet.hairlineWidth }]}>
+                <Text style={[tamilText.labelStrong, { color: theme.colors.primary }]}>{item.group}</Text>
+                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{item.groupEnglish}</Text>
+              </View>
+            ) : (
+              <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
+            )}
             <ChapterRow chapter={item} readCount={readByChapter.get(item.number) ?? 0} onPress={openChapter} />
           </View>
         )}
@@ -241,6 +260,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: StyleSheet.hairlineWidth,
     borderRightWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
+  },
+  groupLabel: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.xs,
   },
   separator: {
     height: StyleSheet.hairlineWidth,

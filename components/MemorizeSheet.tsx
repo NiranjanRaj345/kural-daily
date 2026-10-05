@@ -1,0 +1,385 @@
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import { Text, Button } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Speech from 'expo-speech';
+import * as Haptics from 'expo-haptics';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { getKuralByNumber } from '../services/DataService';
+import { useSettingsStore } from '../store/useSettingsStore';
+import { SheetModal } from './SheetModal';
+import { useAppTheme, space, radius, tamilText, englishText } from '../theme';
+
+/** learn: first time (joins the review list) · review: due today (graded) · practice: ungraded run-through */
+export type MemorizeMode = 'learn' | 'review' | 'practice';
+
+interface MemorizeSheetProps {
+  /** Kural numbers to go through, in order. Empty or null closes the sheet. */
+  queue: number[] | null;
+  mode: MemorizeMode;
+  onClose: () => void;
+}
+
+/*
+ * Learning by heart the way it is taught: read the couplet, then recite it
+ * with more and more of it hidden. Steps:
+ *   0 Read      – every word visible
+ *   1 Gaps      – every other word hidden
+ *   2 Cues      – only the first word of each line
+ *   3 Recall    – nothing visible; recite, then check
+ */
+const STEPS = [
+  { title: 'Read it', hint: 'Read the couplet aloud two or three times.' },
+  { title: 'Fill the gaps', hint: 'Say the hidden words. Tap one to peek.' },
+  { title: 'First words only', hint: 'Recite each line from its first word.' },
+  { title: 'From memory', hint: 'Recite the whole Kural, then check yourself.' },
+];
+const RECALL = STEPS.length - 1;
+
+const isHidden = (step: number, wordIndex: number, globalIndex: number) => {
+  if (step === 0) return false;
+  if (step === 1) return globalIndex % 2 === 1;
+  if (step === 2) return wordIndex !== 0;
+  return true;
+};
+
+const haptic = () => {
+  if (Platform.OS !== 'web') Haptics.selectionAsync();
+};
+
+export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClose }) => {
+  const theme = useAppTheme();
+  const reviewKural = useSettingsStore((s) => s.reviewKural);
+  const startLearning = useSettingsStore((s) => s.startLearning);
+  const speechRate = useSettingsStore((s) => s.speechRate);
+  const voice = useSettingsStore((s) => s.selectedVoiceIdentifier);
+  const showEnglish = useSettingsStore((s) => s.showEnglish);
+
+  const [index, setIndex] = useState(0);
+  const [step, setStep] = useState(mode === 'review' ? RECALL : 0);
+  const [peeked, setPeeked] = useState<Set<number>>(new Set());
+  const [checked, setChecked] = useState(false);
+  const [showMeaning, setShowMeaning] = useState(false);
+  const [results, setResults] = useState({ remembered: 0, practice: 0 });
+  const [done, setDone] = useState(false);
+  const speaking = useRef(false);
+
+  const visible = !!queue && queue.length > 0;
+  const kural = visible ? getKuralByNumber(queue[index]) : undefined;
+
+  // Start fresh whenever a new session opens
+  useEffect(() => {
+    if (!visible) return;
+    setIndex(0);
+    setResults({ remembered: 0, practice: 0 });
+    setDone(false);
+  }, [queue, visible]);
+
+  // Reset per-Kural state
+  useEffect(() => {
+    setStep(mode === 'review' ? RECALL : 0);
+    setPeeked(new Set());
+    setChecked(false);
+    setShowMeaning(false);
+  }, [index, queue, mode]);
+
+  useEffect(() => () => {
+    if (speaking.current) Speech.stop();
+  }, []);
+
+  const lines = useMemo(
+    () => (kural ? [kural.line1, kural.line2].map((l) => l.trim().split(/\s+/)) : []),
+    [kural]
+  );
+
+  const close = () => {
+    if (speaking.current) {
+      Speech.stop();
+      speaking.current = false;
+    }
+    onClose();
+  };
+
+  const listen = () => {
+    if (!kural) return;
+    Speech.stop();
+    speaking.current = true;
+    Speech.speak(`${kural.line1} ... ${kural.line2}`, {
+      language: 'ta-IN',
+      voice: voice ?? undefined,
+      rate: speechRate,
+      onDone: () => { speaking.current = false; },
+      onStopped: () => { speaking.current = false; },
+      onError: () => { speaking.current = false; },
+    });
+  };
+
+  const grade = (remembered: boolean) => {
+    if (!kural) return;
+    if (Platform.OS !== 'web') {
+      Haptics.notificationAsync(remembered ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+    }
+    const alreadyLearning = !!useSettingsStore.getState().learning[kural.number];
+    if (mode === 'learn' && !alreadyLearning) {
+      // First time through: it joins the review list, due tomorrow
+      startLearning(kural.number);
+    } else {
+      reviewKural(kural.number, remembered);
+    }
+    setResults((r) => ({
+      remembered: r.remembered + (remembered ? 1 : 0),
+      practice: r.practice + (remembered ? 0 : 1),
+    }));
+    if (queue && index < queue.length - 1) {
+      setIndex(index + 1);
+    } else {
+      setDone(true);
+    }
+  };
+
+  if (!visible) return null;
+
+  const total = queue!.length;
+  const title = done ? (mode === 'review' ? 'Review complete' : 'Well done') : `Kural ${kural?.number ?? ''}`;
+  const subtitle = done
+    ? undefined
+    : mode === 'review'
+      ? `${index + 1} of ${total} to review`
+      : `Step ${step + 1} of ${STEPS.length} · ${STEPS[step].title}`;
+
+  let globalIndex = -1;
+
+  const footer = done ? (
+    <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+      <Button mode="contained" onPress={close} style={styles.wide} contentStyle={styles.buttonContent}>Done</Button>
+    </View>
+  ) : step < RECALL ? (
+    <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+      <Button mode="text" icon="chevron-left" disabled={step === 0} onPress={() => { haptic(); setStep(step - 1); setPeeked(new Set()); }}>
+        Back
+      </Button>
+      <Button
+        mode="contained"
+        icon="chevron-right"
+        contentStyle={[styles.buttonContent, { flexDirection: 'row-reverse' }]}
+        onPress={() => { haptic(); setStep(step + 1); setPeeked(new Set()); }}
+      >
+        {step === RECALL - 1 ? 'Recite from memory' : 'Next step'}
+      </Button>
+    </View>
+  ) : mode === 'practice' && checked ? (
+    <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+      <Button mode="text" onPress={() => { setStep(0); setChecked(false); setPeeked(new Set()); }}>Again</Button>
+      <Button mode="contained" onPress={close} contentStyle={styles.buttonContent}>Done</Button>
+    </View>
+  ) : !checked ? (
+    <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+      <Button mode="contained" icon="eye-outline" onPress={() => { haptic(); setChecked(true); }} style={styles.wide} contentStyle={styles.buttonContent}>
+        Check my recall
+      </Button>
+    </View>
+  ) : (
+    <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+      <Button mode="outlined" onPress={() => grade(false)} style={styles.half} contentStyle={styles.buttonContent}>
+        Needs practice
+      </Button>
+      <Button mode="contained" onPress={() => grade(true)} style={styles.half} contentStyle={styles.buttonContent}>
+        I knew it
+      </Button>
+    </View>
+  );
+
+  return (
+    <SheetModal
+      visible={visible}
+      onClose={close}
+      title={title}
+      subtitle={subtitle}
+      footer={footer}
+      contentKey={`${index}-${done}`}
+    >
+      {done ? (
+        <Animated.View entering={FadeIn} style={styles.done}>
+          <View style={[styles.doneIcon, { backgroundColor: theme.colors.successContainer }]}>
+            <MaterialCommunityIcons name="check-decagram" size={40} color={theme.colors.onSuccessContainer} />
+          </View>
+          <Text variant="headlineSmall" style={{ color: theme.colors.onSurface, textAlign: 'center' }}>
+            {mode === 'review'
+              ? `${results.remembered} of ${results.remembered + results.practice} remembered`
+              : results.remembered > 0 ? 'Committed to memory' : 'Keep practising'}
+          </Text>
+          <Text variant="bodyMedium" style={[styles.doneText, { color: theme.colors.onSurfaceVariant }]}>
+            {mode === 'review'
+              ? 'Kurals you knew come back after a longer gap. The ones that need practice return tomorrow.'
+              : 'It is now in your review list and will come back tomorrow, then at growing intervals until you know it by heart.'}
+          </Text>
+        </Animated.View>
+      ) : kural ? (
+        <Animated.View key={`${kural.number}-${step}`} entering={FadeIn.duration(200)} style={styles.body}>
+          <View style={styles.progress}>
+            {STEPS.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.progressDot,
+                  { backgroundColor: i <= step ? theme.colors.primary : theme.colors.outlineVariant },
+                ]}
+              />
+            ))}
+          </View>
+
+          <Text variant="bodyMedium" style={[styles.hint, { color: theme.colors.onSurfaceVariant }]}>
+            {checked ? 'Compare with what you recited.' : STEPS[step].hint}
+          </Text>
+
+          <View style={[styles.verseBox, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+            {lines.map((words, li) => (
+              <View key={li} style={styles.line}>
+                {words.map((word, wi) => {
+                  globalIndex += 1;
+                  const gi = globalIndex;
+                  const hidden = !checked && isHidden(step, wi, gi) && !peeked.has(gi);
+                  return (
+                    <Pressable
+                      key={wi}
+                      disabled={!hidden}
+                      onPress={() => { haptic(); setPeeked((p) => new Set(p).add(gi)); }}
+                      accessibilityRole={hidden ? 'button' : 'text'}
+                      accessibilityLabel={hidden ? `Hidden word ${gi + 1}, tap to reveal` : word}
+                      style={[
+                        styles.word,
+                        hidden
+                          ? { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outlineVariant }
+                          : { backgroundColor: 'transparent', borderColor: 'transparent' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          tamilText.kural(20),
+                          { color: hidden ? 'transparent' : theme.colors.ink },
+                        ]}
+                      >
+                        {word}
+                      </Text>
+                      {hidden && (
+                        <View style={styles.hiddenMark} pointerEvents="none">
+                          <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{gi + 1}</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.tools}>
+            <Button compact icon="volume-high" onPress={listen}>Listen slowly</Button>
+            {showEnglish && (
+              <Button compact icon={showMeaning ? 'eye-off-outline' : 'lightbulb-outline'} onPress={() => setShowMeaning((v) => !v)}>
+                {showMeaning ? 'Hide meaning' : 'Meaning'}
+              </Button>
+            )}
+          </View>
+
+          {(showMeaning || (step === 0 && showEnglish)) && (
+            <Text style={[englishText.translation, styles.meaning, { color: theme.colors.onSurfaceVariant }]}>
+              {kural.eng}
+            </Text>
+          )}
+
+          <Text style={[tamilText.label, styles.source, { color: theme.colors.onSurfaceVariant }]}>
+            {kural.chap_tam} · {kural.sect_tam}
+          </Text>
+        </Animated.View>
+      ) : null}
+    </SheetModal>
+  );
+};
+
+const styles = StyleSheet.create({
+  body: {
+    paddingHorizontal: space.xl,
+  },
+  progress: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: space.md,
+  },
+  progressDot: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+  },
+  hint: {
+    marginBottom: space.lg,
+  },
+  verseBox: {
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: space.lg,
+    gap: space.sm,
+  },
+  line: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.xs,
+  },
+  word: {
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    paddingHorizontal: 6,
+  },
+  hiddenMark: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tools: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: space.md,
+    marginLeft: -space.sm,
+  },
+  meaning: {
+    marginTop: space.sm,
+  },
+  source: {
+    marginTop: space.lg,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingVertical: space.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  wide: {
+    flex: 1,
+  },
+  half: {
+    flex: 1,
+  },
+  buttonContent: {
+    paddingVertical: 4,
+  },
+  done: {
+    alignItems: 'center',
+    paddingHorizontal: space.xxl,
+    paddingTop: space.xxl,
+    gap: space.md,
+  },
+  doneIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneText: {
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+});

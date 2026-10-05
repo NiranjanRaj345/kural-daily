@@ -4,6 +4,7 @@ import { Text, Button, Chip, useTheme } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as Clipboard from 'expo-clipboard';
 import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { SheetModal } from './SheetModal';
@@ -14,13 +15,14 @@ interface ShareModalProps {
   kural: Kural;
 }
 
+// Card styles for the shared image, drawn from the app's own palettes
 const THEMES = [
-  { id: 'white', name: 'Classic', colors: ['#ffffff', '#ffffff'] as const, textColor: '#000000', subTextColor: '#666666' },
-  { id: 'dark', name: 'Dark', colors: ['#1a1a1a', '#1a1a1a'] as const, textColor: '#ffffff', subTextColor: '#aaaaaa' },
-  { id: 'sepia', name: 'Sepia', colors: ['#f4ecd8', '#f4ecd8'] as const, textColor: '#5b4636', subTextColor: '#8c6b5d' },
-  { id: 'sunrise', name: 'Sunrise', colors: ['#ff9a9e', '#fad0c4'] as const, textColor: '#2d3436', subTextColor: '#636e72' },
-  { id: 'ocean', name: 'Ocean', colors: ['#2193b0', '#6dd5ed'] as const, textColor: '#ffffff', subTextColor: '#e0f7fa' },
-  { id: 'royal', name: 'Royal', colors: ['#141E30', '#243B55'] as const, textColor: '#ffffff', subTextColor: '#b2bec3' },
+  { id: 'paper', name: 'Paper', colors: ['#FFFDF8', '#F5EFE3'] as const, textColor: '#221A12', subTextColor: '#7A6B5B' },
+  { id: 'palm', name: 'Palm leaf', colors: ['#F1E3C2', '#E1C995'] as const, textColor: '#33230F', subTextColor: '#6E5432' },
+  { id: 'ink', name: 'Ink', colors: ['#211E1A', '#121110'] as const, textColor: '#F3ECDF', subTextColor: '#B5AB9C' },
+  { id: 'indigo', name: 'Indigo', colors: ['#24539F', '#132E63'] as const, textColor: '#FFFFFF', subTextColor: '#C9D6F0' },
+  { id: 'kumkum', name: 'Kumkum', colors: ['#963232', '#5A1A1A'] as const, textColor: '#FFF6F2', subTextColor: '#F0C8C0' },
+  { id: 'leaf', name: 'Leaf', colors: ['#356F3F', '#1D4425'] as const, textColor: '#F4FBF2', subTextColor: '#C4E0C2' },
 ];
 
 export const buildShareText = (
@@ -43,7 +45,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
     shareIncludeTamil, shareIncludeEnglish, shareIncludeExplanation,
     toggleShareIncludeTamil, toggleShareIncludeEnglish, toggleShareIncludeExplanation,
   } = useSettingsStore();
-  const [selectedThemeId, setSelectedThemeId] = useState('white');
+  const [selectedThemeId, setSelectedThemeId] = useState('paper');
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const viewRef = useRef<View>(null);
@@ -72,6 +74,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
     } finally {
       setSharing(false);
     }
+  };
+
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async () => {
+    await Clipboard.setStringAsync(buildShareText(kural, options));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShareText = async () => {
@@ -136,12 +145,12 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
               {shareIncludeExplanation && (
                 <View style={styles.explanation}>
                   {shareIncludeTamil && (
-                    <Text style={[styles.explanationText, { color: selectedTheme.textColor }]}>
+                    <Text style={[styles.explanationText, { color: selectedTheme.textColor, fontFamily: 'NotoSerifTamil_400Regular' }]}>
                       {kural.tam_exp}
                     </Text>
                   )}
                   {shareIncludeEnglish && (
-                    <Text style={[styles.explanationText, { color: selectedTheme.textColor }]}>
+                    <Text style={[styles.explanationText, { color: selectedTheme.textColor, fontFamily: 'Lora_400Regular' }]}>
                       {kural.eng_exp}
                     </Text>
                   )}
@@ -149,7 +158,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
               )}
 
               <Text style={[styles.footer, { color: selectedTheme.subTextColor }]}>
-                Thirukkural Daily
+                Kural Daily · திருக்குறள்
               </Text>
             </LinearGradient>
           </View>
@@ -210,9 +219,14 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
         >
           Share Image
         </Button>
-        <Button mode="outlined" icon="text" onPress={handleShareText} style={styles.shareButton}>
-          Share as Text
-        </Button>
+        <View style={styles.textActions}>
+          <Button mode="outlined" icon="text" onPress={handleShareText} style={styles.flex}>
+            Share text
+          </Button>
+          <Button mode="outlined" icon={copied ? 'check' : 'content-copy'} onPress={handleCopy} style={styles.flex}>
+            {copied ? 'Copied' : 'Copy text'}
+          </Button>
+        </View>
       </View>
     </SheetModal>
   );
@@ -221,6 +235,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
 const styles = StyleSheet.create({
   contentScroll: {
     flex: 1,
+  },
+  flex: {
+    flex: 1,
+  },
+  textActions: {
+    flexDirection: 'row',
+    gap: 8,
   },
   previewContainer: {
     padding: 20,
@@ -275,7 +296,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     textAlign: 'center',
     marginBottom: 8,
-    fontFamily: 'NotoSansTamil_700Bold',
+    fontFamily: 'NotoSerifTamil_600SemiBold',
   },
   divider: {
     height: 1,
@@ -285,7 +306,7 @@ const styles = StyleSheet.create({
   },
   englishText: {
     fontSize: 16,
-    fontStyle: 'italic',
+    fontFamily: 'Lora_400Regular_Italic',
     textAlign: 'center',
     lineHeight: 24,
   },
