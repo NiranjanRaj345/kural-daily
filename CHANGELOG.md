@@ -32,7 +32,8 @@
 - **Install Tamil voices** is always available: in You → Listening and at the top of the voice picker. On Android it opens Google's voice download screen directly, with the text-to-speech settings as a second option; on iPhone it shows where to download one.
 
 ### App icon
-- New icon: a bundle of palm-leaf manuscripts (ஓலைச்சுவடி) with a couplet of 4 + 3 marks, binding hole and cord, on indigo. Full-bleed for iOS; Android adaptive foreground/background plus a monochrome layer for themed icons; matching splash, notification icon and favicon. The old icon had baked-in corners and a white background that showed on both platforms.
+- New icon: the Tamil letter அ in saffron on deep indigo, set in the same serif as the couplets. The Thirukkural opens with it: அகர முதல எழுத்தெல்லாம் (Kural 1, "as அ is the first of all letters"). Flat and typographic so it stays legible at every size.
+- Proper assets for every platform: full-bleed iOS icon (no transparency), Android adaptive foreground and background inside the safe zone, a monochrome layer for themed icons, matching splash, notification icon and favicon. The old icon had baked-in corners and a white background that showed on both platforms.
 
 ### Habit and sharing
 - **Welcome** on first launch: what the Thirukkural is, how you want to read, and an optional daily reminder.
