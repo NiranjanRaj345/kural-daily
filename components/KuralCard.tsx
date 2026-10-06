@@ -62,6 +62,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
   const showTamil = useSettingsStore((s) => s.showTamil);
   const isFavorite = useSettingsStore((s) => s.favorites.includes(kural.number));
   const isLearning = useSettingsStore((s) => !!s.learning[kural.number]);
+  const isRead = useSettingsStore((s) => s.history.includes(kural.number));
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const speechRate = useSettingsStore((s) => s.speechRate);
@@ -142,9 +143,18 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             {kural.number}
           </Text>
           <View style={styles.folioText}>
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              அதிகாரம் {chapterNumber} · {position}/10
-            </Text>
+            <View style={styles.folioMeta}>
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                அதிகாரம் {chapterNumber} · {position}/10
+              </Text>
+              {/* Shows once the Kural has counted as read (see useReadTracker) */}
+              {isRead && (
+                <Animated.View entering={FadeIn.duration(300)} style={styles.readMark} accessibilityLabel="Read">
+                  <MaterialCommunityIcons name="check-circle" size={13} color={theme.colors.success} />
+                  <Text variant="labelSmall" style={{ color: theme.colors.success }}>Read</Text>
+                </Animated.View>
+              )}
+            </View>
             <Text style={[type.tamilLabelStrong, { color: theme.colors.onSurface }]} numberOfLines={1}>
               {kural.chap_tam}
             </Text>
@@ -304,6 +314,16 @@ const styles = StyleSheet.create({
   number: {
     minWidth: 48,
     fontVariant: ['tabular-nums'],
+  },
+  folioMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  readMark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
   },
   folioText: {
     flex: 1,

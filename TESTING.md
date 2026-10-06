@@ -62,8 +62,9 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 - [ ] **Counting as read**: open a Kural you haven't read from Browse and close it within a second:
       it is not in You → Reading history. Open another and stay ~6 seconds, or tap Listen / Meaning /
       Save / Share / Learn on it: it is in history.
-- [ ] On a day you haven't read, opening the app alone doesn't add the day to the streak; it is
-      added a few seconds after Today's Kural is on screen.
+- [ ] On a day you haven't read, opening the app alone doesn't add the day to the streak. About
+      6 seconds after Today's Kural is on screen, a green **✓ Read** appears next to அதிகாரம் and
+      the streak pill's last dot fills. Try it from a cold start (swipe the app away first).
 - [ ] Random Kural opens a sheet; Share the app opens the share sheet with the store link.
 - [ ] The search button opens Search; back returns to Today.
 - [ ] Pull down to refresh works.

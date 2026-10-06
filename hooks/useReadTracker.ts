@@ -4,6 +4,12 @@ import { useIsFocused } from '@react-navigation/native';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { toLocalDateKey } from '../utils/date';
 
+/**
+ * Whether the app is in front. Android reports "unknown" or no state while starting,
+ * so only an explicit background/inactive state stops the clock.
+ */
+const isInFront = (state: string | null | undefined) => state !== 'background' && state !== 'inactive';
+
 /** How long a Kural has to stay on screen to count as read. */
 export const READ_AFTER_MS = 6000;
 
@@ -20,7 +26,7 @@ export const READ_AFTER_MS = 6000;
 export function useReadTracker(kuralNumber: number, visible = true) {
   const markReadInStore = useSettingsStore((s) => s.markRead);
   const focused = useIsFocused();
-  const [active, setActive] = useState(AppState.currentState === 'active');
+  const [active, setActive] = useState(isInFront(AppState.currentState));
   // Kural and day last counted, so a card left open overnight counts again the next day
   const counted = useRef<string | null>(null);
   const keyNow = useCallback(() => `${kuralNumber}:${toLocalDateKey(new Date())}`, [kuralNumber]);
@@ -33,7 +39,10 @@ export function useReadTracker(kuralNumber: number, visible = true) {
   }, [kuralNumber, keyNow, markReadInStore]);
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (state) => setActive(state === 'active'));
+    // Read the state again here: on Android the app can come to the front between the
+    // first render and this listener, and that change would otherwise be missed
+    setActive(isInFront(AppState.currentState));
+    const sub = AppState.addEventListener('change', (state) => setActive(isInFront(state)));
     return () => sub.remove();
   }, []);
 
