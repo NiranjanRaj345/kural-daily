@@ -7,7 +7,7 @@ import { loadVoices, speakSample, stopSpeaking } from '../../services/SpeechServ
 import { isHighQuality, isTamilVoice, rankTamilVoices } from '../../utils/voices';
 import { SheetModal } from '../SheetModal';
 import { EmptyState } from '../ui/EmptyState';
-import { VOICE_HELP, openVoiceSettings } from '../voiceHelp';
+import { VOICE_HELP, openVoiceDownload, openVoiceSettings } from '../voiceHelp';
 import { useAppTheme, space, radius } from '../../theme';
 
 interface VoicePickerSheetProps {
@@ -64,17 +64,29 @@ export const VoicePickerSheet: React.FC<VoicePickerSheetProps> = ({ visible, onC
         contentContainerStyle={{ paddingBottom: space.xl }}
         ListHeaderComponent={
           <View>
-            {(!bestIsNatural || tamil.length === 0) && Platform.OS !== 'web' && (
-              <View style={[styles.help, { backgroundColor: theme.colors.flameContainer }]}>
-                <Text variant="titleSmall" style={{ color: theme.colors.onFlameContainer }}>
-                  {tamil.length === 0 ? 'No Tamil voice installed' : 'Want a more natural voice?'}
+            {Platform.OS !== 'web' && (
+              <View
+                style={[
+                  styles.help,
+                  { backgroundColor: !bestIsNatural || tamil.length === 0 ? theme.colors.flameContainer : theme.colors.surfaceVariant },
+                ]}
+              >
+                <Text variant="titleSmall" style={{ color: !bestIsNatural || tamil.length === 0 ? theme.colors.onFlameContainer : theme.colors.onSurface }}>
+                  {tamil.length === 0 ? 'No Tamil voice installed' : bestIsNatural ? 'Get more Tamil voices' : 'Want a more natural voice?'}
                 </Text>
-                <Text variant="bodySmall" style={[styles.helpText, { color: theme.colors.onFlameContainer }]}>
+                <Text variant="bodySmall" style={[styles.helpText, { color: !bestIsNatural || tamil.length === 0 ? theme.colors.onFlameContainer : theme.colors.onSurfaceVariant }]}>
                   {VOICE_HELP}
                 </Text>
-                <Button mode="contained-tonal" compact icon="cog-outline" onPress={openVoiceSettings} style={styles.helpButton}>
-                  Open voice settings
-                </Button>
+                {Platform.OS === 'android' && (
+                  <View style={styles.helpButtons}>
+                    <Button mode="contained" compact icon="download" onPress={openVoiceDownload}>
+                      Download voices
+                    </Button>
+                    <Button mode="outlined" compact icon="cog-outline" onPress={openVoiceSettings}>
+                      Voice settings
+                    </Button>
+                  </View>
+                )}
               </View>
             )}
             <List.Item
@@ -143,8 +155,10 @@ const styles = StyleSheet.create({
     marginTop: space.xs,
     lineHeight: 19,
   },
-  helpButton: {
-    alignSelf: 'flex-start',
+  helpButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
     marginTop: space.md,
   },
   footer: {

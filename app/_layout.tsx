@@ -13,10 +13,12 @@ import { PaperProvider } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { AppState, Platform, StyleSheet, View, useColorScheme } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as SystemUI from 'expo-system-ui';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { buildTheme, resolveAppearance } from '../theme';
+import { en, registerTranslation } from 'react-native-paper-dates';
 import { WelcomeScreen } from '../components/WelcomeScreen';
-import { syncDailyReminders } from '../services/NotificationService';
+import { reminderInputsKey, syncDailyReminders } from '../services/NotificationService';
 
 const useStoreHydrated = () => {
   const [hydrated, setHydrated] = useState(useSettingsStore.persist.hasHydrated());
@@ -37,6 +39,9 @@ export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
+
+// Labels for the reminder time picker
+registerTranslation('en', en);
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -79,12 +84,26 @@ export default function RootLayout() {
   useEffect(() => {
     if (!hydrated) return;
     // Never prompts here; permission is only requested when the user opts in.
-    // Re-syncing on every foreground keeps the next two weeks of reminders scheduled.
+    // Re-syncing on every foreground keeps the reminder window topped up.
     syncDailyReminders();
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') syncDailyReminders();
     });
-    return () => sub.remove();
+
+    // Re-plan when reading or reminder settings change: reading today drops
+    // today's reminder and moves the streak nudge to tomorrow.
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = useSettingsStore.subscribe((next, prev) => {
+      if (reminderInputsKey(next) === reminderInputsKey(prev)) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => syncDailyReminders(), 400);
+    });
+
+    return () => {
+      sub.remove();
+      unsubscribe();
+      if (timer) clearTimeout(timer);
+    };
   }, [hydrated]);
 
   if (!ready) {
@@ -114,6 +133,11 @@ function RootLayoutNav() {
     });
     return () => sub.remove();
   }, [router]);
+
+  // Window background behind screens and transitions follows the page colour
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(theme.colors.background).catch(() => {});
+  }, [theme.colors.background]);
 
   const navTheme = useMemo(() => {
     const base = theme.dark ? NavigationDarkTheme : NavigationDefaultTheme;

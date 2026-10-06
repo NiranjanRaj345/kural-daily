@@ -95,7 +95,7 @@ export default function TodayScreen() {
   }, [loadKural]);
 
   const handleEnableReminders = async () => {
-    const enabled = await enableDailyReminders();
+    const enabled = await enableDailyReminders({ withStreak: true });
     setSnackbar(enabled
       ? `Daily reminder set for ${formatReminderTime(notificationHour, notificationMinute)}`
       : 'Notifications are blocked. You can allow them in system settings.');
@@ -176,7 +176,7 @@ export default function TodayScreen() {
                 A Kural every morning?
               </Text>
               <Text variant="bodySmall" style={{ color: theme.colors.onPrimaryContainer, opacity: 0.85 }}>
-                Get each day&apos;s Kural at {formatReminderTime(notificationHour, notificationMinute)}. Change the time anytime.
+                Each day&apos;s Kural at {formatReminderTime(notificationHour, notificationMinute)}, and a nudge before your streak ends. Change times in You.
               </Text>
               <View style={styles.reminderActions}>
                 <Button compact mode="contained" onPress={handleEnableReminders}>Turn on</Button>

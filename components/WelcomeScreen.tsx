@@ -7,6 +7,8 @@ import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { useSettingsStore, ReadingLanguage } from '../store/useSettingsStore';
 import { getKuralByNumber } from '../services/DataService';
 import { enableDailyReminders, formatReminderTime } from '../services/NotificationService';
+import { TimePickerModal } from 'react-native-paper-dates';
+import { uses24HourClock } from '../utils/date';
 import { KuralVerse } from './KuralVerse';
 import { useAppTheme, space, radius, useType } from '../theme';
 
@@ -35,6 +37,8 @@ export const WelcomeScreen: React.FC = () => {
   const notificationMinute = useSettingsStore((s) => s.notificationMinute);
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [pickTime, setPickTime] = useState(false);
+  const setNotificationTime = useSettingsStore((s) => s.setNotificationTime);
 
   const language: ReadingLanguage = showTamil && showEnglish ? 'both' : showTamil ? 'tamil' : 'english';
   const sample = getKuralByNumber(1)!;
@@ -42,7 +46,7 @@ export const WelcomeScreen: React.FC = () => {
   const finish = async (withReminder: boolean) => {
     setBusy(true);
     if (withReminder) {
-      await enableDailyReminders();
+      await enableDailyReminders({ withStreak: true });
     } else {
       dismissNotificationPrompt();
     }
@@ -153,8 +157,20 @@ export const WelcomeScreen: React.FC = () => {
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>One Kural a day</Text>
             <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>
               A new couplet waits each morning. Read it daily to build a streak, and learn the ones you love by heart.
-              {'\n\n'}
-              Would you like a gentle reminder at {formatReminderTime(notificationHour, notificationMinute)}? You can change the time later.
+            </Text>
+            <View style={[styles.timeCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+              <View style={{ flex: 1 }}>
+                <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>Daily reminder at</Text>
+                <Text style={[type.display(28), { color: theme.colors.onSurface }]}>
+                  {formatReminderTime(notificationHour, notificationMinute)}
+                </Text>
+              </View>
+              <Button mode="contained-tonal" icon="clock-edit-outline" onPress={() => setPickTime(true)}>
+                Change time
+              </Button>
+            </View>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              We&apos;ll also nudge you in the evening if you haven&apos;t read yet and your streak is about to end. Both can be changed in You → Reminders.
             </Text>
           </Animated.View>
         )}
@@ -181,6 +197,16 @@ export const WelcomeScreen: React.FC = () => {
           </>
         )}
       </View>
+      <TimePickerModal
+        visible={pickTime}
+        onDismiss={() => setPickTime(false)}
+        onConfirm={({ hours, minutes }) => { setNotificationTime(hours, minutes); setPickTime(false); }}
+        hours={notificationHour}
+        minutes={notificationMinute}
+        label="Daily reminder time"
+        use24HourClock={uses24HourClock()}
+        locale="en"
+      />
     </SafeAreaView>
   );
 };
@@ -261,6 +287,15 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     lineHeight: 24,
+  },
+  timeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginVertical: space.sm,
   },
   bigIcon: {
     width: 80,

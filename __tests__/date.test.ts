@@ -1,4 +1,4 @@
-import { toLocalDateKey, calendarDaysBetween, computeStreak } from '../utils/date';
+import { toLocalDateKey, calendarDaysBetween, computeStreak, uses24HourClock } from '../utils/date';
 
 describe('toLocalDateKey', () => {
   it('uses the local calendar date, not UTC', () => {
@@ -40,5 +40,11 @@ describe('computeStreak', () => {
 
   it('resets after a missed day', () => {
     expect(computeStreak('2026-10-03', 9, today)).toEqual({ streak: 1, lastReadDate: '2026-10-05' });
+  });
+});
+
+describe('uses24HourClock', () => {
+  it('returns a boolean for the current locale', () => {
+    expect(typeof uses24HourClock()).toBe('boolean');
   });
 });

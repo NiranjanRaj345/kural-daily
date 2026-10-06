@@ -8,7 +8,7 @@ module.exports = defineConfig([
     ignores: ['dist/*', 'node_modules/*', '.expo/*'],
   },
   {
-    files: ['scripts/**/*.js', 'jest.setup.js', 'metro.config.js', '**/*.test.ts', '**/*.test.tsx'],
+    files: ['scripts/**/*.js', 'plugins/**/*.js', 'jest.setup.js', 'metro.config.js', '**/*.test.ts', '**/*.test.tsx'],
     languageOptions: {
       globals: { __dirname: 'readonly', require: 'readonly', process: 'readonly', jest: 'readonly' },
     },

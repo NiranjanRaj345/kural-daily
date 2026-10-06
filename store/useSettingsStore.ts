@@ -27,6 +27,10 @@ export interface SettingsState {
   notificationHour: number;
   notificationMinute: number;
   notificationPromptDismissed: boolean;
+  /** Evening nudge when a reading streak is about to be lost. */
+  streakReminderEnabled: boolean;
+  streakReminderHour: number;
+  streakReminderMinute: number;
   selectedVoiceIdentifier: string | null;
   /** Text-to-speech rate; slower helps when learning to recite. */
   speechRate: number;
@@ -60,6 +64,8 @@ export interface SettingsState {
   setNotificationsEnabled: (enabled: boolean) => void;
   setNotificationTime: (hour: number, minute: number) => void;
   dismissNotificationPrompt: () => void;
+  setStreakReminderEnabled: (enabled: boolean) => void;
+  setStreakReminderTime: (hour: number, minute: number) => void;
   setSelectedVoiceIdentifier: (identifier: string | null) => void;
   setSpeechRate: (rate: number) => void;
   toggleShareIncludeTamil: () => void;
@@ -84,6 +90,12 @@ const emptyQuizStats: QuizStats = { totalAnswered: 0, correctAnswers: 0, current
 
 type PersistedState = Partial<SettingsState> & { themeMode?: string };
 
+/** Keeps a reminder time valid whatever the picker returns (e.g. 24 for midnight). */
+export const normalizeTime = (hour: number, minute: number) => ({
+  hour: Number.isFinite(hour) ? ((Math.trunc(hour) % 24) + 24) % 24 : 9,
+  minute: Number.isFinite(minute) ? Math.min(59, Math.max(0, Math.trunc(minute))) : 0,
+});
+
 /** Upgrades settings saved by older app versions. Exported for tests. */
 export const migrateSettings = (persisted: unknown, version: number): SettingsState => {
   let next = { ...((persisted ?? {}) as PersistedState) };
@@ -107,6 +119,10 @@ export const migrateSettings = (persisted: unknown, version: number): SettingsSt
       readDays: next.lastReadDate ? [next.lastReadDate] : [],
     };
   }
+  if (version < 4) {
+    // The streak reminder is new: on for people who already chose reminders
+    next = { ...next, streakReminderEnabled: !!next.notificationsEnabled };
+  }
   return next as SettingsState;
 };
 
@@ -125,6 +141,9 @@ export const useSettingsStore = create<SettingsState>()(
       notificationHour: 9,
       notificationMinute: 0,
       notificationPromptDismissed: false,
+      streakReminderEnabled: false,
+      streakReminderHour: 20,
+      streakReminderMinute: 0,
       selectedVoiceIdentifier: null,
       speechRate: 0.9,
 
@@ -154,8 +173,16 @@ export const useSettingsStore = create<SettingsState>()(
       toggleTamil: () => set((state) => ({ showTamil: !state.showTamil })),
       toggleEnglish: () => set((state) => ({ showEnglish: !state.showEnglish })),
       setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
-      setNotificationTime: (hour, minute) => set({ notificationHour: hour, notificationMinute: minute }),
+      setNotificationTime: (hour, minute) => {
+        const t = normalizeTime(hour, minute);
+        set({ notificationHour: t.hour, notificationMinute: t.minute });
+      },
       dismissNotificationPrompt: () => set({ notificationPromptDismissed: true }),
+      setStreakReminderEnabled: (enabled) => set({ streakReminderEnabled: enabled }),
+      setStreakReminderTime: (hour, minute) => {
+        const t = normalizeTime(hour, minute);
+        set({ streakReminderHour: t.hour, streakReminderMinute: t.minute });
+      },
       setSelectedVoiceIdentifier: (identifier) => set({ selectedVoiceIdentifier: identifier }),
       setSpeechRate: (rate) => set({ speechRate: rate }),
       toggleShareIncludeTamil: () => set((state) => ({ shareIncludeTamil: !state.shareIncludeTamil })),
@@ -226,7 +253,7 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: 'settings-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: migrateSettings,
     }
   )

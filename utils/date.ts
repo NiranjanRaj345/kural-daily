@@ -47,3 +47,16 @@ export const lastNDays = (today: Date, count: number): string[] =>
   Array.from({ length: count }, (_, i) =>
     toLocalDateKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - (count - 1 - i)))
   );
+
+/** Whether the device shows times on a 24-hour clock. */
+export const uses24HourClock = (): boolean => {
+  try {
+    const { hour12, hourCycle } = new Intl.DateTimeFormat(undefined, { hour: 'numeric' }).resolvedOptions() as Intl.ResolvedDateTimeFormatOptions & { hourCycle?: string };
+    if (typeof hour12 === 'boolean') return !hour12;
+    if (hourCycle) return hourCycle === 'h23' || hourCycle === 'h24';
+  } catch {
+    // Fall through to formatting check
+  }
+  // Day-period words differ by language (AM, PM, பிற்பகல், 下午…); 13:00 shown as "13" means 24-hour
+  return /(^|\D)13(\D|$)/.test(new Date(2000, 0, 1, 13, 0).toLocaleTimeString([], { hour: 'numeric' }));
+};

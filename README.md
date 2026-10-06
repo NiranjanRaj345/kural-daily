@@ -11,7 +11,7 @@ An offline mobile app for reading the **Thirukkural**: all 1330 couplets in 133 
 - **Saved** Kurals, reading history and milestones
 - **Listen**: Tamil text-to-speech that picks the most natural installed voice, recites line by line, with voice and speed choices
 - **Share** as a styled image or as text; share the app
-- **Daily reminder** (optional, local only) showing that day's Kural, at a time you choose
+- **Reminders** (optional, local only): each day's Kural at any time you choose, and an evening streak reminder on days you haven't read
 - Page styles (Paper, Palm leaf, Night, Auto) × accent colours; Classic, Modern or device font; adjustable text size; Tamil, English or both
 
 There is no backend, account, analytics or network use. All settings are stored on the device.
@@ -32,7 +32,9 @@ theme/               Page × accent theme builder, spacing, radii and reading ty
 services/            DataService (bundled data, search, chapters), DailyService (daily pick),
                      QuizService, NotificationService (daily reminders), SpeechService (Listen)
 store/               useSettingsStore: persisted settings, favorites, history, streaks
-utils/               date (local-timezone dates, streaks), srs (spaced review), milestones, voices (Tamil voice ranking)
+utils/               date (local-timezone dates, streaks), srs (spaced review), milestones, voices (Tamil voice ranking),
+                     reminderPlan (which notifications to schedule)
+plugins/             Expo config plugin declaring the Android voice-settings intents
 assets/data/         thirukkural.json, the full text (generated, see below)
 scripts/             transform_data.js, which rebuilds the data file from raw sources
 __tests__/           Unit tests
@@ -64,7 +66,7 @@ npx eas-cli@latest submit --profile production --platform android
 1. `npm run check` passes
 2. Bump `expo.version` in `app.json` if needed
 3. Update the "Last Updated" date in the in-app privacy policy (`app/(tabs)/profile.tsx`) if it changed
-4. Build with the `production` profile, then test the reminder, sharing and read-aloud on a real device
+4. Build with the `production` profile, then test on a real device: both reminders (set a time a few minutes ahead), Listen and the voice shortcuts, sharing an image, and the launcher icon (round and themed)
 5. Store listing: link a hosted copy of the privacy policy; data-safety form answer is "no data collected"
 6. Check `STORE_URL` in `constants/app.ts` points at the live store listing
 

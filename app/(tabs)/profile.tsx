@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, FlatList, BackHandler, Linking, Platform, Share } from 'react-native';
 import {
-  List, Switch, Text, Divider, SegmentedButtons, IconButton, Portal, Dialog, RadioButton, Button, Snackbar,
+  List, Switch, Text, Divider, SegmentedButtons, IconButton, Portal, Dialog, Button, Snackbar,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { useSettingsStore, ReadingLanguage } from '../../store/useSettingsStore';
+import { TimePickerModal } from 'react-native-paper-dates';
+import { uses24HourClock } from '../../utils/date';
 import {
-  enableDailyReminders, disableDailyReminders, syncDailyReminders, formatReminderTime,
+  enableDailyReminders, disableDailyReminders, setStreakReminder, formatReminderTime,
 } from '../../services/NotificationService';
 import { getKuralByNumber, TOTAL_KURALS } from '../../services/DataService';
 import { Kural } from '../../types/kural';
@@ -25,14 +27,11 @@ import { MilestoneGrid } from '../../components/profile/MilestoneGrid';
 import { FontPicker } from '../../components/profile/FontPicker';
 import { VoicePickerSheet } from '../../components/profile/VoicePickerSheet';
 import { getTamilVoices } from '../../services/SpeechService';
+import { openVoiceDownload } from '../../components/voiceHelp';
 import { computeMilestones } from '../../utils/milestones';
 import { MASTERED_BOX } from '../../utils/srs';
 import { APP_NAME, APP_VERSION, SHARE_APP_MESSAGE } from '../../constants/app';
 import { useAppTheme, space, radius } from '../../theme';
-
-const REMINDER_TIMES: [number, number][] = [
-  [6, 0], [7, 0], [8, 0], [9, 0], [12, 0], [18, 0], [20, 0], [21, 0],
-];
 
 const FONT_SIZES = [
   { value: '20', label: 'S', accessibilityLabel: 'Small' },
@@ -62,6 +61,7 @@ export default function ProfileScreen() {
   const {
     showEnglish, showTamil, setReadingLanguage,
     notificationsEnabled, notificationHour, notificationMinute, setNotificationTime,
+    streakReminderEnabled, streakReminderHour, streakReminderMinute, setStreakReminderTime,
     fontSize, setFontSize, speechRate, setSpeechRate,
     streak, bestStreak, history, learning,
     selectedVoiceIdentifier,
@@ -78,7 +78,7 @@ export default function ProfileScreen() {
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showTimeDialog, setShowTimeDialog] = useState(false);
+  const [timePicker, setTimePicker] = useState<'daily' | 'streak' | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [snackbar, setSnackbar] = useState<{ message: string; openSettings?: boolean } | null>(null);
@@ -109,11 +109,18 @@ export default function ProfileScreen() {
     }
   };
 
-  const onSelectReminderTime = async (value: string) => {
-    const [hour, minute] = value.split(':').map(Number);
-    setNotificationTime(hour, minute);
-    setShowTimeDialog(false);
-    await syncDailyReminders();
+  const onToggleStreakReminder = async () => {
+    const enabled = await setStreakReminder(!streakReminderEnabled);
+    if (!streakReminderEnabled && !enabled) {
+      setSnackbar({ message: 'Notifications are blocked for this app.', openSettings: Platform.OS !== 'web' });
+    }
+  };
+
+  // Rescheduling follows automatically (the root layout re-plans on these changes)
+  const onConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
+    if (timePicker === 'daily') setNotificationTime(hours, minutes);
+    if (timePicker === 'streak') setStreakReminderTime(hours, minutes);
+    setTimePicker(null);
   };
 
   const onReset = () => {
@@ -248,10 +255,10 @@ export default function ProfileScreen() {
           </View>
         </Group>
 
-        <SectionLabel>Reminders & audio</SectionLabel>
+        <SectionLabel>Reminders</SectionLabel>
         <Group>
           <List.Item
-            title="Daily reminder"
+            title="Daily Kural"
             description={notificationsEnabled ? `Each day's Kural at ${formatReminderTime(notificationHour, notificationMinute)}` : 'Off'}
             left={(props) => <List.Icon {...props} icon="bell-outline" />}
             right={() => <Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />}
@@ -259,13 +266,37 @@ export default function ProfileScreen() {
           />
           {notificationsEnabled && (
             <List.Item
-              title="Reminder time"
+              title="Daily reminder time"
               description={formatReminderTime(notificationHour, notificationMinute)}
               left={(props) => <List.Icon {...props} icon="clock-outline" />}
-              right={(props) => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => setShowTimeDialog(true)}
+              right={(props) => <List.Icon {...props} icon="pencil-outline" />}
+              onPress={() => setTimePicker('daily')}
             />
           )}
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <List.Item
+            title="Streak reminder"
+            description={streakReminderEnabled
+              ? `If you haven't read by ${formatReminderTime(streakReminderHour, streakReminderMinute)}, a nudge to keep your streak`
+              : 'Off'}
+            descriptionNumberOfLines={2}
+            left={(props) => <List.Icon {...props} icon="fire" />}
+            right={() => <Switch value={streakReminderEnabled} onValueChange={onToggleStreakReminder} />}
+            onPress={onToggleStreakReminder}
+          />
+          {streakReminderEnabled && (
+            <List.Item
+              title="Streak reminder time"
+              description={formatReminderTime(streakReminderHour, streakReminderMinute)}
+              left={(props) => <List.Icon {...props} icon="clock-outline" />}
+              right={(props) => <List.Icon {...props} icon="pencil-outline" />}
+              onPress={() => setTimePicker('streak')}
+            />
+          )}
+        </Group>
+
+        <SectionLabel>Listening</SectionLabel>
+        <Group>
           <List.Item
             title="Reading voice"
             description={selectedVoiceIdentifier ? voiceName ?? 'Custom voice' : voiceName ? `Automatic · ${voiceName}` : 'Automatic'}
@@ -273,6 +304,16 @@ export default function ProfileScreen() {
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowVoiceModal(true)}
           />
+          {Platform.OS !== 'web' && (
+            <List.Item
+              title="Install Tamil voices"
+              description={Platform.OS === 'android' ? "Download a more natural voice for your phone's text-to-speech" : 'How to download a more natural voice'}
+              descriptionNumberOfLines={2}
+              left={(props) => <List.Icon {...props} icon="download-outline" />}
+              right={(props) => <List.Icon {...props} icon="open-in-new" />}
+              onPress={openVoiceDownload}
+            />
+          )}
         </Group>
 
         <SectionLabel>Share</SectionLabel>
@@ -327,39 +368,31 @@ export default function ProfileScreen() {
 
           <Text variant="titleMedium" style={styles.policyHeading}>Permissions</Text>
           <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            • Notifications (optional): Used only for the daily reminder, scheduled locally on your device. Requested only when you turn reminders on.{'\n'}
+            • Notifications (optional): Used only for the daily Kural and streak reminders you turn on, scheduled locally on your device. Requested only when you turn a reminder on.{'\n'}
+            • Read aloud: Uses your phone&apos;s own text-to-speech voices. Nothing is sent anywhere by the app.{'\n'}
             • Sharing: Kural images are created on your device and passed to the share sheet you choose. No storage permission is needed.
           </Text>
 
           <Text variant="bodySmall" style={{ marginTop: space.xl, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
-            Last updated: October 5, 2026
+            Last updated: October 6, 2026
           </Text>
         </View>
       </SheetModal>
 
       <VoicePickerSheet visible={showVoiceModal} onClose={() => setShowVoiceModal(false)} />
 
+      <TimePickerModal
+        visible={timePicker !== null}
+        onDismiss={() => setTimePicker(null)}
+        onConfirm={onConfirmTime}
+        hours={timePicker === 'streak' ? streakReminderHour : notificationHour}
+        minutes={timePicker === 'streak' ? streakReminderMinute : notificationMinute}
+        label={timePicker === 'streak' ? 'Streak reminder time' : 'Daily reminder time'}
+        use24HourClock={uses24HourClock()}
+        locale="en"
+      />
+
       <Portal>
-        {/* Reminder Time */}
-        <Dialog visible={showTimeDialog} onDismiss={() => setShowTimeDialog(false)}>
-          <Dialog.Title>Reminder time</Dialog.Title>
-          <Dialog.ScrollArea style={{ maxHeight: 360 }}>
-            <ScrollView>
-              <RadioButton.Group onValueChange={onSelectReminderTime} value={`${notificationHour}:${notificationMinute}`}>
-                {REMINDER_TIMES.map(([hour, minute]) => (
-                  <RadioButton.Item
-                    key={`${hour}:${minute}`}
-                    label={formatReminderTime(hour, minute)}
-                    value={`${hour}:${minute}`}
-                  />
-                ))}
-              </RadioButton.Group>
-            </ScrollView>
-          </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setShowTimeDialog(false)}>Cancel</Button>
-          </Dialog.Actions>
-        </Dialog>
 
         {/* Reset confirmation */}
         <Dialog visible={showResetDialog} onDismiss={() => setShowResetDialog(false)}>

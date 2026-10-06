@@ -22,6 +22,18 @@
 - Browse shows the parts (இயல்) of each book; Today offers the rest of today's chapter with a 10-dot progress line.
 - **About the Thirukkural**: the poet, the couplet form (with the seven feet marked) and the full structure of books, parts and chapters.
 
+### Reminders
+- **Pick any time**: a clock and keyboard time picker replaces the preset list, for both reminders, on the welcome screen and in You → Reminders.
+- **Streak reminder** (new): an evening nudge, at a time you choose, only on days you haven't read yet and your streak is about to end. Turned on with "Remind me daily"; separate switch and its own Android notification channel.
+- Reminders now look 30 days ahead (was 14), skip today's once you've read, and re-plan as soon as you read or change a setting. Unchanged plans aren't rescheduled.
+- If notification permission is refused (now or later in system settings) the switches turn off to match; a background check never turns them off while permission simply hasn't been asked yet.
+
+### Voice
+- **Install Tamil voices** is always available: in You → Listening and at the top of the voice picker. On Android it opens Google's voice download screen directly, with the text-to-speech settings as a second option; on iPhone it shows where to download one.
+
+### App icon
+- New icon: a bundle of palm-leaf manuscripts (ஓலைச்சுவடி) with a couplet of 4 + 3 marks, binding hole and cord, on indigo. Full-bleed for iOS; Android adaptive foreground/background plus a monochrome layer for themed icons; matching splash, notification icon and favicon. The old icon had baked-in corners and a white background that showed on both platforms.
+
 ### Habit and sharing
 - **Welcome** on first launch: what the Thirukkural is, how you want to read, and an optional daily reminder.
 - **Week strip** on Today showing the days you read, current and best streak.
@@ -29,6 +41,8 @@
 - **Share the app** from Today and You; share sheet gains palm-leaf, ink, indigo, kumkum and leaf styles and a Copy text button.
 
 ### Fixed
+- Reminder times are always saved as a valid time (the picker can return 24 for midnight).
+- Android: the voice settings shortcuts are declared for Android 11+ package visibility; the unneeded "draw over other apps" permission is blocked; the window background follows the theme (expo-system-ui).
 - The data spelled the part படையியல் as "படையில்".
 - The web build no longer pre-renders pages (it showed hydration errors with saved settings).
 
