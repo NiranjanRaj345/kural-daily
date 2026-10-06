@@ -43,6 +43,7 @@ export const buildShareText = (
 
 export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kural }) => {
   const theme = useAppTheme();
+  const selectedChip = { backgroundColor: theme.colors.secondaryContainer };
   const type = useType();
   const {
     shareIncludeTamil, shareIncludeEnglish, shareIncludeExplanation,
@@ -173,13 +174,13 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
         {/* Content options (saved for next time) */}
         <Text variant="titleMedium" style={styles.sectionTitle}>Include</Text>
         <View style={styles.optionRow}>
-          <Chip selected={shareIncludeTamil} showSelectedCheck onPress={onToggleTamil} style={styles.optionChip}>
+          <Chip mode="outlined" selected={shareIncludeTamil} showSelectedCheck onPress={onToggleTamil} style={[styles.optionChip, shareIncludeTamil && selectedChip]}>
             Tamil
           </Chip>
-          <Chip selected={shareIncludeEnglish} showSelectedCheck onPress={onToggleEnglish} style={styles.optionChip}>
+          <Chip mode="outlined" selected={shareIncludeEnglish} showSelectedCheck onPress={onToggleEnglish} style={[styles.optionChip, shareIncludeEnglish && selectedChip]}>
             English
           </Chip>
-          <Chip selected={shareIncludeExplanation} showSelectedCheck onPress={toggleShareIncludeExplanation} style={styles.optionChip}>
+          <Chip mode="outlined" selected={shareIncludeExplanation} showSelectedCheck onPress={toggleShareIncludeExplanation} style={[styles.optionChip, shareIncludeExplanation && selectedChip]}>
             Explanation
           </Chip>
         </View>

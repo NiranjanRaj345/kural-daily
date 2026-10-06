@@ -105,7 +105,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
       <View style={styles.stats}>
         <StatTile icon="fire" iconColor={theme.colors.flame} value={quizStats.currentStreak} label="In a row" />
         <StatTile icon="check-all" value={quizStats.totalAnswered} label="Answered" />
-        <StatTile icon="target" iconColor={theme.colors.success} value={`${accuracy}%`} label="Accuracy" />
+        <StatTile icon="target" value={`${accuracy}%`} label="Accuracy" />
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modes}>
@@ -113,8 +113,9 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
           <Chip
             key={m.type}
             icon={m.icon}
+            mode="outlined"
             selected={gameMode === m.type}
-            showSelectedOverlay
+            style={gameMode === m.type ? { backgroundColor: theme.colors.secondaryContainer } : undefined}
             onPress={() => setGameMode(m.type)}
             accessibilityLabel={`${m.label} mode`}
           >
@@ -207,9 +208,10 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
                 let fg = theme.colors.onSurface;
                 let icon: IconName | null = null;
                 if (isAnswered && isRight) {
-                  bg = theme.colors.successContainer; border = theme.colors.success; fg = theme.colors.onSuccessContainer; icon = 'check-circle';
+                  // Right answers in the accent, wrong ones a quiet grey (a red would clash with Kumkum)
+                  bg = theme.colors.primaryContainer; border = theme.colors.primary; fg = theme.colors.onPrimaryContainer; icon = 'check-circle';
                 } else if (isAnswered && isPicked) {
-                  bg = theme.colors.errorContainer; border = theme.colors.error; fg = theme.colors.onErrorContainer; icon = 'close-circle';
+                  bg = theme.colors.surfaceVariant; border = theme.colors.outline; fg = theme.colors.onSurfaceVariant; icon = 'close-circle';
                 }
                 const dimmed = isAnswered && !isRight && !isPicked;
                 return (
@@ -240,13 +242,13 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
           {/* Result */}
           {isAnswered && (
             <Animated.View entering={FadeIn.duration(250)} style={styles.result}>
-              <View style={[styles.resultBanner, { backgroundColor: isCorrect ? theme.colors.successContainer : theme.colors.errorContainer }]}>
+              <View style={[styles.resultBanner, { backgroundColor: isCorrect ? theme.colors.primaryContainer : theme.colors.surfaceVariant }]}>
                 <MaterialCommunityIcons
                   name={isCorrect ? 'party-popper' : 'lightbulb-outline'}
                   size={22}
-                  color={isCorrect ? theme.colors.onSuccessContainer : theme.colors.onErrorContainer}
+                  color={isCorrect ? theme.colors.onPrimaryContainer : theme.colors.onSurface}
                 />
-                <Text variant="titleSmall" style={{ color: isCorrect ? theme.colors.onSuccessContainer : theme.colors.onErrorContainer, flex: 1 }}>
+                <Text variant="titleSmall" style={{ color: isCorrect ? theme.colors.onPrimaryContainer : theme.colors.onSurface, flex: 1 }}>
                   {isCorrect
                     ? quizStats.currentStreak > 2 ? `Correct! ${quizStats.currentStreak} in a row.` : 'Correct!'
                     : 'Not quite. Here is the Kural:'}

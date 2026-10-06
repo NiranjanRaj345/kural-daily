@@ -72,7 +72,7 @@ export default function SearchScreen() {
           </View>
           <View style={styles.chips}>
             {recentSearches.map((q) => (
-              <Chip key={q} icon="history" onPress={() => runSearch(q)}>{q}</Chip>
+              <Chip key={q} mode="outlined" icon="history" onPress={() => runSearch(q)}>{q}</Chip>
             ))}
           </View>
         </>

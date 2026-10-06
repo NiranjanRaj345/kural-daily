@@ -71,6 +71,7 @@ const ChapterRow = React.memo(function ChapterRow({
 
 export default function BrowseScreen() {
   const theme = useAppTheme();
+  const selectedChip = { backgroundColor: theme.colors.secondaryContainer };
   const type = useType();
   const router = useRouter();
   const history = useSettingsStore((s) => s.history);
@@ -173,17 +174,17 @@ export default function BrowseScreen() {
         }
       />
       <View style={styles.bookChips}>
-        <Chip compact selected={!bookFilter} showSelectedOverlay onPress={() => setBookFilter(null)} style={styles.bookChip}>
+        <Chip mode="outlined" compact selected={!bookFilter} onPress={() => setBookFilter(null)} style={[styles.bookChip, !bookFilter && selectedChip]}>
           All
         </Chip>
         {books.map((book) => (
           <Chip
             key={book.title}
+            mode="outlined"
             compact
             selected={bookFilter === book.title}
-            showSelectedOverlay
             onPress={() => setBookFilter(bookFilter === book.title ? null : book.title)}
-            style={styles.bookChip}
+            style={[styles.bookChip, bookFilter === book.title && selectedChip]}
           >
             {book.titleEnglish ?? book.title}
           </Chip>
