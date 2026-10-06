@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text as RNText } from 'react-native';
 import { Kural } from '../types/kural';
-import { useAppTheme, space, useType } from '../theme';
+import { useAppTheme, space, useType, readingSizes } from '../theme';
 import { FitLines } from './FitLines';
 
 interface KuralVerseProps {
@@ -15,7 +15,7 @@ interface KuralVerseProps {
  * The couplet set like a printed verse: two lines, left-aligned, the shorter
  * second line left as it is (the venba's 4 + 3 feet), with a margin rule in the
  * accent colour. The text shrinks a little where needed so each line stays on
- * one line; it never goes below about 60% of the chosen size (or 14).
+ * one line, but never below `readingSizes().verseMin`; past that the lines wrap.
  */
 export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = false }) => {
   const theme = useAppTheme();
@@ -50,12 +50,12 @@ export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = 
 };
 
 /** The smallest the couplet may shrink to so it fits on two lines. */
-export const minVerseSize = (size: number) => Math.max(14, Math.round(size * 0.58));
+export const minVerseSize = (size: number) => readingSizes(size).verseMin;
 
 const styles = StyleSheet.create({
   verse: {
     borderLeftWidth: 3,
-    paddingLeft: space.md + 2,
+    paddingLeft: space.md,
     paddingVertical: space.xs,
   },
 });

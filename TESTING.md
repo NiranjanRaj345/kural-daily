@@ -123,7 +123,10 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
       (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
       the share sheet's chips, Browse chapter ticks, By heart, the ✓ Read mark, the reading calendar
       and streak dots. Only the flame icon stays saffron.
-      **Reading** → language, text size S–XL (preview updates), reading speed.
+      **Reading** → language, text size S–XL (preview updates), reading speed. Back on Today, each
+      step makes the couplet, the translation and the meaning bigger; the couplet is always the
+      largest and boldest text on the card (check with Classic, Modern and Device fonts). At S and M
+      long Kurals stay on two lines; at L and XL they may wrap.
 - [ ] Auto page follows the phone's dark mode (toggle it in quick settings).
 - [ ] Reset progress asks first, clears history / streak / learning / quiz, keeps Saved.
 

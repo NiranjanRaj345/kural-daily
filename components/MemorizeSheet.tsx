@@ -57,6 +57,8 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
   const speechRate = useSettingsStore((s) => s.speechRate);
   const voice = useSettingsStore((s) => s.selectedVoiceIdentifier);
   const showEnglish = useSettingsStore((s) => s.showEnglish);
+  // Words wrap freely here, so the couplet can follow the text size directly
+  const verseSize = Math.round(useSettingsStore((s) => s.fontSize) * 0.85);
 
   const [index, setIndex] = useState(0);
   const [step, setStep] = useState(mode === 'review' ? RECALL : 0);
@@ -247,12 +249,12 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
                     >
                       {hidden ? (
                         // Hidden words are a shimmer of particles, like a chat spoiler
-                        <Spoiler text={word} style={type.kural(20)} color={theme.colors.ink} />
+                        <Spoiler text={word} style={type.kural(verseSize)} color={theme.colors.ink} />
                       ) : (
                         // A peeked word fades in from behind its glass
                         <Animated.Text
                           entering={peeked.has(gi) ? FadeIn.duration(250) : undefined}
-                          style={[type.kural(20), { color: theme.colors.ink }]}
+                          style={[type.kural(verseSize), { color: theme.colors.ink }]}
                         >
                           {word}
                         </Animated.Text>

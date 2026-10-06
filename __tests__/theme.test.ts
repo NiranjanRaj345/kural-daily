@@ -1,4 +1,4 @@
-import { ACCENTS, buildTheme, resolveAppearance, ResolvedAppearance } from '../theme';
+import { ACCENTS, buildTheme, readingSizes, resolveAppearance, ResolvedAppearance } from '../theme';
 
 // WCAG relative luminance and contrast ratio
 const luminance = (hex: string) => {
@@ -54,7 +54,7 @@ describe('reading fonts', () => {
     const theme = buildTheme('paper', 'indigo', 'device');
     const styles = [theme.type.kural(24), theme.type.tamilBody, theme.type.translation, theme.type.display(30), theme.type.ui];
     for (const style of styles) expect(style.fontFamily).toBeUndefined();
-    expect(theme.type.kural(24).fontWeight).toBe('600');
+    expect(theme.type.kural(24).fontWeight).toBe('700');
     expect(theme.type.translation.fontStyle).toBe('italic');
     expect(theme.fonts.bodyMedium.fontFamily).not.toMatch(/Inter|Lora|Noto/);
   });
@@ -85,5 +85,22 @@ describe('accent', () => {
         expect(contrast(colors.onSecondaryContainer, colors.secondaryContainer)).toBeGreaterThanOrEqual(4.5);
       }
     }
+  });
+});
+
+describe('reading sizes', () => {
+  const steps = [20, 24, 28, 32].map(readingSizes);
+
+  it('grows every reading size with each text-size step', () => {
+    for (let i = 1; i < steps.length; i++) {
+      expect(steps[i].verseMin).toBeGreaterThan(steps[i - 1].verseMin);
+      expect(steps[i].meaning).toBeGreaterThanOrEqual(steps[i - 1].meaning);
+      expect(steps[i].translation).toBeGreaterThanOrEqual(steps[i - 1].translation);
+    }
+    expect(steps[3].meaning).toBeGreaterThan(steps[0].meaning);
+  });
+
+  it('keeps the couplet clearly larger than the meaning, even when shrunk to fit', () => {
+    for (const s of steps) expect(s.verseMin).toBeGreaterThan(s.meaning);
   });
 });

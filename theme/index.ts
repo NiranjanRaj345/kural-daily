@@ -143,7 +143,8 @@ export interface TypeScale {
 const buildTypeScale = (font: ReadingFont): TypeScale => {
   const f = font === 'device' ? undefined : FAMILIES[font];
   return {
-    kural: (size) => ({ ...face(f?.kural, '600'), fontSize: size, lineHeight: Math.round(size * 1.7) }),
+    // Bold for the device font: Android has no 600 for most system faces and falls back to regular
+    kural: (size) => ({ ...face(f?.kural, '700'), fontSize: size, lineHeight: Math.round(size * 1.7) }),
     tamilBody: { ...face(f?.tamilBody, '400'), fontSize: 16, lineHeight: 29 },
     tamilPreview: { ...face(f?.tamilPreview, '500'), fontSize: 16, lineHeight: 27 },
     tamilTitle: { ...face(f?.tamilUiStrong, '600'), fontSize: 16, lineHeight: 26 },
@@ -333,6 +334,23 @@ export const resolveAppearance = (
 };
 
 export const useAppTheme = () => useTheme<AppTheme>();
+
+/**
+ * Reading sizes for the text-size setting (the couplet's size; S 20, M 24, L 28,
+ * XL 32). The translation and meaning grow with it. The couplet may shrink to
+ * keep its two lines, but never below about 70% of the chosen size and never to
+ * the meaning's size; with its heavier weight it always leads the card.
+ */
+export const readingSizes = (fontSize: number) => {
+  const k = fontSize / 24;
+  const meaning = Math.max(14, Math.round(15 * k));
+  return {
+    verse: fontSize,
+    verseMin: Math.max(meaning + 1, Math.round(fontSize * 0.68)),
+    translation: Math.max(14, Math.round(16 * k)),
+    meaning,
+  };
+};
 
 /** 4pt spacing scale and shared radii. */
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const;

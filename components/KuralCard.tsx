@@ -12,7 +12,7 @@ import { hasTamilVoice, speakKural, speakMeaning, stopSpeaking } from '../servic
 import { showNoTamilVoiceAlert } from './voiceHelp';
 import { KuralVerse } from './KuralVerse';
 import { MemorizeSheet, MemorizeMode } from './MemorizeSheet';
-import { useAppTheme, space, radius, useType } from '../theme';
+import { useAppTheme, space, radius, useType, readingSizes } from '../theme';
 import { useReadTracker } from '../hooks/useReadTracker';
 
 interface KuralCardProps {
@@ -65,6 +65,8 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
   const isRead = useSettingsStore((s) => s.history.includes(kural.number));
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
   const fontSize = useSettingsStore((s) => s.fontSize);
+  // The text-size setting scales all the reading text, the couplet always largest
+  const sizes = readingSizes(fontSize);
   const speechRate = useSettingsStore((s) => s.speechRate);
   const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
 
@@ -179,8 +181,13 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             style={[
               type.translation,
               styles.translation,
+              { fontSize: sizes.translation, lineHeight: Math.round(sizes.translation * 1.6) },
               { color: showTamil ? theme.colors.onSurfaceVariant : theme.colors.ink },
-              !showTamil && [type.englishBody, styles.translationPrimary],
+              !showTamil && [
+                type.englishBody,
+                styles.translationPrimary,
+                { fontSize: sizes.verseMin + 2, lineHeight: Math.round((sizes.verseMin + 2) * 1.55) },
+              ],
             ]}
           >
             {kural.eng}
@@ -229,7 +236,14 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             )}
             <Text
               selectable
-              style={[explanationLang === 'ta' ? type.tamilBody : type.englishBody, { color: theme.colors.onSurface }]}
+              style={[
+                explanationLang === 'ta' ? type.tamilBody : type.englishBody,
+                {
+                  fontSize: sizes.meaning,
+                  lineHeight: Math.round(sizes.meaning * (explanationLang === 'ta' ? 1.8 : 1.65)),
+                  color: theme.colors.onSurface,
+                },
+              ]}
             >
               {explanation}
             </Text>
@@ -329,7 +343,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   verse: {
-    paddingHorizontal: space.xl,
+    // A little more width than the rest of the card, so the lines fit at a larger size
+    paddingHorizontal: space.lg,
     paddingTop: space.xxl,
     paddingBottom: space.sm,
   },
@@ -339,8 +354,6 @@ const styles = StyleSheet.create({
     paddingBottom: space.xl,
   },
   translationPrimary: {
-    fontSize: 20,
-    lineHeight: 31,
     paddingTop: space.xxl,
   },
   explainToggle: {
