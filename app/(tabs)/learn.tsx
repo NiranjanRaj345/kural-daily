@@ -141,7 +141,7 @@ export default function LearnScreen() {
             <View style={styles.stats}>
               <StatTile icon="school-outline" value={summary.total} label="Learning" />
               <StatTile icon="head-heart-outline" iconColor={theme.colors.success} value={summary.mastered} label="By heart" />
-              <StatTile icon="calendar-check-outline" iconColor={theme.colors.flame} value={summary.due} label="Due today" />
+              <StatTile icon="calendar-check-outline" iconColor={theme.colors.primary} value={summary.due} label="Due today" />
             </View>
 
             {learningList.length > 0 && (
@@ -155,7 +155,7 @@ export default function LearnScreen() {
                     onPress={() => setSession({ queue: [kural.number], mode: card.due <= todayKey ? 'review' : 'practice' })}
                     right={
                       <View style={styles.cardMeta}>
-                        <Text variant="labelSmall" style={{ color: card.due <= todayKey ? theme.colors.flame : theme.colors.onSurfaceVariant }}>
+                        <Text variant="labelSmall" style={{ color: card.due <= todayKey ? theme.colors.primary : theme.colors.onSurfaceVariant }}>
                           {formatDue(card.due, todayKey)}
                         </Text>
                         <BoxDots box={card.box} />

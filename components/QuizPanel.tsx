@@ -103,7 +103,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
     <View>
 
       <View style={styles.stats}>
-        <StatTile icon="fire" iconColor={theme.colors.tertiary} value={quizStats.currentStreak} label="In a row" />
+        <StatTile icon="fire" iconColor={theme.colors.flame} value={quizStats.currentStreak} label="In a row" />
         <StatTile icon="check-all" value={quizStats.totalAnswered} label="Answered" />
         <StatTile icon="target" iconColor={theme.colors.success} value={`${accuracy}%`} label="Accuracy" />
       </View>

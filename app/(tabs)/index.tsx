@@ -8,7 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { KuralCard } from '../../components/KuralCard';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { SectionLabel } from '../../components/ui/SectionLabel';
-import { StreakStrip } from '../../components/ui/StreakStrip';
+import { StreakPill } from '../../components/ui/StreakPill';
 import { enableDailyReminders, formatReminderTime } from '../../services/NotificationService';
 import { getDailyKural, getRandomKural } from '../../services/DailyService';
 import { TOTAL_KURALS, getChapterNumber, getKuralsByChapter } from '../../services/DataService';
@@ -49,11 +49,12 @@ export default function TodayScreen() {
   const type = useType();
   const router = useRouter();
   const streak = useSettingsStore((s) => s.streak);
-  const bestStreak = useSettingsStore((s) => s.bestStreak);
   const readDays = useSettingsStore((s) => s.readDays);
   const history = useSettingsStore((s) => s.history);
   const learning = useSettingsStore((s) => s.learning);
-  const updateStreak = useSettingsStore((s) => s.updateStreak);
+  const expireStreak = useSettingsStore((s) => s.expireStreak);
+  // The welcome screens cover Today until they are finished
+  const onboarded = useSettingsStore((s) => s.onboarded);
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
   const notificationPromptDismissed = useSettingsStore((s) => s.notificationPromptDismissed);
   const dismissNotificationPrompt = useSettingsStore((s) => s.dismissNotificationPrompt);
@@ -71,14 +72,15 @@ export default function TodayScreen() {
     try {
       setDailyKural(getDailyKural());
       setNow(new Date());
-      updateStreak();
+      // Opening the app doesn't count as reading; it only ends a streak that has lapsed
+      expireStreak();
     } catch (error) {
       console.error("Failed to load daily kural", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [updateStreak]);
+  }, [expireStreak]);
 
   useEffect(() => {
     loadKural();
@@ -149,19 +151,19 @@ export default function TodayScreen() {
           />
         </View>
 
-        <StreakStrip readDays={readDays} streak={streak} bestStreak={bestStreak} />
+        <StreakPill readDays={readDays} streak={streak} onPress={() => router.navigate('/profile')} />
 
         {dueCount > 0 && (
           <Pressable
             onPress={() => router.navigate('/learn')}
             accessibilityRole="button"
-            style={[styles.banner, { backgroundColor: theme.colors.flameContainer }]}
+            style={[styles.banner, { backgroundColor: theme.colors.primaryContainer }]}
           >
-            <MaterialCommunityIcons name="calendar-check-outline" size={22} color={theme.colors.onFlameContainer} />
-            <Text variant="titleSmall" style={[styles.bannerText, { color: theme.colors.onFlameContainer }]}>
+            <MaterialCommunityIcons name="calendar-check-outline" size={22} color={theme.colors.onPrimaryContainer} />
+            <Text variant="titleSmall" style={[styles.bannerText, { color: theme.colors.onPrimaryContainer }]}>
               {dueCount} {dueCount === 1 ? 'Kural' : 'Kurals'} to review today
             </Text>
-            <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onFlameContainer} />
+            <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onPrimaryContainer} />
           </Pressable>
         )}
 
@@ -188,7 +190,7 @@ export default function TodayScreen() {
 
         <SectionLabel>இன்றைய குறள் · Today&apos;s Kural</SectionLabel>
         {dailyKural ? (
-          <KuralCard kural={dailyKural} defaultExpanded />
+          <KuralCard kural={dailyKural} defaultExpanded visible={onboarded && !detail} />
         ) : (
           <Text style={[styles.errorText, { color: theme.colors.error }]}>Could not load today&apos;s Kural.</Text>
         )}

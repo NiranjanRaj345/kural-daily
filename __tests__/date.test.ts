@@ -1,4 +1,4 @@
-import { toLocalDateKey, calendarDaysBetween, computeStreak, uses24HourClock } from '../utils/date';
+import { toLocalDateKey, calendarDaysBetween, computeStreak, uses24HourClock, monthGrid } from '../utils/date';
 
 describe('toLocalDateKey', () => {
   it('uses the local calendar date, not UTC', () => {
@@ -46,5 +46,21 @@ describe('computeStreak', () => {
 describe('uses24HourClock', () => {
   it('returns a boolean for the current locale', () => {
     expect(typeof uses24HourClock()).toBe('boolean');
+  });
+});
+
+describe('monthGrid', () => {
+  it('lays out a month in Sunday-first weeks', () => {
+    // October 2026 starts on a Thursday and has 31 days
+    const weeks = monthGrid(2026, 9);
+    expect(weeks).toHaveLength(5);
+    expect(weeks[0]).toEqual([null, null, null, null, '2026-10-01', '2026-10-02', '2026-10-03']);
+    expect(weeks[4]).toEqual(['2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31']);
+  });
+
+  it('handles leap-year February', () => {
+    const cells = monthGrid(2028, 1).flat().filter(Boolean);
+    expect(cells).toHaveLength(29);
+    expect(cells[28]).toBe('2028-02-29');
   });
 });

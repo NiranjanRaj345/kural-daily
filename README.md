@@ -4,12 +4,12 @@ An offline mobile app for reading the **Thirukkural**: all 1330 couplets in 133 
 
 ## Features
 
-- **Today**: one couplet per day, cycling through all 1330 in order, with a week strip, streaks and the rest of the day's chapter
+- **Today**: one couplet per day, cycling through all 1330 in order, set on its original two lines, with the streak and the rest of the day's chapter
 - **Learn by heart**: a memorize mode that hides words step by step, and spaced review (1, 2, 4, 7, 15, 30, 60 days)
 - **Quiz**: Missing Word, Meaning Match, Find Chapter, Jumbled Kural
 - **Browse** by book, part (இயல்) and chapter; **search** by Tamil or English text, chapter name, or Kural number
-- **Saved** Kurals, reading history and milestones
-- **Listen**: Tamil text-to-speech that picks the most natural installed voice, recites line by line, with voice and speed choices
+- **Saved** Kurals, reading history, a reading calendar and milestones. A Kural counts as read after a few seconds on screen or any interaction with it
+- **Listen**: Tamil text-to-speech that picks the most natural installed voice, recites line by line, with voice and speed choices; the meaning can be read aloud too
 - **Share** as a styled image or as text; share the app
 - **Reminders** (optional, local only): each day's Kural at any time you choose, and an evening streak reminder on days you haven't read
 - Page styles (Paper, Palm leaf, Night, Auto) × accent colours; Classic, Modern or device font; adjustable text size; Tamil, English or both
@@ -25,8 +25,9 @@ Fonts: Noto Serif Tamil (couplets), Lora (English reading text), Inter and Noto 
 
 ```
 app/                 Screens (expo-router). (tabs)/: Today, Browse, Learn, Saved, You (+ Search)
-components/          KuralCard, KuralVerse, MemorizeSheet, QuizPanel, ShareModal, SheetModal,
+components/          KuralCard, KuralVerse, FitLines, MemorizeSheet, QuizPanel, ShareModal, SheetModal,
                      KuralDetailModal, WelcomeScreen, AboutKuralSheet; ui/ and profile/ building blocks
+hooks/               useReadTracker (when a Kural counts as read)
 constants/app.ts     App name, version and the store link used by "Share the app"
 theme/               Page × accent theme builder, spacing, radii and reading typography
 services/            DataService (bundled data, search, chapters), DailyService (daily pick),

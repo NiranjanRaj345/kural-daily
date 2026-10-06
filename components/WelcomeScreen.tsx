@@ -151,8 +151,8 @@ export const WelcomeScreen: React.FC = () => {
 
         {step === 2 && (
           <Animated.View entering={FadeInRight.duration(300)} style={styles.page}>
-            <View style={[styles.bigIcon, { backgroundColor: theme.colors.flameContainer }]}>
-              <MaterialCommunityIcons name="weather-sunset-up" size={40} color={theme.colors.flame} />
+            <View style={[styles.bigIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+              <MaterialCommunityIcons name="weather-sunset-up" size={40} color={theme.colors.primary} />
             </View>
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>One Kural a day</Text>
             <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>

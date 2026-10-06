@@ -160,7 +160,7 @@ const buildTypeScale = (font: ReadingFont): TypeScale => {
 
 /** Colours Paper doesn't define. */
 export interface ExtraColors {
-  /** Saffron used for streaks and highlights, independent of the chosen accent. */
+  /** Saffron for the streak flame only; everything else follows the accent. */
   flame: string;
   flameContainer: string;
   onFlameContainer: string;
@@ -277,12 +277,14 @@ export const buildTheme = (appearance: ResolvedAppearance, accent: Accent, readi
       ...a,
       secondary: base.onSurfaceVariant,
       onSecondary: base.dark ? '#121110' : '#FFFFFF',
-      secondaryContainer: base.surfaceVariant,
-      onSecondaryContainer: base.onSurface,
-      tertiary: base.dark ? '#F5BC6C' : '#9A5400',
-      onTertiary: base.dark ? '#4A2800' : '#FFFFFF',
-      tertiaryContainer: base.dark ? '#4A3214' : '#FBE6C6',
-      onTertiaryContainer: base.dark ? '#FCE2BD' : '#4A2800',
+      // Paper draws selected segments, chips and tonal buttons with the secondary
+      // container, so it follows the accent too
+      secondaryContainer: a.primaryContainer,
+      onSecondaryContainer: a.onPrimaryContainer,
+      tertiary: a.primary,
+      onTertiary: a.onPrimary,
+      tertiaryContainer: a.primaryContainer,
+      onTertiaryContainer: a.onPrimaryContainer,
       background: base.background,
       onBackground: base.onSurface,
       surface: base.surface,

@@ -60,3 +60,16 @@ export const uses24HourClock = (): boolean => {
   // Day-period words differ by language (AM, PM, பிற்பகல், 下午…); 13:00 shown as "13" means 24-hour
   return /(^|\D)13(\D|$)/.test(new Date(2000, 0, 1, 13, 0).toLocaleTimeString([], { hour: 'numeric' }));
 };
+
+/**
+ * A month laid out as calendar weeks (Sunday first): each cell is a local date
+ * key, or null for the blank cells before the 1st and after the last day.
+ */
+export const monthGrid = (year: number, month: number): (string | null)[][] => {
+  const first = new Date(year, month, 1);
+  const days = new Date(year, month + 1, 0).getDate();
+  const cells: (string | null)[] = Array(first.getDay()).fill(null);
+  for (let d = 1; d <= days; d++) cells.push(toLocalDateKey(new Date(year, month, d)));
+  while (cells.length % 7 !== 0) cells.push(null);
+  return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
+};

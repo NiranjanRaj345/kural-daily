@@ -73,8 +73,10 @@ export interface SettingsState {
   toggleShareIncludeExplanation: () => void;
   completeOnboarding: () => void;
   toggleFavorite: (kuralNumber: number) => void;
-  addToHistory: (kuralNumber: number) => void;
-  updateStreak: () => void;
+  /** Records that a Kural was actually read: history, today's reading day and the streak. */
+  markRead: (kuralNumber: number) => void;
+  /** Ends a streak whose last reading day was before yesterday (call on opening the app). */
+  expireStreak: () => void;
   startLearning: (kuralNumber: number) => void;
   stopLearning: (kuralNumber: number) => void;
   reviewKural: (kuralNumber: number, remembered: boolean) => void;
@@ -195,22 +197,33 @@ export const useSettingsStore = create<SettingsState>()(
           ? state.favorites.filter((id) => id !== kuralNumber)
           : [...state.favorites, kuralNumber],
       })),
-      addToHistory: (kuralNumber) => set((state) => {
-        if (state.history[0] === kuralNumber) return state;
-        // Each Kural once, most recent first (so at most 1330 entries)
-        return { history: [kuralNumber, ...state.history.filter((id) => id !== kuralNumber)] };
-      }),
-      updateStreak: () => set((state) => {
+      markRead: (kuralNumber) => set((state) => {
         const today = new Date();
         const todayKey = toLocalDateKey(today);
+        // Each Kural once, most recent first (so at most 1330 entries)
+        const history = state.history[0] === kuralNumber
+          ? state.history
+          : [kuralNumber, ...state.history.filter((id) => id !== kuralNumber)];
         const next = computeStreak(state.lastReadDate, state.streak, today);
         const readDays = state.readDays.includes(todayKey)
           ? state.readDays
           : [...state.readDays, todayKey].slice(-MAX_READ_DAYS);
-        if (next.lastReadDate === state.lastReadDate && next.streak === state.streak && readDays === state.readDays) {
-          return state; // Already counted today
+        if (
+          history === state.history &&
+          readDays === state.readDays &&
+          next.lastReadDate === state.lastReadDate &&
+          next.streak === state.streak
+        ) {
+          return state;
         }
-        return { ...next, readDays, bestStreak: Math.max(state.bestStreak, next.streak) };
+        return { history, ...next, readDays, bestStreak: Math.max(state.bestStreak, next.streak) };
+      }),
+      expireStreak: () => set((state) => {
+        if (state.streak === 0 || !state.lastReadDate) return state;
+        const now = new Date();
+        const yesterdayKey = toLocalDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+        // Date keys sort as strings; a phone clock set back leaves the streak alone
+        return state.lastReadDate < yesterdayKey ? { streak: 0 } : state;
       }),
 
       startLearning: (kuralNumber) => set((state) => {

@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, BackHandler, Linking, Platform, Share } from 'react-native';
-import {
-  List, Switch, Text, Divider, SegmentedButtons, IconButton, Portal, Dialog, Button, Snackbar,
-} from 'react-native-paper';
+import { View, StyleSheet, ScrollView, FlatList, BackHandler, Share } from 'react-native';
+import { List, Text, Divider, IconButton, Portal, Dialog, Button, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useSettingsStore, ReadingLanguage } from '../../store/useSettingsStore';
-import { TimePickerModal } from 'react-native-paper-dates';
-import { uses24HourClock } from '../../utils/date';
-import {
-  enableDailyReminders, disableDailyReminders, setStreakReminder, formatReminderTime,
-  sendTestReminder, TEST_REMINDER_DELAY_SECONDS,
-} from '../../services/NotificationService';
-import { getKuralByNumber, TOTAL_KURALS } from '../../services/DataService';
+import { useSettingsStore } from '../../store/useSettingsStore';
+import { toLocalDateKey } from '../../utils/date';
+import { getKuralByNumber } from '../../services/DataService';
 import { Kural } from '../../types/kural';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { SheetModal } from '../../components/SheetModal';
@@ -21,31 +15,16 @@ import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { StatTile } from '../../components/ui/StatTile';
 import { SectionLabel } from '../../components/ui/SectionLabel';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { KuralVerse } from '../../components/KuralVerse';
 import { AboutKuralSheet } from '../../components/AboutKuralSheet';
-import { AppearancePicker } from '../../components/profile/AppearancePicker';
 import { MilestoneGrid } from '../../components/profile/MilestoneGrid';
-import { FontPicker } from '../../components/profile/FontPicker';
+import { ReadingCalendar } from '../../components/profile/ReadingCalendar';
+import { AppearanceSheet, ReadingSheet, RemindersSheet, useSettingsSummary } from '../../components/profile/SettingsSheets';
 import { VoicePickerSheet } from '../../components/profile/VoicePickerSheet';
 import { getTamilVoices } from '../../services/SpeechService';
-import { openVoiceDownload } from '../../components/voiceHelp';
-import { computeMilestones } from '../../utils/milestones';
+import { completedChapters, computeMilestones } from '../../utils/milestones';
 import { MASTERED_BOX } from '../../utils/srs';
 import { APP_NAME, APP_VERSION, SHARE_APP_MESSAGE } from '../../constants/app';
 import { useAppTheme, space, radius } from '../../theme';
-
-const FONT_SIZES = [
-  { value: '20', label: 'S', accessibilityLabel: 'Small' },
-  { value: '24', label: 'M', accessibilityLabel: 'Medium' },
-  { value: '28', label: 'L', accessibilityLabel: 'Large' },
-  { value: '32', label: 'XL', accessibilityLabel: 'Extra large' },
-];
-
-const SPEECH_RATES = [
-  { value: '0.7', label: 'Slow' },
-  { value: '0.9', label: 'Steady' },
-  { value: '1', label: 'Natural' },
-];
 
 /** A rounded group of settings rows. */
 const Group: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -59,30 +38,34 @@ const Group: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
-  const {
-    showEnglish, showTamil, setReadingLanguage,
-    notificationsEnabled, notificationHour, notificationMinute, setNotificationTime,
-    streakReminderEnabled, streakReminderHour, streakReminderMinute, setStreakReminderTime,
-    fontSize, setFontSize, speechRate, setSpeechRate,
-    streak, bestStreak, history, learning,
-    selectedVoiceIdentifier,
-    resetProgress,
-  } = useSettingsStore();
+  const streak = useSettingsStore((s) => s.streak);
+  const bestStreak = useSettingsStore((s) => s.bestStreak);
+  const history = useSettingsStore((s) => s.history);
+  const readDays = useSettingsStore((s) => s.readDays);
+  const learning = useSettingsStore((s) => s.learning);
+  const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
+  const resetProgress = useSettingsStore((s) => s.resetProgress);
+  const summary = useSettingsSummary();
 
-  const language: ReadingLanguage = showTamil && showEnglish ? 'both' : showTamil ? 'tamil' : 'english';
   const milestones = useMemo(() => computeMilestones({ history, bestStreak, learning }), [history, bestStreak, learning]);
   const earnedCount = milestones.filter((m) => m.earned).length;
+  // The unearned milestone closest to being earned
+  const nextMilestone = useMemo(
+    () => milestones.filter((m) => !m.earned).sort((a, b) => b.progress - a.progress)[0],
+    [milestones]
+  );
   const mastered = useMemo(() => Object.values(learning).filter((c) => c.box >= MASTERED_BOX).length, [learning]);
-  const previewKural = getKuralByNumber(1)!;
+  const chaptersDone = useMemo(() => completedChapters(history), [history]);
+  const readToday = readDays.includes(toLocalDateKey(new Date()));
 
   const [showHistory, setShowHistory] = useState(false);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [timePicker, setTimePicker] = useState<'daily' | 'streak' | null>(null);
+  const [sheet, setSheet] = useState<'milestones' | 'appearance' | 'reading' | 'reminders' | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ message: string; openSettings?: boolean } | null>(null);
+  const [snackbar, setSnackbar] = useState<string | null>(null);
 
   const historyKurals = useMemo(
     () => history.map((id) => getKuralByNumber(id)).filter((k): k is Kural => k !== undefined),
@@ -99,42 +82,10 @@ export default function ProfileScreen() {
     });
   }, [selectedVoiceIdentifier, showVoiceModal]);
 
-  const onToggleNotifications = async () => {
-    if (notificationsEnabled) {
-      await disableDailyReminders();
-      return;
-    }
-    const enabled = await enableDailyReminders();
-    if (!enabled) {
-      setSnackbar({ message: 'Notifications are blocked for this app.', openSettings: Platform.OS !== 'web' });
-    }
-  };
-
-  const onToggleStreakReminder = async () => {
-    const enabled = await setStreakReminder(!streakReminderEnabled);
-    if (!streakReminderEnabled && !enabled) {
-      setSnackbar({ message: 'Notifications are blocked for this app.', openSettings: Platform.OS !== 'web' });
-    }
-  };
-
-  const onTestReminder = async () => {
-    const sent = await sendTestReminder();
-    setSnackbar(sent
-      ? { message: `Test reminder on its way: lock your phone and wait ${TEST_REMINDER_DELAY_SECONDS} seconds.` }
-      : { message: 'Notifications are blocked for this app.', openSettings: true });
-  };
-
-  // Rescheduling follows automatically (the root layout re-plans on these changes)
-  const onConfirmTime = ({ hours, minutes }: { hours: number; minutes: number }) => {
-    if (timePicker === 'daily') setNotificationTime(hours, minutes);
-    if (timePicker === 'streak') setStreakReminderTime(hours, minutes);
-    setTimePicker(null);
-  };
-
   const onReset = () => {
     resetProgress();
     setShowResetDialog(false);
-    setSnackbar({ message: 'Your reading progress, learning and quiz scores were reset.' });
+    setSnackbar('Your reading progress, learning and quiz scores were reset.');
   };
 
   // Android back closes the history view instead of leaving the tab
@@ -180,22 +131,46 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.listContent}>
         <ScreenHeader title="You" />
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statsRow}>
-            <StatTile icon="fire" iconColor={theme.colors.flame} value={streak} label="Day streak" />
-            <StatTile icon="trophy-outline" iconColor={theme.colors.flame} value={bestStreak} label="Best streak" />
+        {/* Reading progress: streak and calendar */}
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+          <View style={styles.streakRow}>
+            <View style={[styles.flameBadge, { backgroundColor: theme.colors.flameContainer }]}>
+              <MaterialCommunityIcons name="fire" size={26} color={streak > 0 ? theme.colors.flame : theme.colors.outline} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+                {streak > 0 ? `${streak}-day streak` : 'No streak yet'}
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {streak > 0 && !readToday ? "Read today's Kural to keep it going" : streak > 0 ? 'Read today · see you tomorrow' : 'Read a Kural today to start one'}
+              </Text>
+            </View>
+            <View style={styles.best}>
+              <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{bestStreak}</Text>
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Best</Text>
+            </View>
           </View>
-          <View style={styles.statsRow}>
-            <StatTile icon="book-open-variant" value={`${history.length}/${TOTAL_KURALS}`} label="Kurals read" />
-            <StatTile icon="head-heart-outline" iconColor={theme.colors.success} value={mastered} label="By heart" />
-          </View>
+          <Divider style={[styles.cardDivider, { backgroundColor: theme.colors.outlineVariant }]} />
+          <ReadingCalendar readDays={readDays} />
         </View>
 
-        <SectionLabel>Milestones · {earnedCount}/{milestones.length}</SectionLabel>
-        <MilestoneGrid milestones={milestones} />
+        <View style={styles.statsRow}>
+          <StatTile icon="book-open-variant" value={history.length} label="Kurals read" />
+          <StatTile icon="bookshelf" value={chaptersDone} label="Chapters done" />
+          <StatTile icon="head-heart-outline" iconColor={theme.colors.success} value={mastered} label="By heart" />
+        </View>
 
-        <SectionLabel>Library</SectionLabel>
+        <SectionLabel>Progress</SectionLabel>
         <Group>
+          <List.Item
+            title={`Milestones · ${earnedCount} of ${milestones.length}`}
+            description={nextMilestone ? `Next: ${nextMilestone.description} (${nextMilestone.progressLabel})` : 'All earned. Wonderful!'}
+            descriptionNumberOfLines={2}
+            left={(props) => <List.Icon {...props} icon="medal-outline" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('milestones')}
+          />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Reading history"
             description={history.length > 0 ? `${history.length} Kurals, most recent first` : 'Nothing read yet'}
@@ -203,139 +178,54 @@ export default function ProfileScreen() {
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowHistory(true)}
           />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="About the Thirukkural"
-            description="The poet, the couplet form, and how the book is arranged"
+            description="The poet, the verse form and how the book is arranged"
+            descriptionNumberOfLines={2}
             left={(props) => <List.Icon {...props} icon="book-information-variant" />}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowAbout(true)}
           />
         </Group>
 
-        <SectionLabel>Look</SectionLabel>
-        <Group>
-          <AppearancePicker />
-          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
-          <FontPicker />
-        </Group>
-
-        <SectionLabel>Reading</SectionLabel>
-        <Group>
-          <View style={styles.block}>
-            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Language</Text>
-            <SegmentedButtons
-              value={language}
-              onValueChange={(v) => setReadingLanguage(v as ReadingLanguage)}
-              density="small"
-              style={styles.segment}
-              buttons={[
-                { value: 'both', label: 'Both' },
-                { value: 'tamil', label: 'தமிழ்' },
-                { value: 'english', label: 'English' },
-              ]}
-            />
-          </View>
-          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
-          <View style={styles.block}>
-            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Kural text size</Text>
-            <SegmentedButtons
-              value={fontSize.toString()}
-              onValueChange={(val) => setFontSize(parseInt(val, 10))}
-              density="small"
-              style={styles.segment}
-              buttons={FONT_SIZES}
-            />
-            <View style={[styles.preview, { backgroundColor: theme.colors.background }]}>
-              <KuralVerse kural={previewKural} size={fontSize} />
-            </View>
-          </View>
-          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
-          <View style={styles.block}>
-            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Reading speed</Text>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>For Listen and when learning by heart</Text>
-            <SegmentedButtons
-              value={String(speechRate)}
-              onValueChange={(v) => setSpeechRate(Number(v))}
-              density="small"
-              style={styles.segment}
-              buttons={SPEECH_RATES}
-            />
-          </View>
-        </Group>
-
-        <SectionLabel>Reminders</SectionLabel>
+        <SectionLabel>Settings</SectionLabel>
         <Group>
           <List.Item
-            title="Daily Kural"
-            description={notificationsEnabled ? `Each day's Kural at ${formatReminderTime(notificationHour, notificationMinute)}` : 'Off'}
-            left={(props) => <List.Icon {...props} icon="bell-outline" />}
-            right={() => <Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />}
-            onPress={onToggleNotifications}
+            title="Appearance"
+            description={summary.appearance}
+            left={(props) => <List.Icon {...props} icon="palette-outline" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('appearance')}
           />
-          {notificationsEnabled && (
-            <List.Item
-              title="Daily reminder time"
-              description={formatReminderTime(notificationHour, notificationMinute)}
-              left={(props) => <List.Icon {...props} icon="clock-outline" />}
-              right={(props) => <List.Icon {...props} icon="pencil-outline" />}
-              onPress={() => setTimePicker('daily')}
-            />
-          )}
           <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
-            title="Streak reminder"
-            description={streakReminderEnabled
-              ? `If you haven't read by ${formatReminderTime(streakReminderHour, streakReminderMinute)}, a nudge to keep your streak`
-              : 'Off'}
+            title="Reading"
+            description={summary.reading}
+            left={(props) => <List.Icon {...props} icon="format-size" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('reading')}
+          />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <List.Item
+            title="Listening voice"
+            description={`${selectedVoiceIdentifier ? voiceName ?? 'Custom voice' : voiceName ? `Automatic · ${voiceName}` : 'Automatic'}\nChoose or download Tamil voices`}
             descriptionNumberOfLines={2}
-            left={(props) => <List.Icon {...props} icon="fire" />}
-            right={() => <Switch value={streakReminderEnabled} onValueChange={onToggleStreakReminder} />}
-            onPress={onToggleStreakReminder}
-          />
-          {streakReminderEnabled && (
-            <List.Item
-              title="Streak reminder time"
-              description={formatReminderTime(streakReminderHour, streakReminderMinute)}
-              left={(props) => <List.Icon {...props} icon="clock-outline" />}
-              right={(props) => <List.Icon {...props} icon="pencil-outline" />}
-              onPress={() => setTimePicker('streak')}
-            />
-          )}
-          {Platform.OS !== 'web' && (
-            <>
-              <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
-              <List.Item
-                title="Send a test reminder"
-                description={`Arrives in ${TEST_REMINDER_DELAY_SECONDS} seconds, even with the app closed`}
-                left={(props) => <List.Icon {...props} icon="bell-ring-outline" />}
-                onPress={onTestReminder}
-              />
-            </>
-          )}
-        </Group>
-
-        <SectionLabel>Listening</SectionLabel>
-        <Group>
-          <List.Item
-            title="Reading voice"
-            description={selectedVoiceIdentifier ? voiceName ?? 'Custom voice' : voiceName ? `Automatic · ${voiceName}` : 'Automatic'}
             left={(props) => <List.Icon {...props} icon="account-voice" />}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowVoiceModal(true)}
           />
-          {Platform.OS !== 'web' && (
-            <List.Item
-              title="Install Tamil voices"
-              description={Platform.OS === 'android' ? "Download a more natural voice for your phone's text-to-speech" : 'How to download a more natural voice'}
-              descriptionNumberOfLines={2}
-              left={(props) => <List.Icon {...props} icon="download-outline" />}
-              right={(props) => <List.Icon {...props} icon="open-in-new" />}
-              onPress={openVoiceDownload}
-            />
-          )}
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <List.Item
+            title="Reminders"
+            description={summary.reminders}
+            left={(props) => <List.Icon {...props} icon="bell-outline" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('reminders')}
+          />
         </Group>
 
-        <SectionLabel>Share</SectionLabel>
+        <SectionLabel>More</SectionLabel>
         <Group>
           <List.Item
             title="Share Kural Daily"
@@ -344,10 +234,7 @@ export default function ProfileScreen() {
             right={(props) => <List.Icon {...props} icon="share-variant-outline" />}
             onPress={() => Share.share({ message: SHARE_APP_MESSAGE }).catch(() => {})}
           />
-        </Group>
-
-        <SectionLabel>About</SectionLabel>
-        <Group>
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Privacy policy"
             description="No accounts, no tracking, works offline"
@@ -355,6 +242,7 @@ export default function ProfileScreen() {
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowPrivacyModal(true)}
           />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Reset progress"
             description="Clears history, streaks, learning and quiz scores. Saved Kurals are kept."
@@ -370,6 +258,14 @@ export default function ProfileScreen() {
         </Text>
       </ScrollView>
 
+      <SheetModal visible={sheet === 'milestones'} onClose={() => setSheet(null)} title="Milestones" subtitle={`${earnedCount} of ${milestones.length} earned`}>
+        <View style={styles.sheetGrid}>
+          <MilestoneGrid milestones={milestones} />
+        </View>
+      </SheetModal>
+      <AppearanceSheet visible={sheet === 'appearance'} onClose={() => setSheet(null)} />
+      <ReadingSheet visible={sheet === 'reading'} onClose={() => setSheet(null)} />
+      <RemindersSheet visible={sheet === 'reminders'} onClose={() => setSheet(null)} />
       <AboutKuralSheet visible={showAbout} onClose={() => setShowAbout(false)} />
 
       {/* Privacy Policy */}
@@ -400,17 +296,6 @@ export default function ProfileScreen() {
 
       <VoicePickerSheet visible={showVoiceModal} onClose={() => setShowVoiceModal(false)} />
 
-      <TimePickerModal
-        visible={timePicker !== null}
-        onDismiss={() => setTimePicker(null)}
-        onConfirm={onConfirmTime}
-        hours={timePicker === 'streak' ? streakReminderHour : notificationHour}
-        minutes={timePicker === 'streak' ? streakReminderMinute : notificationMinute}
-        label={timePicker === 'streak' ? 'Streak reminder time' : 'Daily reminder time'}
-        use24HourClock={uses24HourClock()}
-        locale="en"
-      />
-
       <Portal>
 
         {/* Reset confirmation */}
@@ -429,13 +314,8 @@ export default function ProfileScreen() {
         </Dialog>
       </Portal>
 
-      <Snackbar
-        visible={!!snackbar}
-        onDismiss={() => setSnackbar(null)}
-        duration={5000}
-        action={snackbar?.openSettings ? { label: 'Settings', onPress: () => Linking.openSettings() } : undefined}
-      >
-        {snackbar?.message}
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar(null)} duration={5000}>
+        {snackbar}
       </Snackbar>
     </SafeAreaView>
   );
@@ -455,33 +335,45 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     paddingBottom: space.sm,
   },
-  statsGrid: {
-    gap: space.sm,
-    paddingHorizontal: space.lg,
-    marginBottom: space.lg,
+  card: {
+    marginHorizontal: space.lg,
+    padding: space.lg,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  flameBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  best: {
+    alignItems: 'center',
+    minWidth: 44,
+  },
+  cardDivider: {
+    marginVertical: space.md,
   },
   statsRow: {
     flexDirection: 'row',
     gap: space.sm,
+    paddingHorizontal: space.lg,
+    marginTop: space.sm,
+  },
+  sheetGrid: {
+    paddingTop: space.lg,
   },
   group: {
     marginHorizontal: space.lg,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-  },
-  block: {
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-  },
-  segment: {
-    marginTop: space.sm,
-  },
-  preview: {
-    marginTop: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.md,
   },
   version: {
     textAlign: 'center',

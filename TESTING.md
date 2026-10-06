@@ -35,6 +35,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 - [ ] **Remind me daily** shows the Android notification permission prompt. Allow it.
 - [ ] The app opens on Today. You → Reminders shows both Daily Kural and Streak reminder on,
       daily at the time you chose.
+- [ ] Waiting on the welcome screens doesn't count today's Kural as read (You → Reading history is
+      empty until you have been on Today for a few seconds).
 - [ ] Repeat with **Not now, start reading** (after clearing data): no permission prompt; Today
       shows the "A Kural every morning?" card.
 
@@ -47,29 +49,40 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 
 ## 3. Today
 
-- [ ] வணக்கம், today's date, and the week strip with today ticked.
+- [ ] வணக்கம், today's date, and a one-line streak pill (flame, "N-day streak", 7 small dots).
+      Tapping it opens You.
 - [ ] Today's Kural: number, அதிகாரம் and position (e.g. 9/10), chapter in Tamil and English.
-- [ ] Meaning is open; switch தமிழ் / English.
+- [ ] The couplet is on its two original lines (text slightly smaller if needed). With text size L
+      or XL on a narrow phone it may wrap; that's intended.
+- [ ] Meaning is open; switch தமிழ் / English. **Listen** under the meaning reads it aloud (Tamil
+      voice for தமிழ், English voice for English); tap again to stop; switching language stops it.
 - [ ] "Keep reading this chapter" opens the chapter's first unread Kural; **Next** goes through
       the chapter; the 10 dots fill as you read.
 - [ ] Your journey numbers go up after reading.
+- [ ] **Counting as read**: open a Kural you haven't read from Browse and close it within a second:
+      it is not in You → Reading history. Open another and stay ~6 seconds, or tap Listen / Meaning /
+      Save / Share / Learn on it: it is in history.
+- [ ] On a day you haven't read, opening the app alone doesn't add the day to the streak; it is
+      added a few seconds after Today's Kural is on screen.
 - [ ] Random Kural opens a sheet; Share the app opens the share sheet with the store link.
 - [ ] The search button opens Search; back returns to Today.
 - [ ] Pull down to refresh works.
 
 ## 4. Kural card actions
 
-- [ ] **Save** turns to Saved (saffron); the Kural appears in the Saved tab.
+- [ ] **Save** turns to Saved (accent colour); the Kural appears in the Saved tab.
 - [ ] **Listen** reads line 1, a short pause, then line 2, in a Tamil voice. Tap again to stop.
       Closing the sheet while it speaks stops it.
 - [ ] **Share** → Share image: try each style, toggle Tamil / English / Explanation; the image
-      shared to WhatsApp or Photos matches the preview. Share text and Copy text work.
+      shared to WhatsApp or Photos matches the preview, with the couplet on **two lines**. Share text
+      and Copy text also give the couplet as two lines.
 - [ ] Android back closes any open sheet (Kural, share, voice).
 
 ## 5. Learn by heart
 
 - [ ] On a Kural, **Learn** opens Memorize at Step 1 of 4.
-- [ ] Next step hides every other word; tap a hidden word to peek.
+- [ ] Next step hides every other word as a **blur** (no boxes, nothing readable); tap a blurred
+      word to peek.
 - [ ] Step 3 shows first words only; Step 4 hides everything.
 - [ ] Listen slowly is slower than normal Listen. Meaning shows the English hint.
 - [ ] Check my recall → I knew it → "Committed to memory". The card's button now says Learning.
@@ -99,22 +112,27 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 ## 8. Saved and You
 
 - [ ] Saved: newest first; tapping the bookmark removes it, **Undo** brings it back.
-- [ ] You: stat tiles, milestones (First step is earned), Reading history, About the Thirukkural.
-- [ ] Look → Page: Auto, Paper, Palm leaf, Night; Accent: Indigo, Kumkum, Leaf, Saffron. Check a
-      few combinations across Today, Learn and a share image.
-- [ ] Look → Font: Classic, Modern, Device change the couplet, explanation and headings.
-- [ ] Reading: language (Both / தமிழ் / English), text size S–XL (preview updates), reading speed.
+- [ ] You: streak card with this month's calendar (read days filled); ‹ › go back to earlier
+      months you read in. Below: Kurals read, Chapters done, By heart.
+- [ ] Progress: Milestones row shows the next one; it opens all milestones. Reading history,
+      About the Thirukkural (read it through: poet, names, verse form, arrangement, commentaries).
+- [ ] Settings rows show a summary and open sheets:
+      **Appearance** → Page: Auto, Paper, Palm leaf, Night; Accent: Indigo, Kumkum, Leaf, Saffron;
+      Font: Classic, Modern, Device, with a live preview. Change the accent and check it on Today
+      (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
+      the share sheet's chips. Only the streak flame stays saffron.
+      **Reading** → language, text size S–XL (preview updates), reading speed.
 - [ ] Auto page follows the phone's dark mode (toggle it in quick settings).
 - [ ] Reset progress asks first, clears history / streak / learning / quiz, keeps Saved.
 
-## 9. Reminders
+## 9. Reminders (You → Reminders)
 
-- [ ] You → Reminders → **Send a test reminder**, lock the phone: within ~10 seconds a
+- [ ] **Send a test reminder**, lock the phone: within ~10 seconds a
       notification shows today's Kural with the palm-leaf icon in the status bar.
 - [ ] Tapping it opens the app on Today.
 - [ ] **Daily**: set the daily time 2–3 minutes ahead, close the app (swipe it away), wait.
       The notification names that day's Kural. Android may deliver it a few minutes late.
-- [ ] **Streak** (opening the app counts as reading, so don't open it after changing the date):
+- [ ] **Streak** (don't open the app after changing the date, or stay on Today for long):
       1. In You → Reminders set the streak reminder to, say, 8:00 PM.
       2. Read today's Kural, then close the app (swipe it away).
       3. In Android settings turn off automatic date & time and set **tomorrow, 7:58 PM**.
@@ -130,9 +148,9 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 
 ## 10. Voice
 
-- [ ] You → Listening → Reading voice lists Tamil voices, best first, with Natural/Recommended
+- [ ] You → Listening voice lists Tamil voices, best first, with Natural/Recommended
       labels; ▶ previews each; picking one changes Listen.
-- [ ] **Install Tamil voices** (and the Download voices button in the voice sheet) opens Google's
+- [ ] **Download voices** at the top of the voice sheet opens Google's
       voice download screen. Download Tamil (India), come back, tap refresh: new voices appear.
 - [ ] Voice settings opens Android's text-to-speech settings.
 

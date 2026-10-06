@@ -67,3 +67,23 @@ describe('reading fonts', () => {
     }
   });
 });
+
+describe('accent', () => {
+  it('colours the selected states Paper draws with secondary/tertiary (segments, chips, tonal buttons)', () => {
+    for (const appearance of appearances) {
+      const seen = new Set(ACCENTS.map(({ value }) => buildTheme(appearance, value).colors.secondaryContainer));
+      expect(seen.size).toBe(ACCENTS.length);
+      const tertiary = new Set(ACCENTS.map(({ value }) => buildTheme(appearance, value).colors.tertiary));
+      expect(tertiary.size).toBe(ACCENTS.length);
+    }
+  });
+
+  it('keeps selected-state text readable', () => {
+    for (const appearance of appearances) {
+      for (const { value } of ACCENTS) {
+        const { colors } = buildTheme(appearance, value);
+        expect(contrast(colors.onSecondaryContainer, colors.secondaryContainer)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+});

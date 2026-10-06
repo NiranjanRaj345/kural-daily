@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable, Platform } from 'react-native';
-import { Text, SegmentedButtons } from 'react-native-paper';
+import { Text, SegmentedButtons, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -8,16 +8,19 @@ import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { getChapterNumber, getPositionInChapter } from '../services/DataService';
 import { ShareModal } from './ShareModal';
-import { hasTamilVoice, speakKural, stopSpeaking } from '../services/SpeechService';
+import { hasTamilVoice, speakKural, speakMeaning, stopSpeaking } from '../services/SpeechService';
 import { showNoTamilVoiceAlert } from './voiceHelp';
 import { KuralVerse } from './KuralVerse';
 import { MemorizeSheet, MemorizeMode } from './MemorizeSheet';
 import { useAppTheme, space, radius, useType } from '../theme';
+import { useReadTracker } from '../hooks/useReadTracker';
 
 interface KuralCardProps {
   kural: Kural;
   /** Open the explanation by default (e.g. on the Today screen). */
   defaultExpanded?: boolean;
+  /** False while something covers the card, so the time doesn't count as reading. */
+  visible?: boolean;
 }
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -52,7 +55,7 @@ const ActionButton: React.FC<{
   );
 };
 
-export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = false }) => {
+export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = false, visible = true }) => {
   const theme = useAppTheme();
   const type = useType();
   const showEnglish = useSettingsStore((s) => s.showEnglish);
@@ -60,23 +63,23 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
   const isFavorite = useSettingsStore((s) => s.favorites.includes(kural.number));
   const isLearning = useSettingsStore((s) => !!s.learning[kural.number]);
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
-  const addToHistory = useSettingsStore((s) => s.addToHistory);
   const fontSize = useSettingsStore((s) => s.fontSize);
   const speechRate = useSettingsStore((s) => s.speechRate);
   const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
 
   const [showExplanation, setShowExplanation] = useState(defaultExpanded);
   const [explanationLang, setExplanationLang] = useState<'ta' | 'en'>(showTamil ? 'ta' : 'en');
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  // What is being read aloud: the couplet or its meaning
+  const [speaking, setSpeaking] = useState<'kural' | 'meaning' | null>(null);
   const isSpeakingRef = useRef(false);
+  const markRead = useReadTracker(kural.number, visible);
   const [showShareModal, setShowShareModal] = useState(false);
   const [memorizing, setMemorizing] = useState<{ queue: number[]; mode: MemorizeMode } | null>(null);
 
-  // Reset per-kural state and record the read
+  // Reset per-kural state. It counts as read after a few seconds or on any interaction (useReadTracker).
   useEffect(() => {
     setShowExplanation(defaultExpanded);
-    addToHistory(kural.number);
-  }, [kural.number, addToHistory, defaultExpanded]);
+  }, [kural.number, defaultExpanded]);
 
   // Keep the explanation language valid if a language is turned off in settings
   useEffect(() => {
@@ -84,9 +87,9 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
     if (!showEnglish && explanationLang === 'en') setExplanationLang('ta');
   }, [showTamil, showEnglish, explanationLang]);
 
-  const updateSpeaking = (value: boolean) => {
-    isSpeakingRef.current = value;
-    setIsSpeaking(value);
+  const updateSpeaking = (value: 'kural' | 'meaning' | null) => {
+    isSpeakingRef.current = value !== null;
+    setSpeaking(value);
   };
 
   // Don't keep reading aloud after the card is closed or replaced
@@ -96,26 +99,26 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
     };
   }, [kural.number]);
 
-  const handleSpeak = async () => {
+  const handleSpeak = async (what: 'kural' | 'meaning') => {
     haptic();
-    if (isSpeaking) {
-      stopSpeaking();
-      return;
-    }
-    if (!(await hasTamilVoice())) {
+    const wasSpeaking = speaking;
+    if (wasSpeaking) stopSpeaking();
+    if (wasSpeaking === what) return; // the same button again stops it
+    markRead();
+    const lang = what === 'meaning' ? explanationLang : 'ta';
+    if (lang === 'ta' && !(await hasTamilVoice())) {
       showNoTamilVoiceAlert();
       return;
     }
-    updateSpeaking(true);
-    speakKural(kural, {
-      voice: selectedVoiceIdentifier,
-      rate: speechRate,
-      onEnd: () => updateSpeaking(false),
-    });
+    updateSpeaking(what);
+    const options = { voice: selectedVoiceIdentifier, rate: speechRate, onEnd: () => updateSpeaking(null) };
+    if (what === 'kural') speakKural(kural, options);
+    else speakMeaning(explanation, lang, options);
   };
 
   const handleFavoritePress = () => {
     haptic(isFavorite ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+    if (!isFavorite) markRead();
     toggleFavorite(kural.number);
   };
 
@@ -176,7 +179,11 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
 
         {/* Meaning */}
         <Pressable
-          onPress={() => setShowExplanation((v) => !v)}
+          onPress={() => {
+            if (!showExplanation) markRead();
+            if (speaking === 'meaning') stopSpeaking();
+            setShowExplanation((v) => !v);
+          }}
           accessibilityRole="button"
           accessibilityState={{ expanded: showExplanation }}
           style={[styles.explainToggle, { borderTopColor: theme.colors.rule }]}
@@ -197,7 +204,11 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             {bothLanguages && (
               <SegmentedButtons
                 value={explanationLang}
-                onValueChange={(v) => setExplanationLang(v as 'ta' | 'en')}
+                onValueChange={(v) => {
+                  if (speaking === 'meaning') stopSpeaking();
+                  markRead();
+                  setExplanationLang(v as 'ta' | 'en');
+                }}
                 density="small"
                 style={styles.langSwitch}
                 buttons={[
@@ -212,11 +223,22 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             >
               {explanation}
             </Text>
-            {explanationLang === 'ta' && (
-              <Text variant="labelSmall" style={[styles.attribution, { color: theme.colors.onSurfaceVariant }]}>
-                உரை: மு. வரதராசனார்
-              </Text>
-            )}
+            <View style={styles.explanationFooter}>
+              <Button
+                compact
+                icon={speaking === 'meaning' ? 'stop-circle-outline' : 'volume-high'}
+                onPress={() => handleSpeak('meaning')}
+                style={styles.listenMeaning}
+                accessibilityLabel={speaking === 'meaning' ? 'Stop reading the meaning' : 'Read the meaning aloud'}
+              >
+                {speaking === 'meaning' ? 'Stop' : explanationLang === 'ta' ? 'கேளுங்கள்' : 'Listen'}
+              </Button>
+              {explanationLang === 'ta' && (
+                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                  உரை: மு. வரதராசனார்
+                </Text>
+              )}
+            </View>
           </Animated.View>
         )}
 
@@ -226,16 +248,16 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             icon={isFavorite ? 'bookmark' : 'bookmark-outline'}
             label={isFavorite ? 'Saved' : 'Save'}
             active={isFavorite}
-            activeColor={theme.colors.flame}
+            activeColor={theme.colors.primary}
             onPress={handleFavoritePress}
             accessibilityLabel={isFavorite ? 'Remove from saved' : 'Save Kural'}
           />
           <ActionButton
-            icon={isSpeaking ? 'stop-circle-outline' : 'volume-high'}
-            label={isSpeaking ? 'Stop' : 'Listen'}
-            active={isSpeaking}
-            onPress={handleSpeak}
-            accessibilityLabel={isSpeaking ? 'Stop reading' : 'Read aloud'}
+            icon={speaking === 'kural' ? 'stop-circle-outline' : 'volume-high'}
+            label={speaking === 'kural' ? 'Stop' : 'Listen'}
+            active={speaking === 'kural'}
+            onPress={() => handleSpeak('kural')}
+            accessibilityLabel={speaking === 'kural' ? 'Stop reading' : 'Read the Kural aloud'}
           />
           <ActionButton
             icon={isLearning ? 'school' : 'school-outline'}
@@ -243,6 +265,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             active={isLearning}
             onPress={() => {
               haptic();
+              markRead();
               // Fixed when the sheet opens: grading a new Kural adds it to the review list,
               // which must not switch the open session into practice mode.
               // Already learning: practise without changing its review schedule.
@@ -250,7 +273,14 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
             }}
             accessibilityLabel={isLearning ? 'Practise this Kural' : 'Learn this Kural by heart'}
           />
-          <ActionButton icon="share-variant-outline" label="Share" onPress={() => setShowShareModal(true)} />
+          <ActionButton
+            icon="share-variant-outline"
+            label="Share"
+            onPress={() => {
+              markRead();
+              setShowShareModal(true);
+            }}
+          />
         </View>
       </View>
     </Animated.View>
@@ -311,9 +341,15 @@ const styles = StyleSheet.create({
   langSwitch: {
     marginBottom: space.md,
   },
-  attribution: {
+  explanationFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     marginTop: space.sm,
-    textAlign: 'right',
+  },
+  listenMeaning: {
+    marginLeft: -space.sm,
   },
   actions: {
     flexDirection: 'row',

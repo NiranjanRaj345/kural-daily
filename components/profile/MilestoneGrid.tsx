@@ -18,7 +18,7 @@ export const MilestoneGrid: React.FC<{ milestones: Milestone[] }> = ({ milestone
           style={[
             styles.item,
             {
-              backgroundColor: m.earned ? theme.colors.flameContainer : theme.colors.surface,
+              backgroundColor: m.earned ? theme.colors.primaryContainer : theme.colors.surface,
               borderColor: m.earned ? 'transparent' : theme.colors.outlineVariant,
             },
           ]}
@@ -29,18 +29,18 @@ export const MilestoneGrid: React.FC<{ milestones: Milestone[] }> = ({ milestone
             <MaterialCommunityIcons
               name={m.icon as IconName}
               size={22}
-              color={m.earned ? theme.colors.flame : theme.colors.outline}
+              color={m.earned ? theme.colors.primary : theme.colors.outline}
             />
             {m.earned ? (
-              <MaterialCommunityIcons name="check-circle" size={16} color={theme.colors.flame} />
+              <MaterialCommunityIcons name="check-circle" size={16} color={theme.colors.primary} />
             ) : (
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{m.progressLabel}</Text>
             )}
           </View>
-          <Text style={[type.tamilLabelStrong, { color: m.earned ? theme.colors.onFlameContainer : theme.colors.onSurface }]} numberOfLines={1}>
+          <Text style={[type.tamilLabelStrong, { color: m.earned ? theme.colors.onPrimaryContainer : theme.colors.onSurface }]} numberOfLines={1}>
             {m.tamil}
           </Text>
-          <Text variant="labelSmall" style={{ color: m.earned ? theme.colors.onFlameContainer : theme.colors.onSurfaceVariant }} numberOfLines={2}>
+          <Text variant="labelSmall" style={{ color: m.earned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant }} numberOfLines={2}>
             {m.description}
           </Text>
           {!m.earned && (

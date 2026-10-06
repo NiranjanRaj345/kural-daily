@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, StyleSheet, Pressable, Platform, TextStyle, PixelRatio } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -36,6 +36,26 @@ const STEPS = [
   { title: 'From memory', hint: 'Recite the whole Kural, then check yourself.' },
 ];
 const RECALL = STEPS.length - 1;
+
+/**
+ * A hidden word drawn out of focus: the glyphs themselves are transparent and
+ * only a wide, soft shadow of them shows, so the shape of the word is there but
+ * it can't be read. iOS doesn't draw shadows of transparent text, so there the
+ * word is a soft smudge of colour instead.
+ */
+// Android takes the shadow radius in physical pixels (and blurs up to about 25);
+// the web takes CSS pixels. Both come out at roughly a 5dp blur.
+const BLUR_RADIUS = Platform.OS === 'android' ? Math.min(25, 9 * PixelRatio.get()) : 12;
+
+const blurred = (ink: string): TextStyle =>
+  Platform.OS === 'ios'
+    ? { color: 'transparent', backgroundColor: withAlpha(ink, 0.12), borderRadius: radius.sm, overflow: 'hidden' }
+    : { color: 'transparent', textShadowColor: withAlpha(ink, 0.8), textShadowOffset: { width: 0, height: 0 }, textShadowRadius: BLUR_RADIUS };
+
+const withAlpha = (hex: string, alpha: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+};
 
 const isHidden = (step: number, wordIndex: number, globalIndex: number) => {
   if (step === 0) return false;
@@ -242,26 +262,16 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
                       onPress={() => { haptic(); setPeeked((p) => new Set(p).add(gi)); }}
                       accessibilityRole={hidden ? 'button' : 'text'}
                       accessibilityLabel={hidden ? `Hidden word ${gi + 1}, tap to reveal` : word}
-                      style={[
-                        styles.word,
-                        hidden
-                          ? { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outlineVariant }
-                          : { backgroundColor: 'transparent', borderColor: 'transparent' },
-                      ]}
+                      style={styles.word}
                     >
                       <Text
                         style={[
                           type.kural(20),
-                          { color: hidden ? 'transparent' : theme.colors.ink },
+                          hidden ? blurred(theme.colors.ink) : { color: theme.colors.ink },
                         ]}
                       >
                         {word}
                       </Text>
-                      {hidden && (
-                        <View style={styles.hiddenMark} pointerEvents="none">
-                          <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{gi + 1}</Text>
-                        </View>
-                      )}
                     </Pressable>
                   );
                 })}
@@ -322,14 +332,7 @@ const styles = StyleSheet.create({
     gap: space.xs,
   },
   word: {
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    paddingHorizontal: 6,
-  },
-  hiddenMark: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   tools: {
     flexDirection: 'row',

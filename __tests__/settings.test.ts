@@ -53,3 +53,39 @@ describe('reminder times', () => {
     });
   });
 });
+
+describe('reading', () => {
+  afterEach(() => jest.useRealTimers());
+  const at = (y: number, m: number, d: number) =>
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] }).setSystemTime(new Date(y, m - 1, d, 10, 0));
+
+  it('records a read Kural in history, reading days and the streak', () => {
+    at(2026, 10, 6);
+    useSettingsStore.setState({ history: [5], readDays: ['2026-10-05'], streak: 2, bestStreak: 2, lastReadDate: '2026-10-05' });
+    useSettingsStore.getState().markRead(7);
+    expect(useSettingsStore.getState()).toMatchObject({
+      history: [7, 5],
+      readDays: ['2026-10-05', '2026-10-06'],
+      streak: 3,
+      bestStreak: 3,
+      lastReadDate: '2026-10-06',
+    });
+    // Reading again the same day changes nothing but the order
+    useSettingsStore.getState().markRead(5);
+    expect(useSettingsStore.getState()).toMatchObject({ history: [5, 7], streak: 3 });
+  });
+
+  it('ends a lapsed streak when the app opens, without counting the day as read', () => {
+    at(2026, 10, 6);
+    useSettingsStore.setState({ readDays: ['2026-10-04'], streak: 4, bestStreak: 4, lastReadDate: '2026-10-04' });
+    useSettingsStore.getState().expireStreak();
+    expect(useSettingsStore.getState()).toMatchObject({ streak: 0, bestStreak: 4, readDays: ['2026-10-04'] });
+  });
+
+  it('keeps a streak that is still alive (last read yesterday)', () => {
+    at(2026, 10, 6);
+    useSettingsStore.setState({ streak: 4, lastReadDate: '2026-10-05' });
+    useSettingsStore.getState().expireStreak();
+    expect(useSettingsStore.getState().streak).toBe(4);
+  });
+});

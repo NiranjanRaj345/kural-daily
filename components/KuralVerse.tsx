@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Text as RNText } from 'react-native';
 import { Kural } from '../types/kural';
 import { useAppTheme, space, useType } from '../theme';
+import { FitLines } from './FitLines';
 
 interface KuralVerseProps {
   kural: Kural;
@@ -11,20 +12,21 @@ interface KuralVerseProps {
 }
 
 /**
- * The couplet set like a printed verse: left-aligned, the shorter second line
- * left as it is (the venba's 4 + 3 feet), with a margin rule in the accent colour.
+ * The couplet set like a printed verse: two lines, left-aligned, the shorter
+ * second line left as it is (the venba's 4 + 3 feet), with a margin rule in the
+ * accent colour. The text shrinks a little where needed so each line stays on
+ * one line; it never goes below about 60% of the chosen size (or 14).
  */
 export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = false }) => {
   const theme = useAppTheme();
   const type = useType();
-  const style = [type.kural(size), { color: theme.colors.ink }];
   const renderLine = (line: string) => {
     if (!showFeet) return line;
     const words = line.trim().split(/\s+/);
     return words.map((word, i) => (
       <React.Fragment key={i}>
         {word}
-        {i < words.length - 1 && <RNText style={{ color: theme.colors.primary }}>{'  ·  '}</RNText>}
+        {i < words.length - 1 && <RNText style={{ color: theme.colors.primary }}>{' · '}</RNText>}
       </React.Fragment>
     ));
   };
@@ -35,17 +37,25 @@ export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = 
       accessible
       accessibilityLabel={`${kural.line1} ${kural.line2}`}
     >
-      <RNText style={style} selectable>{renderLine(kural.line1)}</RNText>
-      {/* A small gap keeps the two lines distinct when a long first line wraps on narrow screens */}
-      <RNText style={[style, { marginTop: Math.round(size * 0.45) }]} selectable>{renderLine(kural.line2)}</RNText>
+      <FitLines
+        lines={[kural.line1, kural.line2]}
+        maxSize={size}
+        minSize={minVerseSize(size)}
+        styleAt={(s) => ({ ...type.kural(s), color: theme.colors.ink })}
+        renderLine={renderLine}
+        selectable
+      />
     </View>
   );
 };
 
+/** The smallest the couplet may shrink to so it fits on two lines. */
+export const minVerseSize = (size: number) => Math.max(14, Math.round(size * 0.58));
+
 const styles = StyleSheet.create({
   verse: {
     borderLeftWidth: 3,
-    paddingLeft: space.lg,
+    paddingLeft: space.md + 2,
     paddingVertical: space.xs,
   },
 });

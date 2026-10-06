@@ -71,25 +71,27 @@ export const stopSpeaking = () => {
 const cleanLine = (line: string) => line.replace(/[.,;:!?]+\s*$/, '').trim();
 
 interface SpeakOptions {
-  /** Voice identifier; undefined picks the best Tamil voice. */
+  /** Voice identifier; undefined picks the best Tamil voice (for Tamil). */
   voice?: string | null;
+  /** Defaults to Tamil. For English the engine's own voice for the language is used. */
+  language?: 'ta-IN' | 'en-IN';
   rate?: number;
   /** Called once when the recitation ends, is stopped, or fails. */
   onEnd?: () => void;
 }
 
-const speakLines = async (lines: string[], { voice, rate = 0.9, onEnd }: SpeakOptions) => {
+const speakLines = async (lines: string[], { voice, language = 'ta-IN', rate = 0.9, onEnd }: SpeakOptions) => {
   stopSpeaking();
   const id = currentId;
   currentEnd = onEnd ?? null;
 
-  const voiceId = voice ?? (await getAutomaticVoice())?.identifier;
+  const voiceId = language === 'ta-IN' ? voice ?? (await getAutomaticVoice())?.identifier : undefined;
   if (id !== currentId) return; // superseded while loading voices
 
   const speakLine = (index: number) => {
     if (id !== currentId) return;
     Speech.speak(lines[index], {
-      language: 'ta-IN',
+      language,
       voice: voiceId,
       rate,
       pitch: 1.0,
@@ -111,6 +113,21 @@ const speakLines = async (lines: string[], { voice, rate = 0.9, onEnd }: SpeakOp
 
 export const speakKural = (kural: Kural, options: SpeakOptions) =>
   speakLines([cleanLine(kural.line1), cleanLine(kural.line2)], options);
+
+/**
+ * Reads a Kural's explanation: the Tamil one in the chosen Tamil voice, the
+ * English one in the phone's English voice. Sentence by sentence, with the same
+ * short pause between them as between the lines of the couplet.
+ */
+export const speakMeaning = (text: string, lang: 'ta' | 'en', options: Omit<SpeakOptions, 'language'>) =>
+  speakLines(splitSentences(text), { ...options, language: lang === 'ta' ? 'ta-IN' : 'en-IN', voice: lang === 'ta' ? options.voice : null });
+
+/** Splits prose into sentences (keeping their full stops) so long text is read in natural breaths. */
+export const splitSentences = (text: string): string[] => {
+  const parts = text.match(/[^.!?]+[.!?]*/g) ?? [];
+  const sentences = parts.map((p) => p.trim()).filter(Boolean);
+  return sentences.length > 0 ? sentences : [text.trim()];
+};
 
 /** A short sample for previewing a voice. */
 export const speakSample = (voice: string | null, rate: number) =>

@@ -52,7 +52,7 @@ export default function TabLayout() {
           title: 'Learn',
           tabBarIcon: tabIcon('school', 'school-outline'),
           tabBarBadge: dueCount > 0 ? dueCount : undefined,
-          tabBarBadgeStyle: { backgroundColor: theme.colors.flame, color: theme.colors.surface, fontSize: 10 },
+          tabBarBadgeStyle: { backgroundColor: theme.colors.primary, color: theme.colors.onPrimary, fontSize: 10 },
         }}
       />
       <Tabs.Screen name="favorites" options={{ title: 'Saved', tabBarIcon: tabIcon('bookmark', 'bookmark-outline') }} />

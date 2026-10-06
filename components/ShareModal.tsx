@@ -8,6 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { SheetModal } from './SheetModal';
+import { FitLines } from './FitLines';
 import { useAppTheme, useType } from '../theme';
 
 interface ShareModalProps {
@@ -125,12 +126,15 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
 
               {shareIncludeTamil && (
                 <View style={styles.textContainer}>
-                  <Text style={[type.kural(20), styles.tamilText, { color: selectedTheme.textColor }]}>
-                    {kural.line1}
-                  </Text>
-                  <Text style={[type.kural(20), styles.tamilText, { color: selectedTheme.textColor }]}>
-                    {kural.line2}
-                  </Text>
+                  {/* Always the original two lines; the size adapts to the longer line */}
+                  <FitLines
+                    lines={[kural.line1, kural.line2]}
+                    maxSize={20}
+                    minSize={12}
+                    align="center"
+                    gap={0.25}
+                    styleAt={(size) => ({ ...type.kural(size), color: selectedTheme.textColor })}
+                  />
                 </View>
               )}
 
@@ -269,6 +273,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     padding: 24,
+    paddingHorizontal: 18,
     paddingBottom: 48,
     borderRadius: 16,
     justifyContent: 'center',
@@ -290,12 +295,6 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     marginBottom: 20,
-  },
-  tamilText: {
-    fontSize: 20,
-    lineHeight: 32,
-    textAlign: 'center',
-    marginBottom: 8,
   },
   divider: {
     height: 1,
