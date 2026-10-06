@@ -180,7 +180,36 @@ screen recording. Phone model and Android version help too.
 
 1. Merge the pull request.
 2. Change `## 1.3.0 (in testing)` in CHANGELOG.md to the release date.
-3. `npx eas-cli@latest build --profile production --platform android`, then commit the bumped
-   `versionCode` in app.json.
-4. Create the GitHub release `v1.3.0` from `master` with the 1.3.0 changelog section.
-5. Check `STORE_URL` in `constants/app.ts` matches the live store listing.
+3. Create the GitHub release `v1.3.0` from `master` with the 1.3.0 changelog section.
+
+## First store release
+
+Build from `master` after merging. `production` builds bump `android.versionCode` in app.json
+(EAS `autoIncrement`); commit that change after each build so the next build goes higher.
+
+**Google Play** (Android App Bundle):
+
+1. `npx eas-cli@latest build --profile production --platform android` → an `.aab`.
+2. Play Console → create the app (*Kural Daily*, free, app). Package name comes from the first
+   upload: `com.mrmonk.kuraldaily`, and can never change.
+3. Upload the `.aab` to **Internal testing** first, install it from the Play link on your phone,
+   then promote to Production. (New personal developer accounts must run a closed test with
+   testers for a set period before Production is unlocked; the Console shows the current rule.)
+4. Store listing: title, short and full description, the 512×512 icon (`assets/images/icon.png`
+   scaled), a 1024×500 feature graphic, and at least two phone screenshots.
+5. App content: privacy policy URL (host the policy text from You → Privacy policy, e.g. on GitHub
+   Pages), Data safety: *no data collected or shared*, content rating questionnaire, target
+   audience, no ads.
+6. Once live, check `STORE_URL` in `constants/app.ts` matches the listing (it's used by
+   *Share the app*).
+
+**Samsung Galaxy Store** (Seller Portal, seller.samsungapps.com):
+
+1. Build what Seller Portal asks for: an APK with
+   `npx eas-cli@latest build --profile production-apk --platform android`, or the same `.aab`
+   as Play if the upload page accepts bundles.
+2. Use the same package name and EAS signing key as Play, so users can move between stores.
+3. Same listing details, screenshots and privacy policy URL. Samsung reviews each release; allow
+   a few days.
+
+Keep the version (`expo.version`) the same in both stores for a release.
