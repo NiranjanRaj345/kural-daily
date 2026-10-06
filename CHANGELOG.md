@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Open source under the GNU GPL v3.0 or later. New README, CONTRIBUTING and PRIVACY (the privacy policy as a page the stores can link to); device test plan and release steps moved to `docs/`.
+- You → More → **Source code** links to the repository.
+- Removed the unused EAS `development` profile; `.gitignore` covers credentials and build outputs; a GitHub check runs `npm run check` on every pull request.
+
 ## 1.3.0 (2026-10-06)
 
 ### From the first round of device testing
