@@ -6,7 +6,7 @@
 - **Reading has to be real**: a Kural counts as read (history, journey, streak) after about 6 seconds on screen with the app open, or straight away when you listen, open its meaning, save, share or learn it. Opening one and closing it at once no longer counts. Opening the app no longer counts as reading either; it only ends a streak that has already lapsed.
 - **Listen to the meaning**: a Listen button under the explanation reads the Tamil meaning in the Tamil voice and the English one in the phone's English voice, sentence by sentence.
 - **The couplet keeps its two lines** on Today, in Kural sheets and in shared images: the text shrinks a little where needed so each line fits on one line. On Today it never goes below about 60% of your text size; with L or XL on a narrow phone the lines wrap rather than get tiny.
-- **Memorize hides words by blurring them** instead of drawing boxes that showed where the words were.
+- **Memorize hides words by blurring them** instead of drawing boxes that showed where the words were. The blur is drawn by the app itself (faint copies of the word spread around it), so it looks the same on Android, iPhone and the web.
 - **Accent colour everywhere**: selected buttons, chips, the review banner, the Learn badge, milestones and Saved now follow the accent. Saffron stays only for the streak flame.
 - **Today is shorter**: the week strip is now a one-line streak pill; tap it for the full calendar on You.
 - **You, reorganised**: streak and a month-by-month reading calendar at the top, then Kurals read / chapters done / by heart, Progress (milestones, history, About), Settings (Appearance, Reading, Listening voice, Reminders, each in its own sheet with a one-line summary) and More.

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Pressable, Platform, TextStyle, PixelRatio } from 'react-native';
+import { View, StyleSheet, Pressable, Platform, TextStyle } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -37,25 +37,41 @@ const STEPS = [
 ];
 const RECALL = STEPS.length - 1;
 
-/**
- * A hidden word drawn out of focus: the glyphs themselves are transparent and
- * only a wide, soft shadow of them shows, so the shape of the word is there but
- * it can't be read. iOS doesn't draw shadows of transparent text, so there the
- * word is a soft smudge of colour instead.
+/*
+ * A hidden word drawn out of focus. Native blur isn't dependable on Android
+ * (a text shadow there comes out sharp, clipped to a box), so the blur is
+ * built by hand: faint copies of the word spread around its place, never one
+ * at the centre. The copies smear into the word's rough shape, which can't be
+ * read, and it looks the same on every platform.
  */
-// Android takes the shadow radius in physical pixels (and blurs up to about 25);
-// the web takes CSS pixels. Both come out at roughly a 5dp blur.
-const BLUR_RADIUS = Platform.OS === 'android' ? Math.min(25, 9 * PixelRatio.get()) : 12;
+const BLUR_RINGS = [
+  { radius: 3, opacity: 0.09 },
+  { radius: 5.5, opacity: 0.07 },
+  { radius: 8, opacity: 0.05 },
+];
+const BLUR_COPIES = BLUR_RINGS.flatMap(({ radius: r, opacity }, ring) =>
+  Array.from({ length: 10 }, (_, i) => {
+    const angle = ((i + ring / BLUR_RINGS.length) / 10) * Math.PI * 2;
+    return { x: Math.round(Math.cos(angle) * r * 10) / 10, y: Math.round(Math.sin(angle) * r * 10) / 10, opacity };
+  })
+);
 
-const blurred = (ink: string): TextStyle =>
-  Platform.OS === 'ios'
-    ? { color: 'transparent', backgroundColor: withAlpha(ink, 0.12), borderRadius: radius.sm, overflow: 'hidden' }
-    : { color: 'transparent', textShadowColor: withAlpha(ink, 0.8), textShadowOffset: { width: 0, height: 0 }, textShadowRadius: BLUR_RADIUS };
-
-const withAlpha = (hex: string, alpha: number) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
-};
+const BlurredWord: React.FC<{ word: string; style: TextStyle; color: string }> = ({ word, style, color }) => (
+  <View>
+    {/* Keeps the word's size; never drawn */}
+    <Text style={[style, { opacity: 0 }]}>{word}</Text>
+    {BLUR_COPIES.map((o, i) => (
+      <Text
+        key={i}
+        style={[style, styles.blurCopy, { color, left: o.x, top: o.y, opacity: o.opacity }]}
+        importantForAccessibility="no"
+        accessibilityElementsHidden
+      >
+        {word}
+      </Text>
+    ))}
+  </View>
+);
 
 const isHidden = (step: number, wordIndex: number, globalIndex: number) => {
   if (step === 0) return false;
@@ -264,14 +280,11 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
                       accessibilityLabel={hidden ? `Hidden word ${gi + 1}, tap to reveal` : word}
                       style={styles.word}
                     >
-                      <Text
-                        style={[
-                          type.kural(20),
-                          hidden ? blurred(theme.colors.ink) : { color: theme.colors.ink },
-                        ]}
-                      >
-                        {word}
-                      </Text>
+                      {hidden ? (
+                        <BlurredWord word={word} style={type.kural(20)} color={theme.colors.ink} />
+                      ) : (
+                        <Text style={[type.kural(20), { color: theme.colors.ink }]}>{word}</Text>
+                      )}
                     </Pressable>
                   );
                 })}
@@ -333,6 +346,9 @@ const styles = StyleSheet.create({
   },
   word: {
     paddingHorizontal: 4,
+  },
+  blurCopy: {
+    position: 'absolute',
   },
   tools: {
     flexDirection: 'row',
