@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, BackHandler, Share } from 'react-native';
+import { View, StyleSheet, ScrollView, FlatList, BackHandler, Share, Linking } from 'react-native';
 import { List, Text, Divider, IconButton, Portal, Dialog, Button, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -23,7 +23,7 @@ import { VoicePickerSheet } from '../../components/profile/VoicePickerSheet';
 import { getTamilVoices } from '../../services/SpeechService';
 import { completedChapters, computeMilestones } from '../../utils/milestones';
 import { MASTERED_BOX } from '../../utils/srs';
-import { APP_NAME, APP_VERSION, SHARE_APP_MESSAGE } from '../../constants/app';
+import { APP_NAME, APP_VERSION, REPO_URL, SHARE_APP_MESSAGE } from '../../constants/app';
 import { useAppTheme, space, radius } from '../../theme';
 
 /** A rounded group of settings rows. */
@@ -244,6 +244,14 @@ export default function ProfileScreen() {
           />
           <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
+            title="Source code"
+            description="Kural Daily is open source (GPL-3.0)"
+            left={(props) => <List.Icon {...props} icon="github" />}
+            right={(props) => <List.Icon {...props} icon="open-in-new" />}
+            onPress={() => Linking.openURL(REPO_URL).catch(() => {})}
+          />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <List.Item
             title="Reset progress"
             description="Clears history, streaks, learning and quiz scores. Saved Kurals are kept."
             descriptionNumberOfLines={2}
@@ -286,6 +294,11 @@ export default function ProfileScreen() {
             • Notifications (optional): Used only for the daily Kural and streak reminders you turn on, scheduled locally on your device. Requested only when you turn a reminder on.{'\n'}
             • Read aloud: Uses your phone&apos;s own text-to-speech voices. Nothing is sent anywhere by the app.{'\n'}
             • Sharing: Kural images are created on your device and passed to the share sheet you choose. No storage permission is needed.
+          </Text>
+
+          <Text variant="titleMedium" style={styles.policyHeading}>Open source</Text>
+          <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
+            The app&apos;s source code is public, so anyone can check what it does: github.com/NiranjanRaj345/kural-daily
           </Text>
 
           <Text variant="bodySmall" style={{ marginTop: space.xl, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>

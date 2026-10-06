@@ -7,10 +7,10 @@ in about 45 minutes. Note anything that looks or behaves wrong with a screenshot
 
 ```bash
 git fetch origin
-git checkout claude/serene-wozniak-94n40c                        # or the branch being tested
-git pull origin claude/serene-wozniak-94n40c                     # bring your copy up to date
+git checkout <branch-to-test>          # e.g. master, or a pull request's branch
+git pull
 npm install
-npm run check                                                     # must pass; shows the version (kural-daily@1.3.0)
+npm run check                          # must pass; shows the version
 npx eas-cli@latest build --profile preview --platform android    # installable APK
 ```
 
@@ -23,7 +23,7 @@ Test both paths if you can:
 - **Fresh install**: uninstall (or Settings → Apps → Kural Daily → Storage → Clear data), then
   install again. This shows the welcome screens.
 
-You → bottom of the screen should read **Kural Daily 1.3.0**.
+The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3.0**).
 
 ## 1. First launch (fresh install)
 
@@ -181,40 +181,4 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 For each problem note: the step number, what you expected, what happened, and a screenshot or
 screen recording. Phone model and Android version help too.
 
-## After testing
-
-1. Merge the pull request.
-2. Make sure the release's section in CHANGELOG.md carries its date (e.g. `## 1.3.0 (2026-10-06)`).
-3. Create the GitHub release `v1.3.0` from `master` with the 1.3.0 changelog section.
-
-## First store release
-
-Build from `master` after merging. `production` builds bump `android.versionCode` in app.json
-(EAS `autoIncrement`); commit that change after each build so the next build goes higher.
-
-**Google Play** (Android App Bundle):
-
-1. `npx eas-cli@latest build --profile production --platform android` → an `.aab`.
-2. Play Console → create the app (*Kural Daily*, free, app). Package name comes from the first
-   upload: `com.mrmonk.kuraldaily`, and can never change.
-3. Upload the `.aab` to **Internal testing** first, install it from the Play link on your phone,
-   then promote to Production. (New personal developer accounts must run a closed test with
-   testers for a set period before Production is unlocked; the Console shows the current rule.)
-4. Store listing: title, short and full description, the 512×512 icon (`assets/images/icon.png`
-   scaled), a 1024×500 feature graphic, and at least two phone screenshots.
-5. App content: privacy policy URL (host the policy text from You → Privacy policy, e.g. on GitHub
-   Pages), Data safety: *no data collected or shared*, content rating questionnaire, target
-   audience, no ads.
-6. Once live, check `STORE_URL` in `constants/app.ts` matches the listing (it's used by
-   *Share the app*).
-
-**Samsung Galaxy Store** (Seller Portal, seller.samsungapps.com):
-
-1. Build what Seller Portal asks for: an APK with
-   `npx eas-cli@latest build --profile production-apk --platform android`, or the same `.aab`
-   as Play if the upload page accepts bundles.
-2. Use the same package name and EAS signing key as Play, so users can move between stores.
-3. Same listing details, screenshots and privacy policy URL. Samsung reviews each release; allow
-   a few days.
-
-Keep the version (`expo.version`) the same in both stores for a release.
+When everything passes, follow [releasing.md](releasing.md).
