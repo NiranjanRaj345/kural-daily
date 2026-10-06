@@ -85,10 +85,23 @@ const contentFor = (reminder: PlannedReminder): Notifications.NotificationConten
   };
 };
 
+const TEST_ID = 'test-reminder';
+
+/**
+ * Cancels the scheduled reminders. A pending test reminder is left alone, so a
+ * sync that runs right after (e.g. when the permission dialog closes) can't
+ * swallow it. Anything else, including reminders scheduled by older versions
+ * of the app, is cancelled.
+ */
 export async function cancelAllNotifications() {
   if (!notificationsSupported) return;
   try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.identifier !== TEST_ID)
+        .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+    );
   } catch (error) {
     console.warn("Failed to cancel notifications:", error);
   }
@@ -213,6 +226,29 @@ export async function disableDailyReminders() {
 export async function setStreakReminder(enabled: boolean): Promise<boolean> {
   useSettingsStore.getState().setStreakReminderEnabled(enabled);
   return syncDailyReminders({ prompt: enabled });
+}
+
+export const TEST_REMINDER_DELAY_SECONDS = 10;
+
+/**
+ * Sends a sample daily reminder in a few seconds, so people can check that
+ * notifications reach them without waiting for the scheduled time.
+ * Returns false if notifications aren't allowed.
+ */
+export async function sendTestReminder(): Promise<boolean> {
+  if (!notificationsSupported) return false;
+  if ((await ensureNotificationPermission(true)) !== 'granted') return false;
+  const date = new Date();
+  await Notifications.scheduleNotificationAsync({
+    identifier: TEST_ID,
+    content: contentFor({ kind: 'daily', date, dayKey: '' }),
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: TEST_REMINDER_DELAY_SECONDS,
+      channelId: DAILY_CHANNEL,
+    },
+  });
+  return true;
 }
 
 export const formatReminderTime = (hour: number, minute: number) =>

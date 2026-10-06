@@ -63,6 +63,9 @@ npx eas-cli@latest submit --profile production --platform android
 
 ### Release checklist
 
+The full device test plan is in [TESTING.md](TESTING.md).
+
+
 1. `npm run check` passes
 2. Bump `expo.version` in `app.json` if needed
 3. Update the "Last Updated" date in the in-app privacy policy (`app/(tabs)/profile.tsx`) if it changed

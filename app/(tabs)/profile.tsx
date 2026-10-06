@@ -10,6 +10,7 @@ import { TimePickerModal } from 'react-native-paper-dates';
 import { uses24HourClock } from '../../utils/date';
 import {
   enableDailyReminders, disableDailyReminders, setStreakReminder, formatReminderTime,
+  sendTestReminder, TEST_REMINDER_DELAY_SECONDS,
 } from '../../services/NotificationService';
 import { getKuralByNumber, TOTAL_KURALS } from '../../services/DataService';
 import { Kural } from '../../types/kural';
@@ -114,6 +115,13 @@ export default function ProfileScreen() {
     if (!streakReminderEnabled && !enabled) {
       setSnackbar({ message: 'Notifications are blocked for this app.', openSettings: Platform.OS !== 'web' });
     }
+  };
+
+  const onTestReminder = async () => {
+    const sent = await sendTestReminder();
+    setSnackbar(sent
+      ? { message: `Test reminder on its way: lock your phone and wait ${TEST_REMINDER_DELAY_SECONDS} seconds.` }
+      : { message: 'Notifications are blocked for this app.', openSettings: true });
   };
 
   // Rescheduling follows automatically (the root layout re-plans on these changes)
@@ -292,6 +300,17 @@ export default function ProfileScreen() {
               right={(props) => <List.Icon {...props} icon="pencil-outline" />}
               onPress={() => setTimePicker('streak')}
             />
+          )}
+          {Platform.OS !== 'web' && (
+            <>
+              <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+              <List.Item
+                title="Send a test reminder"
+                description={`Arrives in ${TEST_REMINDER_DELAY_SECONDS} seconds, even with the app closed`}
+                left={(props) => <List.Icon {...props} icon="bell-ring-outline" />}
+                onPress={onTestReminder}
+              />
+            </>
           )}
         </Group>
 

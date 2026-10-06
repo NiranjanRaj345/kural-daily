@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { scheduleReminders, syncDailyReminders, enableDailyReminders, setStreakReminder } from '../services/NotificationService';
+import { scheduleReminders, syncDailyReminders, enableDailyReminders, setStreakReminder, sendTestReminder } from '../services/NotificationService';
 import { getKuralForDate } from '../services/DailyService';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { toLocalDateKey } from '../utils/date';
@@ -10,9 +10,10 @@ jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(),
-  cancelAllScheduledNotificationsAsync: jest.fn(),
+  getAllScheduledNotificationsAsync: jest.fn(async () => []),
+  cancelScheduledNotificationAsync: jest.fn(),
   AndroidImportance: { HIGH: 4, DEFAULT: 3 },
-  SchedulableTriggerInputTypes: { DATE: 'date' },
+  SchedulableTriggerInputTypes: { DATE: 'date', TIME_INTERVAL: 'timeInterval' },
 }));
 
 const mocked = Notifications as jest.Mocked<typeof Notifications>;
@@ -51,9 +52,13 @@ describe('scheduleReminders', () => {
     expect(request.trigger).toMatchObject({ channelId: 'streak' });
   });
 
-  it('replaces whatever was scheduled before', async () => {
+  it('replaces earlier reminders but keeps a pending test reminder', async () => {
+    mocked.getAllScheduledNotificationsAsync.mockResolvedValueOnce([
+      { identifier: 'old-1' }, { identifier: 'test-reminder' }, { identifier: 'old-2' },
+    ] as never);
     await scheduleReminders([]);
-    expect(mocked.cancelAllScheduledNotificationsAsync).toHaveBeenCalled();
+    const cancelled = mocked.cancelScheduledNotificationAsync.mock.calls.map((c) => c[0]);
+    expect(cancelled).toEqual(['old-1', 'old-2']);
   });
 });
 
@@ -81,7 +86,7 @@ describe('syncDailyReminders', () => {
 
   it('cancels everything when both reminders are off', async () => {
     await syncDailyReminders();
-    expect(mocked.cancelAllScheduledNotificationsAsync).toHaveBeenCalled();
+    expect(mocked.getAllScheduledNotificationsAsync).toHaveBeenCalled();
     expect(mocked.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
@@ -143,5 +148,23 @@ describe('turning reminders on', () => {
     mocked.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as never);
     expect(await setStreakReminder(true)).toBe(true);
     expect(useSettingsStore.getState()).toMatchObject({ notificationsEnabled: false, streakReminderEnabled: true });
+  });
+});
+
+describe('test reminder', () => {
+  it('arrives a few seconds later as a daily reminder, once allowed', async () => {
+    mocked.getPermissionsAsync.mockResolvedValue({ status: 'granted' } as never);
+    expect(await sendTestReminder()).toBe(true);
+    const [request] = scheduled();
+    expect(request.identifier).toBe('test-reminder');
+    expect(request.trigger).toMatchObject({ type: 'timeInterval', seconds: 10, channelId: 'daily-kural' });
+    expect(request.content.title).toMatch(/^Today's Thirukkural/);
+  });
+
+  it('reports when notifications are refused', async () => {
+    mocked.getPermissionsAsync.mockResolvedValue({ status: 'undetermined' } as never);
+    mocked.requestPermissionsAsync.mockResolvedValue({ status: 'denied' } as never);
+    expect(await sendTestReminder()).toBe(false);
+    expect(mocked.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 });

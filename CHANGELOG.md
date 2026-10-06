@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 (in testing)
 
 ### Learn by heart (new)
 - **Memorize mode (மனப்பாடம்)**: read the couplet, then recite it as words are hidden step by step (every other word, first words only, nothing), tapping any word to peek. Listen slowly, see the meaning as a hint.
