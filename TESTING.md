@@ -6,9 +6,11 @@ in about 45 minutes. Note anything that looks or behaves wrong with a screenshot
 ## 0. Build and install
 
 ```bash
-git fetch origin && git checkout claude/serene-wozniak-94n40c   # or the branch being tested
+git fetch origin
+git checkout claude/serene-wozniak-94n40c                        # or the branch being tested
+git pull origin claude/serene-wozniak-94n40c                     # bring your copy up to date
 npm install
-npm run check                                                     # must pass before building
+npm run check                                                     # must pass; shows the version (kural-daily@1.3.0)
 npx eas-cli@latest build --profile preview --platform android    # installable APK
 ```
 
