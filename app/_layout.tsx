@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { NotoSansTamil_400Regular, NotoSansTamil_500Medium, NotoSansTamil_600SemiBold, NotoSansTamil_700Bold } from '@expo-google-fonts/noto-sans-tamil';
-import { NotoSerifTamil_400Regular, NotoSerifTamil_500Medium, NotoSerifTamil_600SemiBold } from '@expo-google-fonts/noto-serif-tamil';
+import { NotoSerifTamil_400Regular, NotoSerifTamil_500Medium, NotoSerifTamil_600SemiBold, NotoSerifTamil_700Bold } from '@expo-google-fonts/noto-serif-tamil';
 import { Lora_400Regular, Lora_400Regular_Italic, Lora_600SemiBold } from '@expo-google-fonts/lora';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { Stack, useRouter } from 'expo-router';
@@ -55,6 +55,7 @@ export default function RootLayout() {
     NotoSerifTamil_400Regular,
     NotoSerifTamil_500Medium,
     NotoSerifTamil_600SemiBold,
+    NotoSerifTamil_700Bold,
     Lora_400Regular,
     Lora_400Regular_Italic,
     Lora_600SemiBold,
@@ -118,11 +119,12 @@ function RootLayoutNav() {
   const appearance = useSettingsStore((state) => state.appearance);
   const accent = useSettingsStore((state) => state.accent);
   const readingFont = useSettingsStore((state) => state.readingFont);
+  const boldKural = useSettingsStore((state) => state.boldKural);
   const onboarded = useSettingsStore((state) => state.onboarded);
   const systemScheme = useColorScheme();
   const theme = useMemo(
-    () => buildTheme(resolveAppearance(appearance, systemScheme), accent, readingFont),
-    [appearance, accent, readingFont, systemScheme]
+    () => buildTheme(resolveAppearance(appearance, systemScheme), accent, readingFont, boldKural),
+    [appearance, accent, readingFont, boldKural, systemScheme]
   );
 
   // Tapping a daily reminder opens today's Kural

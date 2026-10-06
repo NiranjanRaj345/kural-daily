@@ -54,7 +54,8 @@ describe('reading fonts', () => {
     const theme = buildTheme('paper', 'indigo', 'device');
     const styles = [theme.type.kural(24), theme.type.tamilBody, theme.type.translation, theme.type.display(30), theme.type.ui];
     for (const style of styles) expect(style.fontFamily).toBeUndefined();
-    expect(theme.type.kural(24).fontWeight).toBe('700');
+    expect(theme.type.kural(24).fontWeight).toBe('400');
+    expect(buildTheme('paper', 'indigo', 'device', true).type.kural(24).fontWeight).toBe('700');
     expect(theme.type.translation.fontStyle).toBe('italic');
     expect(theme.fonts.bodyMedium.fontFamily).not.toMatch(/Inter|Lora|Noto/);
   });
@@ -102,5 +103,15 @@ describe('reading sizes', () => {
 
   it('keeps the couplet clearly larger than the meaning, even when shrunk to fit', () => {
     for (const s of steps) expect(s.verseMin).toBeGreaterThan(s.meaning);
+  });
+});
+
+describe('bold couplet', () => {
+  it('is off by default and switches each font to its bold face', () => {
+    expect(buildTheme('paper', 'indigo', 'classic').type.kural(20).fontFamily).toBe('NotoSerifTamil_600SemiBold');
+    expect(buildTheme('paper', 'indigo', 'classic', true).type.kural(20).fontFamily).toBe('NotoSerifTamil_700Bold');
+    expect(buildTheme('paper', 'indigo', 'modern', true).type.kural(20).fontFamily).toBe('NotoSansTamil_700Bold');
+    // Bundled faces never carry a bold fontWeight (iOS would fall back to the system font)
+    expect(buildTheme('paper', 'indigo', 'classic', true).type.kural(20).fontWeight).toBeUndefined();
   });
 });

@@ -17,7 +17,7 @@ export const FontPicker: React.FC = () => {
       <View style={styles.options}>
         {READING_FONTS.map((f) => {
           const selected = f.value === readingFont;
-          const preview = buildTheme(theme.appearance, theme.accent, f.value).type;
+          const preview = buildTheme(theme.appearance, theme.accent, f.value, theme.boldKural).type;
           return (
             <Pressable
               key={f.value}

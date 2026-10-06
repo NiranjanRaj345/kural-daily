@@ -10,6 +10,7 @@
 - **Accent colour everywhere**: selected buttons, chips, the review banner, the Learn badge, milestones, Saved, read-chapter ticks, By heart, the Read mark, the reading calendar and streak dots now follow the accent. Only the flame icon stays saffron (and with the Saffron accent it is the accent), and the quiz keeps green/red for right/wrong.
 - **Text size works on all the reading text**: S–XL now scales the couplet, the English translation and the meaning together (it used to change only the couplet, which the two-line fitting then shrank back, so S, M and L looked the same). The couplet stays larger than the meaning, and with the Device font it is now bold (Android has no semi-bold for most system fonts). Memorize follows the text size too.
 - **Match my phone's text size** (new, and the default): the reading text follows the phone's font-size setting. Turn it off to pick S–XL, which then stay exactly that size whatever the phone is set to.
+- **Bold couplet** (optional, off by default): You → Appearance → Couplet weight sets the Kural in bold for any font. Off keeps the usual book weight.
 - **New defaults for a new install**: page Auto, accent Indigo, the phone's font and text size, and the best Tamil voice available. Existing settings are kept on upgrade.
 - **Reading calendar** can go back a year (more if your reading goes back further), and forward again to this month.
 - **Today is shorter**: the week strip is now a one-line streak pill; tap it for the full calendar on You.

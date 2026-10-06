@@ -38,6 +38,7 @@ export const READING_FONTS: { value: ReadingFont; label: string; detail: string 
 
 interface FontFamilies {
   kural: string;
+  kuralBold: string;
   tamilBody: string;
   tamilPreview: string;
   tamilUi: string;
@@ -53,6 +54,7 @@ interface FontFamilies {
 const FAMILIES: Record<Exclude<ReadingFont, 'device'>, FontFamilies> = {
   classic: {
     kural: 'NotoSerifTamil_600SemiBold',
+    kuralBold: 'NotoSerifTamil_700Bold',
     tamilBody: 'NotoSerifTamil_400Regular',
     tamilPreview: 'NotoSerifTamil_500Medium',
     tamilUi: 'NotoSansTamil_400Regular',
@@ -66,6 +68,7 @@ const FAMILIES: Record<Exclude<ReadingFont, 'device'>, FontFamilies> = {
   },
   modern: {
     kural: 'NotoSansTamil_600SemiBold',
+    kuralBold: 'NotoSansTamil_700Bold',
     tamilBody: 'NotoSansTamil_400Regular',
     tamilPreview: 'NotoSansTamil_500Medium',
     tamilUi: 'NotoSansTamil_400Regular',
@@ -140,11 +143,16 @@ export interface TypeScale {
   uiStrong: TextStyle;
 }
 
-const buildTypeScale = (font: ReadingFont): TypeScale => {
+const buildTypeScale = (font: ReadingFont, boldKural: boolean): TypeScale => {
   const f = font === 'device' ? undefined : FAMILIES[font];
   return {
-    // Bold for the device font: Android has no 600 for most system faces and falls back to regular
-    kural: (size) => ({ ...face(f?.kural, '700'), fontSize: size, lineHeight: Math.round(size * 1.7) }),
+    // The couplet's usual face, or bold when the reader asks for it. The device font has no
+    // semi-bold on most Android phones, so there the usual face is regular.
+    kural: (size) => ({
+      ...(boldKural ? face(f?.kuralBold, '700') : face(f?.kural, '400')),
+      fontSize: size,
+      lineHeight: Math.round(size * 1.7),
+    }),
     tamilBody: { ...face(f?.tamilBody, '400'), fontSize: 16, lineHeight: 29 },
     tamilPreview: { ...face(f?.tamilPreview, '500'), fontSize: 16, lineHeight: 27 },
     tamilTitle: { ...face(f?.tamilUiStrong, '600'), fontSize: 16, lineHeight: 26 },
@@ -179,6 +187,7 @@ export type AppTheme = MD3Theme & {
   appearance: ResolvedAppearance;
   accent: Accent;
   readingFont: ReadingFont;
+  boldKural: boolean;
   type: TypeScale;
 };
 
@@ -260,7 +269,12 @@ const ACCENT_PALETTES: Record<Accent, { light: AccentPalette; dark: AccentPalett
   },
 };
 
-export const buildTheme = (appearance: ResolvedAppearance, accent: Accent, readingFont: ReadingFont = 'classic'): AppTheme => {
+export const buildTheme = (
+  appearance: ResolvedAppearance,
+  accent: Accent,
+  readingFont: ReadingFont = 'classic',
+  boldKural = false
+): AppTheme => {
   const base = BASES[appearance];
   const a = ACCENT_PALETTES[accent][base.dark ? 'dark' : 'light'];
   const md3 = base.dark ? MD3DarkTheme : MD3LightTheme;
@@ -272,7 +286,8 @@ export const buildTheme = (appearance: ResolvedAppearance, accent: Accent, readi
     appearance,
     accent,
     readingFont,
-    type: buildTypeScale(readingFont),
+    boldKural,
+    type: buildTypeScale(readingFont, boldKural),
     colors: {
       ...md3.colors,
       ...a,

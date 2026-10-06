@@ -18,6 +18,8 @@ export interface SettingsState {
   appearance: Appearance;
   accent: Accent;
   readingFont: ReadingFont;
+  /** Set the couplet in bold instead of its usual weight. */
+  boldKural: boolean;
   /** Couplet text size (S 20, M 24, L 28, XL 32), or 0 to follow the phone's text size. */
   fontSize: number;
   showTamil: boolean;
@@ -58,6 +60,7 @@ export interface SettingsState {
   setAppearance: (appearance: Appearance) => void;
   setAccent: (accent: Accent) => void;
   setReadingFont: (font: ReadingFont) => void;
+  setBoldKural: (bold: boolean) => void;
   setFontSize: (size: number) => void;
   setReadingLanguage: (language: ReadingLanguage) => void;
   toggleTamil: () => void;
@@ -135,6 +138,7 @@ export const useSettingsStore = create<SettingsState>()(
       appearance: 'auto',
       accent: 'indigo',
       readingFont: 'device',
+      boldKural: false,
       fontSize: 0, // the phone's text size (DEVICE_TEXT_SIZE)
       showTamil: true,
       showEnglish: true,
@@ -168,6 +172,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAppearance: (appearance) => set({ appearance }),
       setAccent: (accent) => set({ accent }),
       setReadingFont: (readingFont) => set({ readingFont }),
+      setBoldKural: (boldKural) => set({ boldKural }),
       setFontSize: (size) => set({ fontSize: size }),
       setReadingLanguage: (language) => set({
         showTamil: language !== 'english',

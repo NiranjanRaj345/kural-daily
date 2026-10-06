@@ -121,7 +121,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
       About the Thirukkural (read it through: poet, names, verse form, arrangement, commentaries).
 - [ ] Settings rows show a summary and open sheets:
       **Appearance** → Page: Auto, Paper, Palm leaf, Night; Accent: Indigo, Kumkum, Leaf, Saffron;
-      Font: Classic, Modern, Device, with a live preview. Change the accent and check it on Today
+      Font: Classic, Modern, Device, with a live preview. **Bold couplet** is off by default (the
+      Kural in its usual weight); turning it on makes the couplet bold in every font. Change the accent and check it on Today
       (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
       the share sheet's chips, Browse chapter ticks, By heart, the ✓ Read mark, the reading calendar
       and streak dots. Only the flame icon stays saffron.

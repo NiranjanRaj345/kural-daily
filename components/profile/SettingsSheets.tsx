@@ -84,14 +84,27 @@ const Preview: React.FC = () => {
   );
 };
 
-/** Page colour, accent and font, with a live preview. */
-export const AppearanceSheet: React.FC<SheetProps> = ({ visible, onClose }) => (
-  <SheetModal visible={visible} onClose={onClose} title="Appearance" height="80%">
-    <Preview />
-    <AppearancePicker />
-    <FontPicker />
-  </SheetModal>
-);
+/** Page colour, accent, font and couplet weight, with a live preview. */
+export const AppearanceSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
+  const theme = useAppTheme();
+  const boldKural = useSettingsStore((s) => s.boldKural);
+  const setBoldKural = useSettingsStore((s) => s.setBoldKural);
+  return (
+    <SheetModal visible={visible} onClose={onClose} title="Appearance" height="85%">
+      <Preview />
+      <AppearancePicker />
+      <FontPicker />
+      <Block title="Couplet weight" detail="Off keeps the Kural in its usual book weight">
+        <View style={styles.switchRow}>
+          <Text variant="bodyMedium" style={[styles.flex, { color: theme.colors.onSurface }]}>
+            Bold couplet
+          </Text>
+          <Switch value={boldKural} onValueChange={setBoldKural} accessibilityLabel="Bold couplet" />
+        </View>
+      </Block>
+    </SheetModal>
+  );
+};
 
 /** Language, text size and speech speed. */
 export const ReadingSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
