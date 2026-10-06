@@ -54,6 +54,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 - [ ] வணக்கம், today's date, and a one-line streak pill (flame, "N-day streak", 7 small dots).
       Tapping it opens You.
 - [ ] Today's Kural: number, அதிகாரம் and position (e.g. 9/10), chapter in Tamil and English.
+- [ ] Tomorrow is a surprise: set the phone's date a day ahead (automatic date off) and reopen the
+      app; the Kural is from a different chapter, not today's number + 1. Set the date back.
 - [ ] The couplet is on its two original lines (text slightly smaller if needed). With text size L
       or XL on a narrow phone it may wrap; that's intended.
 - [ ] The whole card (to Save / Listen / Learn / Share) fits on the screen without scrolling.

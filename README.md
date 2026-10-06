@@ -4,7 +4,7 @@ An offline mobile app for reading the **Thirukkural**: all 1330 couplets in 133 
 
 ## Features
 
-- **Today**: one couplet per day, cycling through all 1330 in order, set on its original two lines, with the streak and the rest of the day's chapter
+- **Today**: one couplet per day in a fixed shuffled order of all 1330 (the same for everyone; none repeats until all 1330 have been shown), set on its original two lines, with the streak and the rest of the day's chapter
 - **Learn by heart**: a memorize mode that hides words step by step, and spaced review (1, 2, 4, 7, 15, 30, 60 days)
 - **Quiz**: Missing Word, Meaning Match, Find Chapter, Jumbled Kural
 - **Browse** by book, part (இயல்) and chapter; **search** by Tamil or English text, chapter name, or Kural number
