@@ -38,7 +38,7 @@ const STEPS = [
 const RECALL = STEPS.length - 1;
 
 /*
- * A hidden word drawn out of focus. Native blur isn't dependable on Android
+ * A hidden word drawn out of focus, under frosted glass. Native blur isn't dependable on Android
  * (a text shadow there comes out sharp, clipped to a box), so the blur is
  * built by hand: faint copies of the word spread around its place, never one
  * at the centre. The copies smear into the word's rough shape, which can't be
@@ -56,20 +56,29 @@ const BLUR_COPIES = BLUR_RINGS.flatMap(({ radius: r, opacity }, ring) =>
   })
 );
 
-const BlurredWord: React.FC<{ word: string; style: TextStyle; color: string }> = ({ word, style, color }) => (
-  <View>
+const withAlpha = (hex: string, alpha: number) => {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+};
+
+/** A hidden word: the smudged word under a frosted-glass box. Tapping it reveals the word. */
+const BlurredWord: React.FC<{ word: string; style: TextStyle; ink: string; glass: string; edge: string }> = ({
+  word, style, ink, glass, edge,
+}) => (
+  <View style={[styles.tile, { borderColor: edge }]}>
     {/* Keeps the word's size; never drawn */}
     <Text style={[style, { opacity: 0 }]}>{word}</Text>
     {BLUR_COPIES.map((o, i) => (
       <Text
         key={i}
-        style={[style, styles.blurCopy, { color, left: o.x, top: o.y, opacity: o.opacity }]}
+        style={[style, styles.blurCopy, { color: ink, left: o.x, top: o.y, opacity: o.opacity }]}
         importantForAccessibility="no"
         accessibilityElementsHidden
       >
         {word}
       </Text>
     ))}
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(glass, 0.5) }]} />
   </View>
 );
 
@@ -281,9 +290,21 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
                       style={styles.word}
                     >
                       {hidden ? (
-                        <BlurredWord word={word} style={type.kural(20)} color={theme.colors.ink} />
+                        <BlurredWord
+                          word={word}
+                          style={type.kural(20)}
+                          ink={theme.colors.ink}
+                          glass={theme.colors.surfaceVariant}
+                          edge={theme.colors.outlineVariant}
+                        />
                       ) : (
-                        <Text style={[type.kural(20), { color: theme.colors.ink }]}>{word}</Text>
+                        // A peeked word fades in from behind its glass
+                        <Animated.Text
+                          entering={peeked.has(gi) ? FadeIn.duration(250) : undefined}
+                          style={[type.kural(20), { color: theme.colors.ink }]}
+                        >
+                          {word}
+                        </Animated.Text>
                       )}
                     </Pressable>
                   );
@@ -349,6 +370,14 @@ const styles = StyleSheet.create({
   },
   blurCopy: {
     position: 'absolute',
+  },
+  // The blur stays inside its tile
+  tile: {
+    overflow: 'hidden',
+    marginHorizontal: -4,
+    paddingHorizontal: 4,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   tools: {
     flexDirection: 'row',

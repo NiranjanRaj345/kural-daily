@@ -81,8 +81,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 ## 5. Learn by heart
 
 - [ ] On a Kural, **Learn** opens Memorize at Step 1 of 4.
-- [ ] Next step hides every other word as a **blur** (no boxes, nothing readable); tap a blurred
-      word to peek.
+- [ ] Next step hides every other word under a **frosted, blurred tile** (nothing readable through
+      it); tap a tile and the word fades in.
 - [ ] Step 3 shows first words only; Step 4 hides everything.
 - [ ] Listen slowly is slower than normal Listen. Meaning shows the English hint.
 - [ ] Check my recall → I knew it → "Committed to memory". The card's button now says Learning.
