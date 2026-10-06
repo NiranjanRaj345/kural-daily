@@ -59,7 +59,7 @@ npx eas-cli@latest submit --profile production --platform android
 ```
 
 - Versions are managed **locally** (`appVersionSource: "local"`). The production profile has `autoIncrement`, so EAS bumps `android.versionCode` / `ios.buildNumber` in `app.json` on each build. Commit that change after building.
-- For a user-visible release, also bump `expo.version` in `app.json`. The Profile screen reads the version from there.
+- For a user-visible release, also bump `expo.version` in `app.json`. The You screen shows the version from there (via `constants/app.ts`).
 
 ### Release checklist
 
