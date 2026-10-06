@@ -3,7 +3,7 @@
 ## 1.3.0 (in testing)
 
 ### From the first round of device testing
-- **Reading has to be real**: a Kural counts as read (history, journey, streak) after about 6 seconds on screen with the app open, or straight away when you listen, open its meaning, save, share or learn it. Opening one and closing it at once no longer counts. Opening the app no longer counts as reading either; it only ends a streak that has already lapsed.
+- **Reading has to be real**: a Kural counts as read (history, journey, streak) after about 6 seconds on screen with the app open, or straight away when you listen, open its meaning, save, share or learn it. Opening one and closing it at once no longer counts. Opening the app no longer counts as reading either; it only ends a streak that has already lapsed. A green ✓ Read on the card shows when a Kural has counted.
 - **Listen to the meaning**: a Listen button under the explanation reads the Tamil meaning in the Tamil voice and the English one in the phone's English voice, sentence by sentence.
 - **The couplet keeps its two lines** on Today, in Kural sheets and in shared images: the text shrinks a little where needed so each line fits on one line. On Today it never goes below about 60% of your text size; with L or XL on a narrow phone the lines wrap rather than get tiny.
 - **Memorize hides words by blurring them** instead of drawing boxes that showed where the words were. Each hidden word sits under a frosted-glass tile over a blurred copy of the word (drawn by the app itself, so it looks the same on Android, iPhone and the web); tap a tile and the word fades in.
