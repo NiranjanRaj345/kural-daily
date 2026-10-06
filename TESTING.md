@@ -56,8 +56,10 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 - [ ] Today's Kural: number, அதிகாரம் and position (e.g. 9/10), chapter in Tamil and English.
 - [ ] The couplet is on its two original lines (text slightly smaller if needed). With text size L
       or XL on a narrow phone it may wrap; that's intended.
-- [ ] Meaning is open; switch தமிழ் / English. **Listen** under the meaning reads it aloud (Tamil
-      voice for தமிழ், English voice for English); tap again to stop; switching language stops it.
+- [ ] The whole card (to Save / Listen / Learn / Share) fits on the screen without scrolling.
+- [ ] Meaning is open. Its header row has பொருள் (tap to collapse/expand), a தமிழ் / EN switch and
+      a speaker: it reads the meaning aloud (Tamil voice for தமிழ், English voice for EN); tap again
+      to stop; switching language stops it.
 - [ ] "Keep reading this chapter" opens the chapter's first unread Kural; **Next** goes through
       the chapter; the 10 dots fill as you read.
 - [ ] Your journey numbers go up after reading.

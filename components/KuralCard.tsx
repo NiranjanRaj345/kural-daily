@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable, Platform } from 'react-native';
-import { Text, SegmentedButtons, Button } from 'react-native-paper';
+import { Text, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -139,33 +139,30 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
         {/* Folio: where this couplet sits in the book */}
         <View style={styles.folio}>
           <Text
-            style={[type.display(34), styles.number, { color: theme.colors.primary }]}
+            style={[type.display(30), styles.number, { color: theme.colors.primary }]}
             accessibilityLabel={`Kural ${kural.number}`}
           >
             {kural.number}
           </Text>
           <View style={styles.folioText}>
-            <View style={styles.folioMeta}>
-              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                அதிகாரம் {chapterNumber} · {position}/10
-              </Text>
-              {/* Shows once the Kural has counted as read (see useReadTracker) */}
-              {isRead && (
-                <Animated.View entering={FadeIn.duration(300)} style={styles.readMark} accessibilityLabel="Read">
-                  <MaterialCommunityIcons name="check-circle" size={13} color={theme.colors.primary} />
-                  <Text variant="labelSmall" style={{ color: theme.colors.primary }}>Read</Text>
-                </Animated.View>
-              )}
-            </View>
             <Text style={[type.tamilLabelStrong, { color: theme.colors.onSurface }]} numberOfLines={1}>
               {kural.chap_tam}
             </Text>
-            {kural.chap_eng && (
-              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-                {kural.chap_eng} · {kural.sect_eng}
-              </Text>
-            )}
+            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+              அதிகாரம் {chapterNumber} · {position}/10{kural.chap_eng ? ` · ${kural.chap_eng}` : ''}
+            </Text>
           </View>
+          {/* Shows once the Kural has counted as read (see useReadTracker) */}
+          {isRead && (
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              style={[styles.readMark, { backgroundColor: theme.colors.primaryContainer }]}
+              accessibilityLabel="Read"
+            >
+              <MaterialCommunityIcons name="check" size={13} color={theme.colors.onPrimaryContainer} />
+              <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>Read</Text>
+            </Animated.View>
+          )}
         </View>
 
         {/* The couplet */}
@@ -194,75 +191,91 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
           </Text>
         )}
 
-        {/* Meaning */}
-        <Pressable
-          onPress={() => {
-            if (!showExplanation) markRead();
-            if (speaking === 'meaning') stopSpeaking();
-            setShowExplanation((v) => !v);
-          }}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: showExplanation }}
-          style={[styles.explainToggle, { borderTopColor: theme.colors.rule }]}
-        >
-          <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>பொருள்</Text>
-          <Text variant="labelLarge" style={[styles.explainLabel, { color: theme.colors.primary }]}>
-            Meaning
-          </Text>
-          <MaterialCommunityIcons
-            name={showExplanation ? 'chevron-up' : 'chevron-down'}
-            size={22}
-            color={theme.colors.primary}
-          />
-        </Pressable>
+        {/* Meaning: one header row with its language and listen controls */}
+        <View style={[styles.explainHeader, { borderTopColor: theme.colors.rule }]}>
+          <Pressable
+            onPress={() => {
+              if (!showExplanation) markRead();
+              if (speaking === 'meaning') stopSpeaking();
+              setShowExplanation((v) => !v);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={showExplanation ? 'Hide the meaning' : 'Show the meaning'}
+            accessibilityState={{ expanded: showExplanation }}
+            hitSlop={8}
+            style={styles.explainTitle}
+          >
+            <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>பொருள்</Text>
+            <MaterialCommunityIcons
+              name={showExplanation ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={theme.colors.primary}
+            />
+          </Pressable>
+          {showExplanation && bothLanguages && (
+            <View style={[styles.langToggle, { borderColor: theme.colors.outlineVariant }]} accessibilityRole="radiogroup">
+              {(['ta', 'en'] as const).map((lang) => {
+                const selected = explanationLang === lang;
+                return (
+                  <Pressable
+                    key={lang}
+                    onPress={() => {
+                      if (selected) return;
+                      if (speaking === 'meaning') stopSpeaking();
+                      markRead();
+                      setExplanationLang(lang);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={lang === 'ta' ? 'Tamil meaning' : 'English meaning'}
+                    style={[styles.langOption, selected && { backgroundColor: theme.colors.secondaryContainer }]}
+                  >
+                    <Text
+                      style={[
+                        lang === 'ta' ? type.tamilLabelStrong : type.uiMedium,
+                        styles.langText,
+                        { color: selected ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant },
+                      ]}
+                    >
+                      {lang === 'ta' ? 'தமிழ்' : 'EN'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+          {showExplanation && (
+            <IconButton
+              icon={speaking === 'meaning' ? 'stop-circle-outline' : 'volume-high'}
+              size={20}
+              iconColor={theme.colors.primary}
+              onPress={() => handleSpeak('meaning')}
+              style={styles.explainListen}
+              accessibilityLabel={speaking === 'meaning' ? 'Stop reading the meaning' : 'Read the meaning aloud'}
+            />
+          )}
+        </View>
 
         {showExplanation && (
           <Animated.View entering={FadeIn.duration(250)} style={styles.explanation}>
-            {bothLanguages && (
-              <SegmentedButtons
-                value={explanationLang}
-                onValueChange={(v) => {
-                  if (speaking === 'meaning') stopSpeaking();
-                  markRead();
-                  setExplanationLang(v as 'ta' | 'en');
-                }}
-                density="small"
-                style={styles.langSwitch}
-                buttons={[
-                  { value: 'ta', label: 'தமிழ்' },
-                  { value: 'en', label: 'English' },
-                ]}
-              />
-            )}
             <Text
               selectable
               style={[
                 explanationLang === 'ta' ? type.tamilBody : type.englishBody,
                 {
                   fontSize: sizes.meaning,
-                  lineHeight: Math.round(sizes.meaning * (explanationLang === 'ta' ? 1.8 : 1.65)),
+                  lineHeight: Math.round(sizes.meaning * (explanationLang === 'ta' ? 1.75 : 1.6)),
                   color: theme.colors.onSurface,
                 },
               ]}
             >
               {explanation}
             </Text>
-            <View style={styles.explanationFooter}>
-              <Button
-                compact
-                icon={speaking === 'meaning' ? 'stop-circle-outline' : 'volume-high'}
-                onPress={() => handleSpeak('meaning')}
-                style={styles.listenMeaning}
-                accessibilityLabel={speaking === 'meaning' ? 'Stop reading the meaning' : 'Read the meaning aloud'}
-              >
-                {speaking === 'meaning' ? 'Stop' : explanationLang === 'ta' ? 'கேளுங்கள்' : 'Listen'}
-              </Button>
-              {explanationLang === 'ta' && (
-                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  உரை: மு. வரதராசனார்
-                </Text>
-              )}
-            </View>
+            {explanationLang === 'ta' && (
+              <Text variant="labelSmall" style={[styles.attribution, { color: theme.colors.onSurfaceVariant }]}>
+                உரை: மு. வரதராசனார்
+              </Text>
+            )}
           </Animated.View>
         )}
 
@@ -321,23 +334,21 @@ const styles = StyleSheet.create({
   folio: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.lg,
+    gap: space.md,
     paddingHorizontal: space.xl,
-    paddingTop: space.xl,
+    paddingTop: space.lg,
   },
   number: {
-    minWidth: 48,
+    minWidth: 44,
     fontVariant: ['tabular-nums'],
-  },
-  folioMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
   },
   readMark: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 2,
+    paddingHorizontal: space.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
   },
   folioText: {
     flex: 1,
@@ -345,49 +356,63 @@ const styles = StyleSheet.create({
   verse: {
     // A little more width than the rest of the card, so the lines fit at a larger size
     paddingHorizontal: space.lg,
-    paddingTop: space.xxl,
-    paddingBottom: space.sm,
+    paddingTop: space.lg,
   },
   translation: {
     paddingHorizontal: space.xl,
-    paddingTop: space.md,
-    paddingBottom: space.xl,
+    paddingTop: space.sm,
+    paddingBottom: space.lg,
   },
   translationPrimary: {
-    paddingTop: space.xxl,
+    paddingTop: space.lg,
   },
-  explainToggle: {
+  explainHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    paddingHorizontal: space.xl,
-    paddingVertical: space.md,
+    minHeight: 48,
+    paddingLeft: space.xl,
+    paddingRight: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  explainLabel: {
+  explainTitle: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    minHeight: 44,
+  },
+  langToggle: {
+    flexDirection: 'row',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  langOption: {
+    minWidth: 48,
+    minHeight: 32,
+    paddingHorizontal: space.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langText: {
+    fontSize: 13,
+  },
+  explainListen: {
+    margin: 0,
   },
   explanation: {
     paddingHorizontal: space.xl,
-    paddingBottom: space.lg,
+    paddingBottom: space.md,
   },
-  langSwitch: {
-    marginBottom: space.md,
-  },
-  explanationFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    marginTop: space.sm,
-  },
-  listenMeaning: {
-    marginLeft: -space.sm,
+  attribution: {
+    marginTop: space.xs,
+    textAlign: 'right',
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: space.sm,
+    paddingVertical: space.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   action: {

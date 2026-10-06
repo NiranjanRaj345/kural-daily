@@ -13,6 +13,7 @@
 - **Bold couplet** (optional, off by default): You → Appearance → Couplet weight sets the Kural in bold for any font. Off keeps the usual book weight.
 - **New defaults for a new install**: page Auto, accent Indigo, the phone's font and text size, and the best Tamil voice available. Existing settings are kept on upgrade.
 - **Reading calendar** can go back a year (more if your reading goes back further), and forward again to this month.
+- **Today's card, tighter**: the whole card fits on one screen on most phones. The meaning has one header row (பொருள், a small தமிழ் / EN switch, a speaker button, collapse), the chapter details sit on two lines, and Read is a small badge beside them.
 - **Today is shorter**: the week strip is now a one-line streak pill; tap it for the full calendar on You.
 - **You, reorganised**: streak and a month-by-month reading calendar at the top, then Kurals read / chapters done / by heart, Progress (milestones, history, About), Settings (Appearance, Reading, Listening voice, Reminders, each in its own sheet with a one-line summary) and More.
 - **About the Thirukkural rewritten**: the poet, the work's names, its place among the பதினெண்கீழ்க்கணக்கு, the verse form, the arrangement, commentaries and translations, and the sources used in the app.

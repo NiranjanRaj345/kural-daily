@@ -138,7 +138,7 @@ export default function TodayScreen() {
         {/* Greeting */}
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>வணக்கம்</Text>
+            <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>வணக்கம் · இன்றைய குறள்</Text>
             <Text variant="headlineMedium" accessibilityRole="header" style={{ color: theme.colors.onBackground }}>
               {now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
@@ -188,9 +188,10 @@ export default function TodayScreen() {
           </Animated.View>
         )}
 
-        <SectionLabel>இன்றைய குறள் · Today&apos;s Kural</SectionLabel>
         {dailyKural ? (
-          <KuralCard kural={dailyKural} defaultExpanded visible={onboarded && !detail} />
+          <View style={styles.cardSpacing}>
+            <KuralCard kural={dailyKural} defaultExpanded visible={onboarded && !detail} />
+          </View>
         ) : (
           <Text style={[styles.errorText, { color: theme.colors.error }]}>Could not load today&apos;s Kural.</Text>
         )}
@@ -295,9 +296,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: space.xl,
-    paddingTop: space.lg,
-    paddingBottom: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.md,
     gap: space.md,
+  },
+  cardSpacing: {
+    marginTop: space.md,
   },
   banner: {
     flexDirection: 'row',
