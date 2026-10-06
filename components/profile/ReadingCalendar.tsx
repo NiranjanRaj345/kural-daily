@@ -13,6 +13,8 @@ const WEEKDAYS = Array.from({ length: 7 }, (_, i) =>
   new Date(2026, 0, 4 + i).toLocaleDateString(undefined, { weekday: 'narrow' })
 );
 
+const MIN_MONTHS_BACK = 11;
+
 /** A month of reading days, with the months since the first reading day one tap away. */
 export const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ readDays }) => {
   const theme = useAppTheme();
@@ -20,11 +22,12 @@ export const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ readDays }) =>
   const todayKey = toLocalDateKey(today);
   const read = useMemo(() => new Set(readDays), [readDays]);
 
-  // Months are counted back from the current one; the earliest is the first month with a reading day
+  // Months are counted back from the current one (forward stops at this month)
   const [offset, setOffset] = useState(0);
   const earliest = readDays.length > 0 ? [...readDays].sort()[0] : todayKey;
   const [ey, em] = earliest.split('-').map(Number);
-  const maxOffset = Math.max(0, (today.getFullYear() - ey) * 12 + today.getMonth() - (em - 1));
+  // Always a year to look back on, more if the reading goes back further
+  const maxOffset = Math.max(MIN_MONTHS_BACK, (today.getFullYear() - ey) * 12 + today.getMonth() - (em - 1));
 
   const shown = new Date(today.getFullYear(), today.getMonth() - offset, 1);
   const weeks = monthGrid(shown.getFullYear(), shown.getMonth());

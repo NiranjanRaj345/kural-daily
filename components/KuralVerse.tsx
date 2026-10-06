@@ -7,6 +7,8 @@ import { FitLines } from './FitLines';
 interface KuralVerseProps {
   kural: Kural;
   size: number;
+  /** Smallest size the lines may shrink to so each stays on one line; defaults from `size`. */
+  minSize?: number;
   /** Mark the boundaries between the seven feet (சீர்) of the couplet. */
   showFeet?: boolean;
 }
@@ -17,7 +19,7 @@ interface KuralVerseProps {
  * accent colour. The text shrinks a little where needed so each line stays on
  * one line, but never below `readingSizes().verseMin`; past that the lines wrap.
  */
-export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = false }) => {
+export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, minSize, showFeet = false }) => {
   const theme = useAppTheme();
   const type = useType();
   const renderLine = (line: string) => {
@@ -40,7 +42,7 @@ export const KuralVerse: React.FC<KuralVerseProps> = ({ kural, size, showFeet = 
       <FitLines
         lines={[kural.line1, kural.line2]}
         maxSize={size}
-        minSize={minVerseSize(size)}
+        minSize={minSize ?? minVerseSize(size)}
         styleAt={(s) => ({ ...type.kural(s), color: theme.colors.ink })}
         renderLine={renderLine}
         selectable

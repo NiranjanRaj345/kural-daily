@@ -89,3 +89,15 @@ describe('reading', () => {
     expect(useSettingsStore.getState().streak).toBe(4);
   });
 });
+
+describe('defaults for a new install', () => {
+  it("follow the phone: auto page, indigo, device font and text size, best voice", () => {
+    expect(useSettingsStore.getInitialState()).toMatchObject({
+      appearance: 'auto',
+      accent: 'indigo',
+      readingFont: 'device',
+      fontSize: 0,
+      selectedVoiceIdentifier: null,
+    });
+  });
+});

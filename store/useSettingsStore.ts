@@ -18,6 +18,7 @@ export interface SettingsState {
   appearance: Appearance;
   accent: Accent;
   readingFont: ReadingFont;
+  /** Couplet text size (S 20, M 24, L 28, XL 32), or 0 to follow the phone's text size. */
   fontSize: number;
   showTamil: boolean;
   showEnglish: boolean;
@@ -133,8 +134,8 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       appearance: 'auto',
       accent: 'indigo',
-      readingFont: 'classic',
-      fontSize: 24,
+      readingFont: 'device',
+      fontSize: 0, // the phone's text size (DEVICE_TEXT_SIZE)
       showTamil: true,
       showEnglish: true,
 

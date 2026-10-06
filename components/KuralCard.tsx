@@ -12,7 +12,8 @@ import { hasTamilVoice, speakKural, speakMeaning, stopSpeaking } from '../servic
 import { showNoTamilVoiceAlert } from './voiceHelp';
 import { KuralVerse } from './KuralVerse';
 import { MemorizeSheet, MemorizeMode } from './MemorizeSheet';
-import { useAppTheme, space, radius, useType, readingSizes } from '../theme';
+import { useAppTheme, space, radius, useType } from '../theme';
+import { useReadingSizes } from '../hooks/useReadingSizes';
 import { useReadTracker } from '../hooks/useReadTracker';
 
 interface KuralCardProps {
@@ -64,9 +65,8 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
   const isLearning = useSettingsStore((s) => !!s.learning[kural.number]);
   const isRead = useSettingsStore((s) => s.history.includes(kural.number));
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
-  const fontSize = useSettingsStore((s) => s.fontSize);
   // The text-size setting scales all the reading text, the couplet always largest
-  const sizes = readingSizes(fontSize);
+  const sizes = useReadingSizes();
   const speechRate = useSettingsStore((s) => s.speechRate);
   const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
 
@@ -171,7 +171,7 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
         {/* The couplet */}
         {showTamil && (
           <View style={styles.verse}>
-            <KuralVerse kural={kural} size={fontSize} />
+            <KuralVerse kural={kural} size={sizes.verse} minSize={sizes.verseMin} />
           </View>
         )}
 

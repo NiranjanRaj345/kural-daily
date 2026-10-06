@@ -13,6 +13,7 @@ import {
   sendTestReminder, TEST_REMINDER_DELAY_SECONDS,
 } from '../../services/NotificationService';
 import { uses24HourClock } from '../../utils/date';
+import { DEVICE_TEXT_SIZE, useReadingSizes } from '../../hooks/useReadingSizes';
 import { ACCENTS, APPEARANCES, READING_FONTS, useAppTheme, space, radius } from '../../theme';
 
 export const FONT_SIZES = [
@@ -41,7 +42,9 @@ export const useSettingsSummary = () => {
   const page = APPEARANCES.find((a) => a.value === s.appearance)?.label;
   const accent = ACCENTS.find((a) => a.value === s.accent)?.label;
   const font = READING_FONTS.find((f) => f.value === s.readingFont)?.label;
-  const size = FONT_SIZES.find((f) => f.value === String(s.fontSize))?.accessibilityLabel ?? `${s.fontSize}`;
+  const size = s.fontSize === DEVICE_TEXT_SIZE
+    ? "Phone's"
+    : FONT_SIZES.find((f) => f.value === String(s.fontSize))?.accessibilityLabel ?? `${s.fontSize}`;
   const speed = SPEECH_RATES.find((r) => r.value === String(s.speechRate))?.label;
   const reminders = [
     s.notificationsEnabled && `Daily ${formatReminderTime(s.notificationHour, s.notificationMinute)}`,
@@ -73,10 +76,10 @@ const Block: React.FC<{ title: string; detail?: string; children: React.ReactNod
 
 const Preview: React.FC = () => {
   const theme = useAppTheme();
-  const fontSize = useSettingsStore((s) => s.fontSize);
+  const sizes = useReadingSizes();
   return (
     <View style={[styles.preview, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
-      <KuralVerse kural={getKuralByNumber(1)!} size={fontSize} />
+      <KuralVerse kural={getKuralByNumber(1)!} size={sizes.verse} minSize={sizes.verseMin} />
     </View>
   );
 };
@@ -92,6 +95,7 @@ export const AppearanceSheet: React.FC<SheetProps> = ({ visible, onClose }) => (
 
 /** Language, text size and speech speed. */
 export const ReadingSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
+  const theme = useAppTheme();
   const { language } = useSettingsSummary();
   const fontSize = useSettingsStore((s) => s.fontSize);
   const speechRate = useSettingsStore((s) => s.speechRate);
@@ -111,14 +115,26 @@ export const ReadingSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
           buttons={LANGUAGES}
         />
       </Block>
-      <Block title="Kural text size">
-        <SegmentedButtons
-          value={fontSize.toString()}
-          onValueChange={(val) => setFontSize(parseInt(val, 10))}
-          density="small"
-          style={styles.segment}
-          buttons={FONT_SIZES}
-        />
+      <Block title="Text size" detail="The couplet, its translation and the meaning">
+        <View style={styles.switchRow}>
+          <Text variant="bodyMedium" style={[styles.flex, { color: theme.colors.onSurface }]}>
+            Match my phone&apos;s text size
+          </Text>
+          <Switch
+            value={fontSize === DEVICE_TEXT_SIZE}
+            onValueChange={(on) => setFontSize(on ? DEVICE_TEXT_SIZE : 24)}
+            accessibilityLabel="Match my phone's text size"
+          />
+        </View>
+        {fontSize !== DEVICE_TEXT_SIZE && (
+          <SegmentedButtons
+            value={fontSize.toString()}
+            onValueChange={(val) => setFontSize(parseInt(val, 10))}
+            density="small"
+            style={styles.segment}
+            buttons={FONT_SIZES}
+          />
+        )}
       </Block>
       <Block title="Reading speed" detail="For Listen and when learning by heart">
         <SegmentedButtons
@@ -276,6 +292,15 @@ const styles = StyleSheet.create({
   },
   segment: {
     marginTop: space.sm,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.xs,
+  },
+  flex: {
+    flex: 1,
   },
   preview: {
     marginHorizontal: space.xl,

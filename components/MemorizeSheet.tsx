@@ -11,6 +11,7 @@ import { hasTamilVoice, speakKural, stopSpeaking } from '../services/SpeechServi
 import { showNoTamilVoiceAlert } from './voiceHelp';
 import { useAppTheme, space, radius, useType } from '../theme';
 import { Spoiler } from './ui/Spoiler';
+import { useReadingSizes } from '../hooks/useReadingSizes';
 
 /** learn: first time (joins the review list) · review: due today (graded) · practice: ungraded run-through */
 export type MemorizeMode = 'learn' | 'review' | 'practice';
@@ -58,7 +59,7 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
   const voice = useSettingsStore((s) => s.selectedVoiceIdentifier);
   const showEnglish = useSettingsStore((s) => s.showEnglish);
   // Words wrap freely here, so the couplet can follow the text size directly
-  const verseSize = Math.round(useSettingsStore((s) => s.fontSize) * 0.85);
+  const verseSize = useReadingSizes().verse * 0.85;
 
   const [index, setIndex] = useState(0);
   const [step, setStep] = useState(mode === 'review' ? RECALL : 0);

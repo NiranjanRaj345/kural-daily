@@ -30,6 +30,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 - [ ] Splash: indigo background with the palm-leaf icon, no white flash.
 - [ ] Welcome 1 shows திருக்குறள், 1330 / 133 / 3 and the first Kural.
 - [ ] Welcome 2: choose தமிழ் மட்டும், then Tamil and English; the selection moves.
+- [ ] After a fresh install, You → Appearance shows Auto page, Indigo, Device font; Reading shows
+      "Match my phone's text size" on; Listening voice says Automatic.
 - [ ] Welcome 3: **Change time** opens the clock. Set an unusual time (e.g. 6:47) using the
       keyboard icon; the card shows it after **Ok**.
 - [ ] **Remind me daily** shows the Android notification permission prompt. Allow it.
@@ -114,7 +116,7 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 
 - [ ] Saved: newest first; tapping the bookmark removes it, **Undo** brings it back.
 - [ ] You: streak card with this month's calendar (read days filled); ‹ › go back to earlier
-      months you read in. Below: Kurals read, Chapters done, By heart.
+      months (up to a year back) and forward again to this month. Below: Kurals read, Chapters done, By heart.
 - [ ] Progress: Milestones row shows the next one; it opens all milestones. Reading history,
       About the Thirukkural (read it through: poet, names, verse form, arrangement, commentaries).
 - [ ] Settings rows show a summary and open sheets:
@@ -123,7 +125,9 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
       (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
       the share sheet's chips, Browse chapter ticks, By heart, the ✓ Read mark, the reading calendar
       and streak dots. Only the flame icon stays saffron.
-      **Reading** → language, text size S–XL (preview updates), reading speed. Back on Today, each
+      **Reading** → language, text size, reading speed. With "Match my phone's text size" on,
+      change the phone's font size (Settings → Display) and the Kural text follows it. Turn it off:
+      S–XL appear and stay the same size whatever the phone is set to. Back on Today, each
       step makes the couplet, the translation and the meaning bigger; the couplet is always the
       largest and boldest text on the card (check with Classic, Modern and Device fonts). At S and M
       long Kurals stay on two lines; at L and XL they may wrap.
