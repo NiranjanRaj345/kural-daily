@@ -1,17 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, BackHandler, Linking, Platform } from 'react-native';
-import {
-  List, Switch, Text, Divider, SegmentedButtons, IconButton, Portal, Dialog, RadioButton, Button, Snackbar,
-} from 'react-native-paper';
+import { View, StyleSheet, ScrollView, FlatList, BackHandler, Share } from 'react-native';
+import { List, Text, Divider, IconButton, Portal, Dialog, Button, Snackbar } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import appConfig from '../../app.json';
-import * as Speech from 'expo-speech';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import {
-  enableDailyReminders, disableDailyReminders, syncDailyReminders, formatReminderTime,
-} from '../../services/NotificationService';
-import { getKuralByNumber, TOTAL_KURALS } from '../../services/DataService';
+import { toLocalDateKey } from '../../utils/date';
+import { getKuralByNumber } from '../../services/DataService';
 import { Kural } from '../../types/kural';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { SheetModal } from '../../components/SheetModal';
@@ -20,20 +15,16 @@ import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { StatTile } from '../../components/ui/StatTile';
 import { SectionLabel } from '../../components/ui/SectionLabel';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { ThemeMode, useAppTheme, space, radius, tamilText } from '../../theme';
-
-const REMINDER_TIMES: [number, number][] = [
-  [6, 0], [7, 0], [8, 0], [9, 0], [12, 0], [18, 0], [20, 0], [21, 0],
-];
-
-const FONT_SIZES = [
-  { value: '20', label: 'S', accessibilityLabel: 'Small' },
-  { value: '24', label: 'M', accessibilityLabel: 'Medium' },
-  { value: '28', label: 'L', accessibilityLabel: 'Large' },
-  { value: '32', label: 'XL', accessibilityLabel: 'Extra large' },
-];
-
-const APP_VERSION = appConfig.expo.version;
+import { AboutKuralSheet } from '../../components/AboutKuralSheet';
+import { MilestoneGrid } from '../../components/profile/MilestoneGrid';
+import { ReadingCalendar } from '../../components/profile/ReadingCalendar';
+import { AppearanceSheet, ReadingSheet, RemindersSheet, useSettingsSummary } from '../../components/profile/SettingsSheets';
+import { VoicePickerSheet } from '../../components/profile/VoicePickerSheet';
+import { getTamilVoices } from '../../services/SpeechService';
+import { completedChapters, computeMilestones } from '../../utils/milestones';
+import { MASTERED_BOX } from '../../utils/srs';
+import { APP_NAME, APP_VERSION, SHARE_APP_MESSAGE } from '../../constants/app';
+import { useAppTheme, space, radius } from '../../theme';
 
 /** A rounded group of settings rows. */
 const Group: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -47,98 +38,54 @@ const Group: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export default function ProfileScreen() {
   const theme = useAppTheme();
-  const {
-    themeMode, setThemeMode,
-    showEnglish, toggleEnglish,
-    showTamil, toggleTamil,
-    notificationsEnabled, notificationHour, notificationMinute, setNotificationTime,
-    fontSize, setFontSize,
-    streak, bestStreak, history, favorites,
-    selectedVoiceIdentifier, setSelectedVoiceIdentifier,
-    resetProgress,
-  } = useSettingsStore();
+  const streak = useSettingsStore((s) => s.streak);
+  const bestStreak = useSettingsStore((s) => s.bestStreak);
+  const history = useSettingsStore((s) => s.history);
+  const readDays = useSettingsStore((s) => s.readDays);
+  const learning = useSettingsStore((s) => s.learning);
+  const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
+  const resetProgress = useSettingsStore((s) => s.resetProgress);
+  const summary = useSettingsSummary();
+
+  const milestones = useMemo(() => computeMilestones({ history, bestStreak, learning }), [history, bestStreak, learning]);
+  const earnedCount = milestones.filter((m) => m.earned).length;
+  // The unearned milestone closest to being earned
+  const nextMilestone = useMemo(
+    () => milestones.filter((m) => !m.earned).sort((a, b) => b.progress - a.progress)[0],
+    [milestones]
+  );
+  const mastered = useMemo(() => Object.values(learning).filter((c) => c.box >= MASTERED_BOX).length, [learning]);
+  const chaptersDone = useMemo(() => completedChapters(history), [history]);
+  const readToday = readDays.includes(toLocalDateKey(new Date()));
 
   const [showHistory, setShowHistory] = useState(false);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
-  const [allVoices, setAllVoices] = useState<Speech.Voice[]>([]);
-  const [showAllVoices, setShowAllVoices] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [showTimeDialog, setShowTimeDialog] = useState(false);
+  const [sheet, setSheet] = useState<'milestones' | 'appearance' | 'reading' | 'reminders' | null>(null);
   const [showResetDialog, setShowResetDialog] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ message: string; openSettings?: boolean } | null>(null);
+  const [showAbout, setShowAbout] = useState(false);
+  const [snackbar, setSnackbar] = useState<string | null>(null);
 
   const historyKurals = useMemo(
     () => history.map((id) => getKuralByNumber(id)).filter((k): k is Kural => k !== undefined),
     [history]
   );
 
-  const loadVoices = async () => {
-    try {
-      setAllVoices(await Speech.getAvailableVoicesAsync());
-    } catch (error) {
-      console.error("Failed to load voices", error);
-    }
-  };
-
-  const displayedVoices = useMemo(() => {
-    if (showAllVoices) return allVoices;
-    const tamil = allVoices.filter(v =>
-      (v.language && v.language.toLowerCase().startsWith('ta')) ||
-      (v.name && v.name.toLowerCase().includes('tamil'))
-    );
-    // If no Tamil voices found, show all by default so the list isn't empty
-    return tamil.length > 0 ? tamil : allVoices;
-  }, [allVoices, showAllVoices]);
-
-  const selectedVoiceName = allVoices.find((v) => v.identifier === selectedVoiceIdentifier)?.name;
-
+  // Name shown on the Reading voice row
+  const [voiceName, setVoiceName] = useState<string | null>(null);
   useEffect(() => {
-    loadVoices();
-  }, []);
-
-  useEffect(() => {
-    if (showVoiceModal) loadVoices();
-  }, [showVoiceModal]);
-
-  const handleVoicePreview = (voiceIdentifier: string) => {
-    Speech.stop();
-    Speech.speak('வணக்கம், இது திருக்குறள்', { language: 'ta-IN', voice: voiceIdentifier });
-  };
-
-  const onToggleNotifications = async () => {
-    if (notificationsEnabled) {
-      await disableDailyReminders();
-      return;
-    }
-    const enabled = await enableDailyReminders();
-    if (!enabled) {
-      setSnackbar({ message: 'Notifications are blocked for this app.', openSettings: Platform.OS !== 'web' });
-    }
-  };
-
-  const onSelectReminderTime = async (value: string) => {
-    const [hour, minute] = value.split(':').map(Number);
-    setNotificationTime(hour, minute);
-    setShowTimeDialog(false);
-    await syncDailyReminders();
-  };
-
-  const onToggleTamil = () => {
-    // Keep at least one language visible
-    if (showTamil && !showEnglish) toggleEnglish();
-    toggleTamil();
-  };
-
-  const onToggleEnglish = () => {
-    if (showEnglish && !showTamil) toggleTamil();
-    toggleEnglish();
-  };
+    if (showVoiceModal) return;
+    getTamilVoices().then((voices) => {
+      const chosen = selectedVoiceIdentifier ? voices.find((v) => v.identifier === selectedVoiceIdentifier) : voices[0];
+      setVoiceName(chosen?.name ?? null);
+    });
+  }, [selectedVoiceIdentifier, showVoiceModal]);
 
   const onReset = () => {
     resetProgress();
     setShowResetDialog(false);
-    setSnackbar({ message: 'Reading progress and quiz scores were reset.' });
+    setSnackbar('Your reading progress, learning and quiz scores were reset.');
   };
 
   // Android back closes the history view instead of leaving the tab
@@ -184,18 +131,46 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.listContent}>
         <ScreenHeader title="You" />
 
-        <View style={styles.statsGrid}>
-          <View style={styles.statsRow}>
-            <StatTile icon="fire" iconColor={theme.colors.tertiary} value={streak} label="Day streak" />
-            <StatTile icon="trophy-outline" iconColor={theme.colors.tertiary} value={bestStreak} label="Best streak" />
+        {/* Reading progress: streak and calendar */}
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+          <View style={styles.streakRow}>
+            <View style={[styles.flameBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+              <MaterialCommunityIcons name="fire" size={26} color={streak > 0 ? theme.colors.flame : theme.colors.outline} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+                {streak > 0 ? `${streak}-day streak` : 'No streak yet'}
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {streak > 0 && !readToday ? "Read today's Kural to keep it going" : streak > 0 ? 'Read today · see you tomorrow' : 'Read a Kural today to start one'}
+              </Text>
+            </View>
+            <View style={styles.best}>
+              <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{bestStreak}</Text>
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>Best</Text>
+            </View>
           </View>
-          <View style={styles.statsRow}>
-            <StatTile icon="book-open-variant" value={`${history.length}/${TOTAL_KURALS}`} label="Kurals read" />
-            <StatTile icon="bookmark-outline" value={favorites.length} label="Saved" />
-          </View>
+          <Divider style={[styles.cardDivider, { backgroundColor: theme.colors.outlineVariant }]} />
+          <ReadingCalendar readDays={readDays} />
         </View>
 
+        <View style={styles.statsRow}>
+          <StatTile icon="book-open-variant" value={history.length} label="Kurals read" />
+          <StatTile icon="bookshelf" value={chaptersDone} label="Chapters done" />
+          <StatTile icon="head-heart-outline" value={mastered} label="By heart" />
+        </View>
+
+        <SectionLabel>Progress</SectionLabel>
         <Group>
+          <List.Item
+            title={`Milestones · ${earnedCount} of ${milestones.length}`}
+            description={nextMilestone ? `Next: ${nextMilestone.description} (${nextMilestone.progressLabel})` : 'All earned. Wonderful!'}
+            descriptionNumberOfLines={2}
+            left={(props) => <List.Icon {...props} icon="medal-outline" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('milestones')}
+          />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Reading history"
             description={history.length > 0 ? `${history.length} Kurals, most recent first` : 'Nothing read yet'}
@@ -203,87 +178,63 @@ export default function ProfileScreen() {
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowHistory(true)}
           />
-        </Group>
-
-        <SectionLabel>Reading</SectionLabel>
-        <Group>
-          <View style={styles.block}>
-            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Theme</Text>
-            <SegmentedButtons
-              value={themeMode}
-              onValueChange={(val) => setThemeMode(val as ThemeMode)}
-              density="small"
-              style={styles.segment}
-              buttons={[
-                { value: 'system', label: 'Auto' },
-                { value: 'light', label: 'Light' },
-                { value: 'dark', label: 'Dark' },
-                { value: 'sepia', label: 'Sepia' },
-              ]}
-            />
-          </View>
-          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
-          <View style={styles.block}>
-            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Kural text size</Text>
-            <SegmentedButtons
-              value={fontSize.toString()}
-              onValueChange={(val) => setFontSize(parseInt(val, 10))}
-              density="small"
-              style={styles.segment}
-              buttons={FONT_SIZES}
-            />
-            <View style={[styles.preview, { backgroundColor: theme.colors.surfaceVariant }]}>
-              <Text style={[tamilText.kural(fontSize), { color: theme.colors.onSurface, textAlign: 'center' }]}>
-                அகர முதல எழுத்தெல்லாம்
-              </Text>
-            </View>
-          </View>
           <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
-            title="Tamil text"
-            description="The original couplet and Tamil explanation"
-            left={(props) => <List.Icon {...props} icon="format-text" />}
-            right={() => <Switch value={showTamil} onValueChange={onToggleTamil} />}
-            onPress={onToggleTamil}
-          />
-          <List.Item
-            title="English"
-            description="Translation and English explanation"
-            left={(props) => <List.Icon {...props} icon="translate" />}
-            right={() => <Switch value={showEnglish} onValueChange={onToggleEnglish} />}
-            onPress={onToggleEnglish}
+            title="About the Thirukkural"
+            description="The poet, the verse form and how the book is arranged"
+            descriptionNumberOfLines={2}
+            left={(props) => <List.Icon {...props} icon="book-information-variant" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setShowAbout(true)}
           />
         </Group>
 
-        <SectionLabel>Reminders & audio</SectionLabel>
+        <SectionLabel>Settings</SectionLabel>
         <Group>
           <List.Item
-            title="Daily reminder"
-            description={notificationsEnabled ? `Today's Kural at ${formatReminderTime(notificationHour, notificationMinute)}` : 'Off'}
-            left={(props) => <List.Icon {...props} icon="bell-outline" />}
-            right={() => <Switch value={notificationsEnabled} onValueChange={onToggleNotifications} />}
-            onPress={onToggleNotifications}
+            title="Appearance"
+            description={summary.appearance}
+            left={(props) => <List.Icon {...props} icon="palette-outline" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('appearance')}
           />
-          {notificationsEnabled && (
-            <List.Item
-              title="Reminder time"
-              description={formatReminderTime(notificationHour, notificationMinute)}
-              left={(props) => <List.Icon {...props} icon="clock-outline" />}
-              right={(props) => <List.Icon {...props} icon="chevron-right" />}
-              onPress={() => setShowTimeDialog(true)}
-            />
-          )}
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
-            title="Reading voice"
-            description={selectedVoiceIdentifier ? selectedVoiceName ?? 'Custom voice' : 'System default'}
+            title="Reading"
+            description={summary.reading}
+            left={(props) => <List.Icon {...props} icon="format-size" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('reading')}
+          />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <List.Item
+            title="Listening voice"
+            description={`${selectedVoiceIdentifier ? voiceName ?? 'Custom voice' : voiceName ? `Automatic · ${voiceName}` : 'Automatic'}\nChoose or download Tamil voices`}
+            descriptionNumberOfLines={2}
             left={(props) => <List.Icon {...props} icon="account-voice" />}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowVoiceModal(true)}
           />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
+          <List.Item
+            title="Reminders"
+            description={summary.reminders}
+            left={(props) => <List.Icon {...props} icon="bell-outline" />}
+            right={(props) => <List.Icon {...props} icon="chevron-right" />}
+            onPress={() => setSheet('reminders')}
+          />
         </Group>
 
-        <SectionLabel>About</SectionLabel>
+        <SectionLabel>More</SectionLabel>
         <Group>
+          <List.Item
+            title="Share Kural Daily"
+            description="Invite a friend or family member to read along"
+            left={(props) => <List.Icon {...props} icon="account-heart-outline" />}
+            right={(props) => <List.Icon {...props} icon="share-variant-outline" />}
+            onPress={() => Share.share({ message: SHARE_APP_MESSAGE }).catch(() => {})}
+          />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Privacy policy"
             description="No accounts, no tracking, works offline"
@@ -291,9 +242,11 @@ export default function ProfileScreen() {
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
             onPress={() => setShowPrivacyModal(true)}
           />
+          <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Reset progress"
-            description="Clears history, streaks and quiz scores. Saved Kurals are kept."
+            description="Clears history, streaks, learning and quiz scores. Saved Kurals are kept."
+            descriptionNumberOfLines={2}
             titleStyle={{ color: theme.colors.error }}
             left={(props) => <List.Icon {...props} color={theme.colors.error} icon="restore" />}
             onPress={() => setShowResetDialog(true)}
@@ -301,9 +254,19 @@ export default function ProfileScreen() {
         </Group>
 
         <Text variant="labelSmall" style={[styles.version, { color: theme.colors.onSurfaceVariant }]}>
-          Kural Daily {APP_VERSION}
+          {APP_NAME} {APP_VERSION}
         </Text>
       </ScrollView>
+
+      <SheetModal visible={sheet === 'milestones'} onClose={() => setSheet(null)} title="Milestones" subtitle={`${earnedCount} of ${milestones.length} earned`}>
+        <View style={styles.sheetGrid}>
+          <MilestoneGrid milestones={milestones} />
+        </View>
+      </SheetModal>
+      <AppearanceSheet visible={sheet === 'appearance'} onClose={() => setSheet(null)} />
+      <ReadingSheet visible={sheet === 'reading'} onClose={() => setSheet(null)} />
+      <RemindersSheet visible={sheet === 'reminders'} onClose={() => setSheet(null)} />
+      <AboutKuralSheet visible={showAbout} onClose={() => setShowAbout(false)} />
 
       {/* Privacy Policy */}
       <SheetModal visible={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} title="Privacy policy">
@@ -320,97 +283,20 @@ export default function ProfileScreen() {
 
           <Text variant="titleMedium" style={styles.policyHeading}>Permissions</Text>
           <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            • Notifications (optional): Used only for the daily reminder, scheduled locally on your device. Requested only when you turn reminders on.{'\n'}
+            • Notifications (optional): Used only for the daily Kural and streak reminders you turn on, scheduled locally on your device. Requested only when you turn a reminder on.{'\n'}
+            • Read aloud: Uses your phone&apos;s own text-to-speech voices. Nothing is sent anywhere by the app.{'\n'}
             • Sharing: Kural images are created on your device and passed to the share sheet you choose. No storage permission is needed.
           </Text>
 
           <Text variant="bodySmall" style={{ marginTop: space.xl, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
-            Last updated: October 5, 2026
+            Last updated: October 6, 2026
           </Text>
         </View>
       </SheetModal>
 
-      {/* Voice Selection */}
-      <SheetModal
-        visible={showVoiceModal}
-        onClose={() => { Speech.stop(); setShowVoiceModal(false); }}
-        title="Reading voice"
-        scrollable={false}
-        headerRight={<IconButton icon="refresh" onPress={loadVoices} accessibilityLabel="Refresh voices" />}
-      >
-        <List.Item
-          title="Show all languages"
-          description={`${allVoices.length} voices on this device`}
-          right={() => <Switch value={showAllVoices} onValueChange={setShowAllVoices} />}
-          style={{ backgroundColor: theme.colors.surfaceVariant }}
-        />
-        <FlatList
-          data={displayedVoices}
-          keyExtractor={(item) => item.identifier}
-          contentContainerStyle={{ paddingBottom: space.xl }}
-          ListHeaderComponent={
-            <List.Item
-              title="System default"
-              description="Use the device's Tamil voice"
-              onPress={() => setSelectedVoiceIdentifier(null)}
-              left={(props) => (
-                <List.Icon {...props} icon={!selectedVoiceIdentifier ? 'radiobox-marked' : 'radiobox-blank'} color={theme.colors.primary} />
-              )}
-            />
-          }
-          ItemSeparatorComponent={() => <Divider style={{ marginLeft: 56 }} />}
-          renderItem={({ item }) => (
-            <List.Item
-              title={item.name}
-              description={item.language}
-              onPress={() => setSelectedVoiceIdentifier(item.identifier)}
-              left={(props) => (
-                <List.Icon
-                  {...props}
-                  icon={selectedVoiceIdentifier === item.identifier ? 'radiobox-marked' : 'radiobox-blank'}
-                  color={theme.colors.primary}
-                />
-              )}
-              right={() => (
-                <IconButton
-                  icon="play-circle-outline"
-                  onPress={() => handleVoicePreview(item.identifier)}
-                  accessibilityLabel={`Preview ${item.name}`}
-                />
-              )}
-            />
-          )}
-          ListEmptyComponent={
-            <EmptyState
-              icon="account-voice-off"
-              title="No voices found"
-              message="Install a Tamil text-to-speech voice in your device settings, then tap refresh."
-            />
-          }
-        />
-      </SheetModal>
+      <VoicePickerSheet visible={showVoiceModal} onClose={() => setShowVoiceModal(false)} />
 
       <Portal>
-        {/* Reminder Time */}
-        <Dialog visible={showTimeDialog} onDismiss={() => setShowTimeDialog(false)}>
-          <Dialog.Title>Reminder time</Dialog.Title>
-          <Dialog.ScrollArea style={{ maxHeight: 360 }}>
-            <ScrollView>
-              <RadioButton.Group onValueChange={onSelectReminderTime} value={`${notificationHour}:${notificationMinute}`}>
-                {REMINDER_TIMES.map(([hour, minute]) => (
-                  <RadioButton.Item
-                    key={`${hour}:${minute}`}
-                    label={formatReminderTime(hour, minute)}
-                    value={`${hour}:${minute}`}
-                  />
-                ))}
-              </RadioButton.Group>
-            </ScrollView>
-          </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setShowTimeDialog(false)}>Cancel</Button>
-          </Dialog.Actions>
-        </Dialog>
 
         {/* Reset confirmation */}
         <Dialog visible={showResetDialog} onDismiss={() => setShowResetDialog(false)}>
@@ -428,13 +314,8 @@ export default function ProfileScreen() {
         </Dialog>
       </Portal>
 
-      <Snackbar
-        visible={!!snackbar}
-        onDismiss={() => setSnackbar(null)}
-        duration={5000}
-        action={snackbar?.openSettings ? { label: 'Settings', onPress: () => Linking.openSettings() } : undefined}
-      >
-        {snackbar?.message}
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar(null)} duration={5000}>
+        {snackbar}
       </Snackbar>
     </SafeAreaView>
   );
@@ -454,33 +335,45 @@ const styles = StyleSheet.create({
     paddingTop: space.sm,
     paddingBottom: space.sm,
   },
-  statsGrid: {
-    gap: space.sm,
-    paddingHorizontal: space.lg,
-    marginBottom: space.lg,
+  card: {
+    marginHorizontal: space.lg,
+    padding: space.lg,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  flameBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  best: {
+    alignItems: 'center',
+    minWidth: 44,
+  },
+  cardDivider: {
+    marginVertical: space.md,
   },
   statsRow: {
     flexDirection: 'row',
     gap: space.sm,
+    paddingHorizontal: space.lg,
+    marginTop: space.sm,
+  },
+  sheetGrid: {
+    paddingTop: space.lg,
   },
   group: {
     marginHorizontal: space.lg,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
-  },
-  block: {
-    paddingHorizontal: space.lg,
-    paddingVertical: space.md,
-  },
-  segment: {
-    marginTop: space.sm,
-  },
-  preview: {
-    marginTop: space.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.sm,
-    borderRadius: radius.md,
   },
   version: {
     textAlign: 'center',

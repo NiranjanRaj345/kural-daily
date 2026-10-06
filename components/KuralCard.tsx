@@ -1,20 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Pressable, Platform } from 'react-native';
-import { Text, SegmentedButtons } from 'react-native-paper';
+import { Text, IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Speech from 'expo-speech';
-import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Kural } from '../types/kural';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { ShareModal, buildShareText } from './ShareModal';
-import { useAppTheme, space, radius, tamilText } from '../theme';
+import { getChapterNumber, getPositionInChapter } from '../services/DataService';
+import { ShareModal } from './ShareModal';
+import { hasTamilVoice, speakKural, speakMeaning, stopSpeaking } from '../services/SpeechService';
+import { showNoTamilVoiceAlert } from './voiceHelp';
+import { KuralVerse } from './KuralVerse';
+import { MemorizeSheet, MemorizeMode } from './MemorizeSheet';
+import { useAppTheme, space, radius, useType } from '../theme';
+import { useReadingSizes } from '../hooks/useReadingSizes';
+import { useReadTracker } from '../hooks/useReadTracker';
 
 interface KuralCardProps {
   kural: Kural;
   /** Open the explanation by default (e.g. on the Today screen). */
   defaultExpanded?: boolean;
+  /** False while something covers the card, so the time doesn't count as reading. */
+  visible?: boolean;
 }
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -49,28 +56,33 @@ const ActionButton: React.FC<{
   );
 };
 
-export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = false }) => {
+export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = false, visible = true }) => {
   const theme = useAppTheme();
+  const type = useType();
   const showEnglish = useSettingsStore((s) => s.showEnglish);
   const showTamil = useSettingsStore((s) => s.showTamil);
   const isFavorite = useSettingsStore((s) => s.favorites.includes(kural.number));
+  const isLearning = useSettingsStore((s) => !!s.learning[kural.number]);
+  const isRead = useSettingsStore((s) => s.history.includes(kural.number));
   const toggleFavorite = useSettingsStore((s) => s.toggleFavorite);
-  const addToHistory = useSettingsStore((s) => s.addToHistory);
-  const fontSize = useSettingsStore((s) => s.fontSize);
+  // The text-size setting scales all the reading text, the couplet always largest
+  const sizes = useReadingSizes();
+  const speechRate = useSettingsStore((s) => s.speechRate);
   const selectedVoiceIdentifier = useSettingsStore((s) => s.selectedVoiceIdentifier);
 
   const [showExplanation, setShowExplanation] = useState(defaultExpanded);
   const [explanationLang, setExplanationLang] = useState<'ta' | 'en'>(showTamil ? 'ta' : 'en');
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  // What is being read aloud: the couplet or its meaning
+  const [speaking, setSpeaking] = useState<'kural' | 'meaning' | null>(null);
   const isSpeakingRef = useRef(false);
-  const [copied, setCopied] = useState(false);
+  const markRead = useReadTracker(kural.number, visible);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [memorizing, setMemorizing] = useState<{ queue: number[]; mode: MemorizeMode } | null>(null);
 
-  // Reset per-kural state and record the read
+  // Reset per-kural state. It counts as read after a few seconds or on any interaction (useReadTracker).
   useEffect(() => {
     setShowExplanation(defaultExpanded);
-    addToHistory(kural.number);
-  }, [kural.number, addToHistory, defaultExpanded]);
+  }, [kural.number, defaultExpanded]);
 
   // Keep the explanation language valid if a language is turned off in settings
   useEffect(() => {
@@ -78,151 +90,183 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
     if (!showEnglish && explanationLang === 'en') setExplanationLang('ta');
   }, [showTamil, showEnglish, explanationLang]);
 
-  const updateSpeaking = (value: boolean) => {
-    isSpeakingRef.current = value;
-    setIsSpeaking(value);
+  const updateSpeaking = (value: 'kural' | 'meaning' | null) => {
+    isSpeakingRef.current = value !== null;
+    setSpeaking(value);
   };
 
   // Don't keep reading aloud after the card is closed or replaced
   useEffect(() => {
     return () => {
-      if (isSpeakingRef.current) {
-        isSpeakingRef.current = false;
-        Speech.stop();
-      }
+      if (isSpeakingRef.current) stopSpeaking();
     };
   }, [kural.number]);
 
-  useEffect(() => {
-    if (!copied) return;
-    const timer = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timer);
-  }, [copied]);
-
-  const handleSpeak = () => {
+  const handleSpeak = async (what: 'kural' | 'meaning') => {
     haptic();
-    if (isSpeaking) {
-      Speech.stop();
-      updateSpeaking(false);
+    const wasSpeaking = speaking;
+    if (wasSpeaking) stopSpeaking();
+    if (wasSpeaking === what) return; // the same button again stops it
+    markRead();
+    const lang = what === 'meaning' ? explanationLang : 'ta';
+    if (lang === 'ta' && !(await hasTamilVoice())) {
+      showNoTamilVoiceAlert();
       return;
     }
-
-    updateSpeaking(true);
-    Speech.speak(`${kural.line1} ... ${kural.line2}`, {
-      language: 'ta-IN',
-      voice: selectedVoiceIdentifier || undefined,
-      onDone: () => updateSpeaking(false),
-      onStopped: () => updateSpeaking(false),
-      onError: () => updateSpeaking(false),
-    });
-  };
-
-  const handleCopy = async () => {
-    haptic();
-    await Clipboard.setStringAsync(buildShareText(kural, { tamil: true, english: true, explanation: true }));
-    setCopied(true);
+    updateSpeaking(what);
+    const options = { voice: selectedVoiceIdentifier, rate: speechRate, onEnd: () => updateSpeaking(null) };
+    if (what === 'kural') speakKural(kural, options);
+    else speakMeaning(explanation, lang, options);
   };
 
   const handleFavoritePress = () => {
     haptic(isFavorite ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+    if (!isFavorite) markRead();
     toggleFavorite(kural.number);
   };
 
   const bothLanguages = showTamil && showEnglish;
   const explanation = explanationLang === 'ta' ? kural.tam_exp : kural.eng_exp;
+  const chapterNumber = getChapterNumber(kural);
+  const position = getPositionInChapter(kural);
 
   return (
-    <Animated.View entering={FadeInDown.duration(400)}>
+    <Animated.View entering={FadeInDown.duration(350)}>
       <ShareModal visible={showShareModal} onDismiss={() => setShowShareModal(false)} kural={kural} />
+      <MemorizeSheet queue={memorizing?.queue ?? null} mode={memorizing?.mode ?? 'learn'} onClose={() => setMemorizing(null)} />
 
       <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
-        {/* Header: number + where it sits in the book */}
-        <View style={styles.header}>
-          <View style={[styles.numberPill, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text variant="labelLarge" style={{ color: theme.colors.onPrimaryContainer }}>
-              குறள் {kural.number}
-            </Text>
-          </View>
-          <View style={styles.headerText}>
-            <Text style={[tamilText.label, { color: theme.colors.onSurface }]} numberOfLines={1}>
+        {/* Folio: where this couplet sits in the book */}
+        <View style={styles.folio}>
+          <Text
+            style={[type.display(30), styles.number, { color: theme.colors.primary }]}
+            accessibilityLabel={`Kural ${kural.number}`}
+          >
+            {kural.number}
+          </Text>
+          <View style={styles.folioText}>
+            <Text style={[type.tamilLabelStrong, { color: theme.colors.onSurface }]} numberOfLines={1}>
               {kural.chap_tam}
             </Text>
             <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-              {[kural.chap_eng, kural.sect_eng].filter(Boolean).join(' · ')}
+              அதிகாரம் {chapterNumber} · {position}/10{kural.chap_eng ? ` · ${kural.chap_eng}` : ''}
             </Text>
           </View>
+          {/* Shows once the Kural has counted as read (see useReadTracker) */}
+          {isRead && (
+            <Animated.View
+              entering={FadeIn.duration(300)}
+              style={[styles.readMark, { backgroundColor: theme.colors.primaryContainer }]}
+              accessibilityLabel="Read"
+            >
+              <MaterialCommunityIcons name="check" size={13} color={theme.colors.onPrimaryContainer} />
+              <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>Read</Text>
+            </Animated.View>
+          )}
         </View>
 
         {/* The couplet */}
         {showTamil && (
-          <View style={styles.couplet}>
-            <View style={[styles.accentRule, { backgroundColor: theme.colors.accent }]} />
-            <Text
-              style={[tamilText.kural(fontSize), styles.coupletLine, { color: theme.colors.onSurface }]}
-              selectable
-            >
-              {kural.line1}
-            </Text>
-            <Text
-              style={[tamilText.kural(fontSize), styles.coupletLine, { color: theme.colors.onSurface }]}
-              selectable
-            >
-              {kural.line2}
-            </Text>
+          <View style={styles.verse}>
+            <KuralVerse kural={kural} size={sizes.verse} minSize={sizes.verseMin} />
           </View>
         )}
 
         {showEnglish && (
           <Text
-            variant="bodyLarge"
             selectable
             style={[
+              type.translation,
               styles.translation,
-              { color: showTamil ? theme.colors.onSurfaceVariant : theme.colors.onSurface },
-              !showTamil && styles.translationPrimary,
+              { fontSize: sizes.translation, lineHeight: Math.round(sizes.translation * 1.6) },
+              { color: showTamil ? theme.colors.onSurfaceVariant : theme.colors.ink },
+              !showTamil && [
+                type.englishBody,
+                styles.translationPrimary,
+                { fontSize: sizes.verseMin + 2, lineHeight: Math.round((sizes.verseMin + 2) * 1.55) },
+              ],
             ]}
           >
             {kural.eng}
           </Text>
         )}
 
-        {/* Explanation */}
-        <Pressable
-          onPress={() => setShowExplanation((v) => !v)}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: showExplanation }}
-          style={[styles.explainToggle, { borderTopColor: theme.colors.outlineVariant }]}
-        >
-          <MaterialCommunityIcons name="text-box-outline" size={18} color={theme.colors.primary} />
-          <Text variant="labelLarge" style={[styles.explainLabel, { color: theme.colors.primary }]}>
-            Explanation
-          </Text>
-          <MaterialCommunityIcons
-            name={showExplanation ? 'chevron-up' : 'chevron-down'}
-            size={22}
-            color={theme.colors.primary}
-          />
-        </Pressable>
+        {/* Meaning: one header row with its language and listen controls */}
+        <View style={[styles.explainHeader, { borderTopColor: theme.colors.rule }]}>
+          <Pressable
+            onPress={() => {
+              if (!showExplanation) markRead();
+              if (speaking === 'meaning') stopSpeaking();
+              setShowExplanation((v) => !v);
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={showExplanation ? 'Hide the meaning' : 'Show the meaning'}
+            accessibilityState={{ expanded: showExplanation }}
+            hitSlop={8}
+            style={styles.explainTitle}
+          >
+            <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>பொருள்</Text>
+            <MaterialCommunityIcons
+              name={showExplanation ? 'chevron-up' : 'chevron-down'}
+              size={20}
+              color={theme.colors.primary}
+            />
+          </Pressable>
+          {showExplanation && bothLanguages && (
+            <View style={[styles.langToggle, { borderColor: theme.colors.outlineVariant }]} accessibilityRole="radiogroup">
+              {(['ta', 'en'] as const).map((lang) => {
+                const selected = explanationLang === lang;
+                return (
+                  <Pressable
+                    key={lang}
+                    onPress={() => {
+                      if (selected) return;
+                      if (speaking === 'meaning') stopSpeaking();
+                      markRead();
+                      setExplanationLang(lang);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    accessibilityLabel={lang === 'ta' ? 'Tamil meaning' : 'English meaning'}
+                    style={[styles.langOption, selected && { backgroundColor: theme.colors.secondaryContainer }]}
+                  >
+                    <Text
+                      style={[
+                        lang === 'ta' ? type.tamilLabelStrong : type.uiMedium,
+                        styles.langText,
+                        { color: selected ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant },
+                      ]}
+                    >
+                      {lang === 'ta' ? 'தமிழ்' : 'EN'}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+          {showExplanation && (
+            <IconButton
+              icon={speaking === 'meaning' ? 'stop-circle-outline' : 'volume-high'}
+              size={20}
+              iconColor={theme.colors.primary}
+              onPress={() => handleSpeak('meaning')}
+              style={styles.explainListen}
+              accessibilityLabel={speaking === 'meaning' ? 'Stop reading the meaning' : 'Read the meaning aloud'}
+            />
+          )}
+        </View>
 
         {showExplanation && (
           <Animated.View entering={FadeIn.duration(250)} style={styles.explanation}>
-            {bothLanguages && (
-              <SegmentedButtons
-                value={explanationLang}
-                onValueChange={(v) => setExplanationLang(v as 'ta' | 'en')}
-                density="small"
-                style={styles.langSwitch}
-                buttons={[
-                  { value: 'ta', label: 'தமிழ்' },
-                  { value: 'en', label: 'English' },
-                ]}
-              />
-            )}
             <Text
               selectable
               style={[
-                explanationLang === 'ta' ? tamilText.body : styles.englishBody,
-                { color: theme.colors.onSurface },
+                explanationLang === 'ta' ? type.tamilBody : type.englishBody,
+                {
+                  fontSize: sizes.meaning,
+                  lineHeight: Math.round(sizes.meaning * (explanationLang === 'ta' ? 1.75 : 1.6)),
+                  color: theme.colors.onSurface,
+                },
               ]}
             >
               {explanation}
@@ -236,30 +280,43 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
         )}
 
         {/* Actions */}
-        <View style={[styles.actions, { borderTopColor: theme.colors.outlineVariant }]}>
+        <View style={[styles.actions, { borderTopColor: theme.colors.rule }]}>
           <ActionButton
             icon={isFavorite ? 'bookmark' : 'bookmark-outline'}
             label={isFavorite ? 'Saved' : 'Save'}
             active={isFavorite}
-            activeColor={theme.colors.tertiary}
+            activeColor={theme.colors.primary}
             onPress={handleFavoritePress}
             accessibilityLabel={isFavorite ? 'Remove from saved' : 'Save Kural'}
           />
           <ActionButton
-            icon={isSpeaking ? 'stop-circle-outline' : 'volume-high'}
-            label={isSpeaking ? 'Stop' : 'Listen'}
-            active={isSpeaking}
-            onPress={handleSpeak}
-            accessibilityLabel={isSpeaking ? 'Stop reading' : 'Read aloud'}
+            icon={speaking === 'kural' ? 'stop-circle-outline' : 'volume-high'}
+            label={speaking === 'kural' ? 'Stop' : 'Listen'}
+            active={speaking === 'kural'}
+            onPress={() => handleSpeak('kural')}
+            accessibilityLabel={speaking === 'kural' ? 'Stop reading' : 'Read the Kural aloud'}
           />
-          <ActionButton icon="share-variant-outline" label="Share" onPress={() => setShowShareModal(true)} />
           <ActionButton
-            icon={copied ? 'check' : 'content-copy'}
-            label={copied ? 'Copied' : 'Copy'}
-            active={copied}
-            activeColor={theme.colors.success}
-            onPress={handleCopy}
-            accessibilityLabel="Copy text"
+            icon={isLearning ? 'school' : 'school-outline'}
+            label={isLearning ? 'Learning' : 'Learn'}
+            active={isLearning}
+            onPress={() => {
+              haptic();
+              markRead();
+              // Fixed when the sheet opens: grading a new Kural adds it to the review list,
+              // which must not switch the open session into practice mode.
+              // Already learning: practise without changing its review schedule.
+              setMemorizing({ queue: [kural.number], mode: isLearning ? 'practice' : 'learn' });
+            }}
+            accessibilityLabel={isLearning ? 'Practise this Kural' : 'Learn this Kural by heart'}
+          />
+          <ActionButton
+            icon="share-variant-outline"
+            label="Share"
+            onPress={() => {
+              markRead();
+              setShowShareModal(true);
+            }}
           />
         </View>
       </View>
@@ -274,81 +331,88 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
-  header: {
+  folio: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
     paddingHorizontal: space.xl,
-    paddingTop: space.xl,
+    paddingTop: space.lg,
   },
-  numberPill: {
-    paddingHorizontal: space.md,
-    paddingVertical: 6,
+  number: {
+    minWidth: 44,
+    fontVariant: ['tabular-nums'],
+  },
+  readMark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: space.sm,
+    paddingVertical: 2,
     borderRadius: radius.pill,
   },
-  headerText: {
+  folioText: {
     flex: 1,
   },
-  couplet: {
-    alignItems: 'center',
-    paddingHorizontal: space.xl,
-    paddingTop: space.xxl,
-    paddingBottom: space.sm,
-  },
-  accentRule: {
-    width: 32,
-    height: 3,
-    borderRadius: 2,
-    marginBottom: space.lg,
-  },
-  coupletLine: {
-    textAlign: 'center',
+  verse: {
+    // A little more width than the rest of the card, so the lines fit at a larger size
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
   },
   translation: {
-    textAlign: 'center',
-    fontStyle: 'italic',
-    lineHeight: 24,
-    paddingHorizontal: space.xxl,
-    paddingTop: space.md,
-    paddingBottom: space.xl,
+    paddingHorizontal: space.xl,
+    paddingTop: space.sm,
+    paddingBottom: space.lg,
   },
   translationPrimary: {
-    fontStyle: 'normal',
-    fontSize: 19,
-    lineHeight: 28,
-    paddingTop: space.xxl,
+    paddingTop: space.lg,
   },
-  explainToggle: {
+  explainHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    paddingHorizontal: space.xl,
-    paddingVertical: space.md,
+    minHeight: 48,
+    paddingLeft: space.xl,
+    paddingRight: space.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  explainLabel: {
+  explainTitle: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    minHeight: 44,
+  },
+  langToggle: {
+    flexDirection: 'row',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    overflow: 'hidden',
+  },
+  langOption: {
+    minWidth: 48,
+    minHeight: 32,
+    paddingHorizontal: space.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langText: {
+    fontSize: 13,
+  },
+  explainListen: {
+    margin: 0,
   },
   explanation: {
     paddingHorizontal: space.xl,
-    paddingBottom: space.lg,
-  },
-  langSwitch: {
-    marginBottom: space.md,
-  },
-  englishBody: {
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    lineHeight: 24,
+    paddingBottom: space.md,
   },
   attribution: {
-    marginTop: space.sm,
+    marginTop: space.xs,
     textAlign: 'right',
   },
   actions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: space.sm,
+    paddingVertical: space.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   action: {

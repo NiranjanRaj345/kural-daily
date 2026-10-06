@@ -1,0 +1,220 @@
+# Manual testing
+
+Run this on a real phone before merging a release. Everything below can be checked
+in about 45 minutes. Note anything that looks or behaves wrong with a screenshot.
+
+## 0. Build and install
+
+```bash
+git fetch origin
+git checkout claude/serene-wozniak-94n40c                        # or the branch being tested
+git pull origin claude/serene-wozniak-94n40c                     # bring your copy up to date
+npm install
+npm run check                                                     # must pass; shows the version (kural-daily@1.3.0)
+npx eas-cli@latest build --profile preview --platform android    # installable APK
+```
+
+Open the build link on the phone (or scan the QR code) and install.
+
+Test both paths if you can:
+
+- **Upgrade**: install the new APK *over* the version already on your phone (same signing key, so
+  Android allows it). Your data must survive.
+- **Fresh install**: uninstall (or Settings → Apps → Kural Daily → Storage → Clear data), then
+  install again. This shows the welcome screens.
+
+You → bottom of the screen should read **Kural Daily 1.3.0**.
+
+## 1. First launch (fresh install)
+
+- [ ] Splash: indigo background with the palm-leaf icon, no white flash.
+- [ ] Welcome 1 shows திருக்குறள், 1330 / 133 / 3 and the first Kural.
+- [ ] Welcome 2: choose தமிழ் மட்டும், then Tamil and English; the selection moves.
+- [ ] After a fresh install, You → Appearance shows Auto page, Indigo, Device font; Reading shows
+      "Match my phone's text size" on; Listening voice says Automatic.
+- [ ] Welcome 3: **Change time** opens the clock. Set an unusual time (e.g. 6:47) using the
+      keyboard icon; the card shows it after **Ok**.
+- [ ] **Remind me daily** shows the Android notification permission prompt. Allow it.
+- [ ] The app opens on Today. You → Reminders shows both Daily Kural and Streak reminder on,
+      daily at the time you chose.
+- [ ] Waiting on the welcome screens doesn't count today's Kural as read (You → Reading history is
+      empty until you have been on Today for a few seconds).
+- [ ] Repeat with **Not now, start reading** (after clearing data): no permission prompt; Today
+      shows the "A Kural every morning?" card.
+
+## 2. Upgrade from 1.2
+
+- [ ] No welcome screens.
+- [ ] Streak, saved Kurals, reading history and quiz scores are all still there.
+- [ ] Theme: if you had Light / Dark / Sepia, you now have Paper / Night / Palm leaf.
+- [ ] If daily reminders were on before, Streak reminder is now on too.
+
+## 3. Today
+
+- [ ] வணக்கம், today's date, and a one-line streak pill (flame, "N-day streak", 7 small dots).
+      Tapping it opens You.
+- [ ] Today's Kural: number, அதிகாரம் and position (e.g. 9/10), chapter in Tamil and English.
+- [ ] Tomorrow is a surprise: set the phone's date a day ahead (automatic date off) and reopen the
+      app; the Kural is from a different chapter, not today's number + 1. Set the date back.
+- [ ] The couplet is on its two original lines (text slightly smaller if needed). With text size L
+      or XL on a narrow phone it may wrap; that's intended.
+- [ ] The whole card (to Save / Listen / Learn / Share) fits on the screen without scrolling.
+- [ ] Meaning is open. Its header row has பொருள் (tap to collapse/expand), a தமிழ் / EN switch and
+      a speaker: it reads the meaning aloud (Tamil voice for தமிழ், English voice for EN); tap again
+      to stop; switching language stops it.
+- [ ] "Keep reading this chapter" opens the chapter's first unread Kural; **Next** goes through
+      the chapter; the 10 dots fill as you read.
+- [ ] Your journey numbers go up after reading.
+- [ ] **Counting as read**: open a Kural you haven't read from Browse and close it within a second:
+      it is not in You → Reading history. Open another and stay ~6 seconds, or tap Listen / Meaning /
+      Save / Share / Learn on it: it is in history.
+- [ ] On a day you haven't read, opening the app alone doesn't add the day to the streak. About
+      6 seconds after Today's Kural is on screen, a green **✓ Read** appears next to அதிகாரம் and
+      the streak pill's last dot fills. Try it from a cold start (swipe the app away first).
+- [ ] Random Kural opens a sheet; Share the app opens the share sheet with the store link.
+- [ ] The search button opens Search; back returns to Today.
+- [ ] Pull down to refresh works.
+
+## 4. Kural card actions
+
+- [ ] **Save** turns to Saved (accent colour); the Kural appears in the Saved tab.
+- [ ] **Listen** reads line 1, a short pause, then line 2, in a Tamil voice. Tap again to stop.
+      Closing the sheet while it speaks stops it.
+- [ ] **Share** → Share image: try each style, toggle Tamil / English / Explanation; the image
+      shared to WhatsApp or Photos matches the preview, with the couplet on **two lines**. Share text
+      and Copy text also give the couplet as two lines.
+- [ ] Android back closes any open sheet (Kural, share, voice).
+
+## 5. Learn by heart
+
+- [ ] On a Kural, **Learn** opens Memorize at Step 1 of 4.
+- [ ] Next step hides every other word as a **spoiler**: a shimmer of moving particles, nothing
+      readable; tap one and the word fades in.
+- [ ] Step 3 shows first words only; Step 4 hides everything.
+- [ ] Listen slowly is slower than normal Listen. Meaning shows the English hint.
+- [ ] Check my recall → I knew it → "Committed to memory". The card's button now says Learning.
+- [ ] Learn tab: "All caught up · Next review: tomorrow"; your Kural is listed with 7 dots.
+- [ ] **Review tomorrow, today**: set the phone's date one day ahead (Settings → System → Date &
+      time, turn off automatic). Reopen the app: Today shows "1 Kural to review today", the Learn
+      tab has a badge, and Start review opens the Kural fully hidden ("From memory"). Grade it.
+      Set the date back to automatic afterwards.
+- [ ] Tapping a Kural in Your Kurals that isn't due opens practice: it ends with Again / Done and
+      doesn't change its next review.
+
+## 6. Quiz (Learn → Quiz)
+
+- [ ] Missing word, Meaning, Chapter, Jumbled: each gives sensible questions.
+- [ ] Right/wrong colours are clear; the screen scrolls to the result and Next question.
+- [ ] Jumbled: tap a placed word to take it back; Check answer needs every word.
+
+## 7. Browse and Search
+
+- [ ] Browse: All / Virtue / Wealth / Love filters; part (இயல்) labels inside each book.
+- [ ] Chapter 71 shows only Kurals 701–710.
+- [ ] Inside a chapter: ‹ › move to the previous/next chapter; Android back returns to the list.
+- [ ] A fully read chapter shows a tick.
+- [ ] Search `7` shows only Kural 7; a Tamil word (அன்பு) and an English word (Patience) give
+      results; suggested topics and recent searches work; Clear empties recents.
+
+## 8. Saved and You
+
+- [ ] Saved: newest first; tapping the bookmark removes it, **Undo** brings it back.
+- [ ] You: streak card with this month's calendar (read days filled); ‹ › go back to earlier
+      months (up to a year back) and forward again to this month. Below: Kurals read, Chapters done, By heart.
+- [ ] Progress: Milestones row shows the next one; it opens all milestones. Reading history,
+      About the Thirukkural (read it through: poet, names, verse form, arrangement, commentaries).
+- [ ] Settings rows show a summary and open sheets:
+      **Appearance** → Page: Auto, Paper, Palm leaf, Night; Accent: Indigo, Kumkum, Leaf, Saffron;
+      Font: Classic, Modern, Device, with a live preview. **Bold couplet** is off by default (the
+      Kural in its usual weight); turning it on makes the couplet bold in every font. Change the accent and check it on Today
+      (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
+      the share sheet's chips, Browse chapter ticks, By heart, the ✓ Read mark, the reading calendar
+      and streak dots. Only the flame icon stays saffron.
+      **Reading** → language, text size, reading speed. With "Match my phone's text size" on,
+      change the phone's font size (Settings → Display) and the Kural text follows it. Turn it off:
+      S–XL appear and stay the same size whatever the phone is set to. Back on Today, each
+      step makes the couplet, the translation and the meaning bigger; the couplet is always the
+      largest and boldest text on the card (check with Classic, Modern and Device fonts). At S and M
+      long Kurals stay on two lines; at L and XL they may wrap.
+- [ ] Auto page follows the phone's dark mode (toggle it in quick settings).
+- [ ] Reset progress asks first, clears history / streak / learning / quiz, keeps Saved.
+
+## 9. Reminders (You → Reminders)
+
+- [ ] **Send a test reminder**, lock the phone: within ~10 seconds a
+      notification shows today's Kural with the palm-leaf icon in the status bar.
+- [ ] Tapping it opens the app on Today.
+- [ ] **Daily**: set the daily time 2–3 minutes ahead, close the app (swipe it away), wait.
+      The notification names that day's Kural. Android may deliver it a few minutes late.
+- [ ] **Streak** (don't open the app after changing the date, or stay on Today for long):
+      1. In You → Reminders set the streak reminder to, say, 8:00 PM.
+      2. Read today's Kural, then close the app (swipe it away).
+      3. In Android settings turn off automatic date & time and set **tomorrow, 7:58 PM**.
+      4. Wait about two minutes: "Keep your N-day streak" arrives.
+      5. Set date & time back to automatic.
+- [ ] Open the app on a day you haven't read yet before the streak time, read, and confirm no
+      streak reminder arrives that evening.
+- [ ] Restart the phone with reminders on; the next one still arrives.
+- [ ] Turn notifications off for the app in Android settings, return to the app: both reminder
+      switches turn off. Turning one on again asks for permission.
+- [ ] Android Settings → Apps → Kural Daily → Notifications lists **Daily Kural** and
+      **Streak reminder** as separate categories.
+
+## 10. Voice
+
+- [ ] You → Listening voice lists Tamil voices, best first, with Natural/Recommended
+      labels; ▶ previews each; picking one changes Listen.
+- [ ] **Download voices** at the top of the voice sheet opens Google's
+      voice download screen. Download Tamil (India), come back, tap refresh: new voices appear.
+- [ ] Voice settings opens Android's text-to-speech settings.
+
+## 11. Icon and system
+
+- [ ] Home screen icon: palm leaves with அ, nothing cropped (try your launcher's icon shapes if it
+      has them).
+- [ ] Android 13+: turn on Themed icons (wallpaper settings) — a single-colour palm-leaf icon.
+- [ ] Airplane mode: everything except sharing to other apps still works.
+- [ ] Phone font size set to Largest: text stays readable, nothing overlaps badly.
+
+## Reporting
+
+For each problem note: the step number, what you expected, what happened, and a screenshot or
+screen recording. Phone model and Android version help too.
+
+## After testing
+
+1. Merge the pull request.
+2. Make sure the release's section in CHANGELOG.md carries its date (e.g. `## 1.3.0 (2026-10-06)`).
+3. Create the GitHub release `v1.3.0` from `master` with the 1.3.0 changelog section.
+
+## First store release
+
+Build from `master` after merging. `production` builds bump `android.versionCode` in app.json
+(EAS `autoIncrement`); commit that change after each build so the next build goes higher.
+
+**Google Play** (Android App Bundle):
+
+1. `npx eas-cli@latest build --profile production --platform android` → an `.aab`.
+2. Play Console → create the app (*Kural Daily*, free, app). Package name comes from the first
+   upload: `com.mrmonk.kuraldaily`, and can never change.
+3. Upload the `.aab` to **Internal testing** first, install it from the Play link on your phone,
+   then promote to Production. (New personal developer accounts must run a closed test with
+   testers for a set period before Production is unlocked; the Console shows the current rule.)
+4. Store listing: title, short and full description, the 512×512 icon (`assets/images/icon.png`
+   scaled), a 1024×500 feature graphic, and at least two phone screenshots.
+5. App content: privacy policy URL (host the policy text from You → Privacy policy, e.g. on GitHub
+   Pages), Data safety: *no data collected or shared*, content rating questionnaire, target
+   audience, no ads.
+6. Once live, check `STORE_URL` in `constants/app.ts` matches the listing (it's used by
+   *Share the app*).
+
+**Samsung Galaxy Store** (Seller Portal, seller.samsungapps.com):
+
+1. Build what Seller Portal asks for: an APK with
+   `npx eas-cli@latest build --profile production-apk --platform android`, or the same `.aab`
+   as Play if the upload page accepts bundles.
+2. Use the same package name and EAS signing key as Play, so users can move between stores.
+3. Same listing details, screenshots and privacy policy URL. Samsung reviews each release; allow
+   a few days.
+
+Keep the version (`expo.version`) the same in both stores for a release.

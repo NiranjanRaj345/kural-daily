@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Kural } from '../../types/kural';
-import { useAppTheme, space, radius, tamilText } from '../../theme';
+import { useAppTheme, space, radius, useType } from '../../theme';
 
 interface KuralListItemProps {
   kural: Kural;
@@ -19,6 +19,7 @@ const KuralListItemBase: React.FC<KuralListItemProps> = ({
   kural, onPress, showChapter = false, showEnglish = true, right, read = false,
 }) => {
   const theme = useAppTheme();
+  const type = useType();
   return (
     <Pressable
       onPress={() => onPress(kural)}
@@ -48,15 +49,15 @@ const KuralListItemBase: React.FC<KuralListItemProps> = ({
         </Text>
       </View>
       <View style={styles.body}>
-        <Text style={[tamilText.title, { color: theme.colors.onSurface }]}>{kural.line1}</Text>
-        <Text style={[tamilText.title, { color: theme.colors.onSurface }]}>{kural.line2}</Text>
+        <Text style={[type.tamilPreview, { color: theme.colors.ink }]}>{kural.line1}</Text>
+        <Text style={[type.tamilPreview, { color: theme.colors.ink }]}>{kural.line2}</Text>
         {showEnglish && (
-          <Text variant="bodySmall" numberOfLines={1} style={[styles.english, { color: theme.colors.onSurfaceVariant }]}>
+          <Text numberOfLines={1} style={[type.translation, styles.english, { color: theme.colors.onSurfaceVariant }]}>
             {kural.eng}
           </Text>
         )}
         {showChapter && (
-          <Text style={[tamilText.label, { color: theme.colors.primary, marginTop: 4 }]} numberOfLines={1}>
+          <Text style={[type.tamilLabel, { color: theme.colors.primary, marginTop: 4 }]} numberOfLines={1}>
             {kural.chap_tam}{kural.chap_eng ? ` · ${kural.chap_eng}` : ''}
           </Text>
         )}
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
   },
   english: {
     marginTop: 4,
-    fontStyle: 'italic',
+    fontSize: 14,
+    lineHeight: 21,
   },
 });

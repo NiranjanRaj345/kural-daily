@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { View, StyleSheet, FlatList, SectionList, Pressable, BackHandler } from 'react-native';
 import { Text, IconButton, Chip } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,7 +10,7 @@ import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { KuralListItem } from '../../components/ui/KuralListItem';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { useAppTheme, space, radius, tamilText } from '../../theme';
+import { useAppTheme, space, radius, useType } from '../../theme';
 
 interface Book {
   title: string;
@@ -33,6 +33,7 @@ const ChapterRow = React.memo(function ChapterRow({
   chapter, readCount, onPress,
 }: { chapter: Chapter; readCount: number; onPress: (c: Chapter) => void }) {
   const theme = useAppTheme();
+  const type = useType();
   const complete = readCount >= 10;
   return (
     <Pressable
@@ -45,17 +46,17 @@ const ChapterRow = React.memo(function ChapterRow({
       <View
         style={[
           styles.chapterBadge,
-          { backgroundColor: complete ? theme.colors.successContainer : theme.colors.surfaceVariant },
+          { backgroundColor: complete ? theme.colors.primaryContainer : theme.colors.surfaceVariant },
         ]}
       >
         {complete ? (
-          <MaterialCommunityIcons name="check" size={18} color={theme.colors.onSuccessContainer} />
+          <MaterialCommunityIcons name="check" size={18} color={theme.colors.onPrimaryContainer} />
         ) : (
           <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{chapter.number}</Text>
         )}
       </View>
       <View style={styles.chapterText}>
-        <Text style={[tamilText.title, { color: theme.colors.onSurface }]} numberOfLines={1}>{chapter.name}</Text>
+        <Text style={[type.tamilTitle, { color: theme.colors.onSurface }]} numberOfLines={1}>{chapter.name}</Text>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
           {chapter.nameEnglish}
         </Text>
@@ -70,6 +71,9 @@ const ChapterRow = React.memo(function ChapterRow({
 
 export default function BrowseScreen() {
   const theme = useAppTheme();
+  const selectedChip = { backgroundColor: theme.colors.secondaryContainer };
+  const type = useType();
+  const router = useRouter();
   const history = useSettingsStore((s) => s.history);
   const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [selectedKural, setSelectedKural] = useState<Kural | null>(null);
@@ -120,7 +124,7 @@ export default function BrowseScreen() {
             <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
               Chapter {index} · {selectedChapter.sectionEnglish}
             </Text>
-            <Text style={[tamilText.title, { fontSize: 20, lineHeight: 30, color: theme.colors.onBackground }]} numberOfLines={1}>
+            <Text style={[type.tamilTitle, { fontSize: 20, lineHeight: 30, color: theme.colors.onBackground }]} numberOfLines={1}>
               {selectedChapter.name}
             </Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
@@ -157,19 +161,30 @@ export default function BrowseScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title="Browse" subtitle="3 books · 133 chapters · 1330 Kurals" />
+      <ScreenHeader
+        title="Browse"
+        subtitle="3 books · 133 chapters · 1330 Kurals"
+        right={
+          <IconButton
+            icon="magnify"
+            mode="contained-tonal"
+            onPress={() => router.navigate('/search')}
+            accessibilityLabel="Search Kurals"
+          />
+        }
+      />
       <View style={styles.bookChips}>
-        <Chip compact selected={!bookFilter} showSelectedOverlay onPress={() => setBookFilter(null)} style={styles.bookChip}>
+        <Chip mode="outlined" compact selected={!bookFilter} onPress={() => setBookFilter(null)} style={[styles.bookChip, !bookFilter && selectedChip]}>
           All
         </Chip>
         {books.map((book) => (
           <Chip
             key={book.title}
+            mode="outlined"
             compact
             selected={bookFilter === book.title}
-            showSelectedOverlay
             onPress={() => setBookFilter(bookFilter === book.title ? null : book.title)}
-            style={styles.bookChip}
+            style={[styles.bookChip, bookFilter === book.title && selectedChip]}
           >
             {book.titleEnglish ?? book.title}
           </Chip>
@@ -182,7 +197,7 @@ export default function BrowseScreen() {
         stickySectionHeadersEnabled
         renderSectionHeader={({ section }) => (
           <View style={[styles.bookHeader, { backgroundColor: theme.colors.background }]}>
-            <Text style={[tamilText.title, { color: theme.colors.primary }]}>{section.title}</Text>
+            <Text style={[type.tamilTitle, { color: theme.colors.primary }]}>{section.title}</Text>
             <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>
               {section.titleEnglish} · {section.data.length} chapters
             </Text>
@@ -204,7 +219,14 @@ export default function BrowseScreen() {
               },
             ]}
           >
-            {index > 0 && <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />}
+            {(index === 0 || section.data[index - 1].group !== item.group) ? (
+              <View style={[styles.groupLabel, index > 0 && { borderTopColor: theme.colors.outlineVariant, borderTopWidth: StyleSheet.hairlineWidth }]}>
+                <Text style={[type.tamilLabelStrong, { color: theme.colors.primary }]}>{item.group}</Text>
+                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{item.groupEnglish}</Text>
+              </View>
+            ) : (
+              <View style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]} />
+            )}
             <ChapterRow chapter={item} readCount={readByChapter.get(item.number) ?? 0} onPress={openChapter} />
           </View>
         )}
@@ -241,6 +263,14 @@ const styles = StyleSheet.create({
     borderLeftWidth: StyleSheet.hairlineWidth,
     borderRightWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
+  },
+  groupLabel: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: space.sm,
+    paddingHorizontal: space.lg,
+    paddingTop: space.md,
+    paddingBottom: space.xs,
   },
   separator: {
     height: StyleSheet.hairlineWidth,

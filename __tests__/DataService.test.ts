@@ -1,4 +1,4 @@
-import { getAllKurals, getChapters, getKuralByNumber, getKuralsByChapter, searchKurals } from '../services/DataService';
+import { getAllKurals, getBookStructure, getChapters, getKuralByNumber, getKuralsByChapter, getPositionInChapter, searchKurals } from '../services/DataService';
 
 describe('DataService', () => {
   it('has all 1330 kurals in 133 chapters', () => {
@@ -15,6 +15,20 @@ describe('DataService', () => {
     for (const chapter of chapters) {
       expect(getKuralsByChapter(chapter.number)).toHaveLength(10);
     }
+  });
+
+  it('derives the book structure: 3 books, 13 parts, 133 chapters', () => {
+    const books = getBookStructure();
+    expect(books.map((b) => [b.nameEnglish, b.chapters, b.kurals])).toEqual([
+      ['Virtue', 38, 380], ['Wealth', 70, 700], ['Love', 25, 250],
+    ]);
+    expect(books.flatMap((b) => b.groups)).toHaveLength(13);
+    expect(books[1].groups.map((g) => g.name)).toContain('படையியல்');
+  });
+
+  it('knows a Kural\'s place in its chapter', () => {
+    expect(getPositionInChapter(getKuralByNumber(1009)!)).toBe(9);
+    expect(getPositionInChapter(getKuralByNumber(1010)!)).toBe(10);
   });
 
   it('every kural has the required text', () => {

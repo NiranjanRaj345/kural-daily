@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, FlatList, Keyboard } from 'react-native';
-import { Searchbar, Text, Chip, Button } from 'react-native-paper';
+import { Searchbar, Text, Chip, Button, IconButton } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { searchKurals } from '../../services/DataService';
 import { getRandomKural } from '../../services/DailyService';
 import { Kural } from '../../types/kural';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { KuralListItem } from '../../components/ui/KuralListItem';
-import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SectionLabel } from '../../components/ui/SectionLabel';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { useAppTheme, space } from '../../theme';
+import { useAppTheme, useType, space } from '../../theme';
 
 const SUGGESTIONS = ['அன்பு', 'கல்வி', 'நட்பு', 'Friendship', 'Truth', 'Patience', 'Wealth', 'Kindness'];
 
@@ -32,6 +32,8 @@ const useDebounced = <T,>(value: T, delay: number) => {
 
 export default function SearchScreen() {
   const theme = useAppTheme();
+  const type = useType();
+  const router = useRouter();
   const recentSearches = useSettingsStore((s) => s.recentSearches);
   const addRecentSearch = useSettingsStore((s) => s.addRecentSearch);
   const clearRecentSearches = useSettingsStore((s) => s.clearRecentSearches);
@@ -70,7 +72,7 @@ export default function SearchScreen() {
           </View>
           <View style={styles.chips}>
             {recentSearches.map((q) => (
-              <Chip key={q} icon="history" onPress={() => runSearch(q)}>{q}</Chip>
+              <Chip key={q} mode="outlined" icon="history" onPress={() => runSearch(q)}>{q}</Chip>
             ))}
           </View>
         </>
@@ -93,16 +95,22 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScreenHeader title="Search" />
+      <View style={styles.topBar}>
+        <IconButton icon="arrow-left" onPress={() => (router.canGoBack() ? router.back() : router.navigate('/'))} accessibilityLabel="Back" />
+        <Text variant="headlineMedium" accessibilityRole="header" style={{ color: theme.colors.onBackground }}>
+          Search
+        </Text>
+      </View>
       <Searchbar
         placeholder="Word, chapter or number"
         onChangeText={setSearchQuery}
         onSubmitEditing={() => isSearchable(searchQuery) && addRecentSearch(searchQuery)}
         value={searchQuery}
         style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant }]}
-        inputStyle={styles.searchInput}
+        inputStyle={type.ui}
         returnKeyType="search"
         autoCorrect={false}
+        autoFocus
         accessibilityLabel="Search Kurals"
       />
 
@@ -145,13 +153,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: space.xs,
+    paddingTop: space.sm,
+    paddingBottom: space.sm,
+  },
   searchBar: {
     marginHorizontal: space.lg,
     marginBottom: space.sm,
     elevation: 0,
-  },
-  searchInput: {
-    fontFamily: 'Inter_400Regular',
   },
   listContent: {
     paddingTop: space.sm,

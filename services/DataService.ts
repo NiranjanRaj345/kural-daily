@@ -41,8 +41,12 @@ export interface Chapter {
   number: number;
   name: string;
   nameEnglish?: string;
+  /** Book (பால்): அறத்துப்பால், பொருட்பால், காமத்துப்பால் */
   section: string;
   sectionEnglish?: string;
+  /** Part of the book (இயல்) */
+  group: string;
+  groupEnglish?: string;
 }
 
 // Every chapter has exactly 10 kurals. Chapters are identified by number because
@@ -59,11 +63,45 @@ for (const k of kurals) {
       nameEnglish: k.chap_eng,
       section: k.sect_tam,
       sectionEnglish: k.sect_eng,
+      group: k.chapgrp_tam,
+      groupEnglish: k.chapgrp_eng,
     };
   }
 }
 
 export const getChapters = (): Chapter[] => chapters;
+
+/** Position of a Kural within its chapter, 1–10. */
+export const getPositionInChapter = (kural: Kural) => ((kural.number - 1) % 10) + 1;
+
+export interface BookStructure {
+  name: string;
+  nameEnglish?: string;
+  chapters: number;
+  kurals: number;
+  groups: { name: string; nameEnglish?: string; chapters: number; firstChapter: number }[];
+}
+
+/** The three books and their parts, derived from the data. */
+export const getBookStructure = (): BookStructure[] => {
+  const books: BookStructure[] = [];
+  for (const chapter of chapters) {
+    let book = books[books.length - 1];
+    if (!book || book.name !== chapter.section) {
+      book = { name: chapter.section, nameEnglish: chapter.sectionEnglish, chapters: 0, kurals: 0, groups: [] };
+      books.push(book);
+    }
+    book.chapters += 1;
+    book.kurals += 10;
+    let group = book.groups[book.groups.length - 1];
+    if (!group || group.name !== chapter.group) {
+      group = { name: chapter.group, nameEnglish: chapter.groupEnglish, chapters: 0, firstChapter: chapter.number };
+      book.groups.push(group);
+    }
+    group.chapters += 1;
+  }
+  return books;
+};
 
 export const getKuralsByChapter = (chapterNumber: number): Kural[] => {
   return kurals.filter(k => getChapterNumber(k) === chapterNumber);
