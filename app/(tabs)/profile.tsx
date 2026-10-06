@@ -134,7 +134,7 @@ export default function ProfileScreen() {
         {/* Reading progress: streak and calendar */}
         <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
           <View style={styles.streakRow}>
-            <View style={[styles.flameBadge, { backgroundColor: theme.colors.flameContainer }]}>
+            <View style={[styles.flameBadge, { backgroundColor: theme.colors.primaryContainer }]}>
               <MaterialCommunityIcons name="fire" size={26} color={streak > 0 ? theme.colors.flame : theme.colors.outline} />
             </View>
             <View style={{ flex: 1 }}>
@@ -157,7 +157,7 @@ export default function ProfileScreen() {
         <View style={styles.statsRow}>
           <StatTile icon="book-open-variant" value={history.length} label="Kurals read" />
           <StatTile icon="bookshelf" value={chaptersDone} label="Chapters done" />
-          <StatTile icon="head-heart-outline" iconColor={theme.colors.success} value={mastered} label="By heart" />
+          <StatTile icon="head-heart-outline" value={mastered} label="By heart" />
         </View>
 
         <SectionLabel>Progress</SectionLabel>

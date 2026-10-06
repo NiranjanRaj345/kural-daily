@@ -46,11 +46,11 @@ const ChapterRow = React.memo(function ChapterRow({
       <View
         style={[
           styles.chapterBadge,
-          { backgroundColor: complete ? theme.colors.successContainer : theme.colors.surfaceVariant },
+          { backgroundColor: complete ? theme.colors.primaryContainer : theme.colors.surfaceVariant },
         ]}
       >
         {complete ? (
-          <MaterialCommunityIcons name="check" size={18} color={theme.colors.onSuccessContainer} />
+          <MaterialCommunityIcons name="check" size={18} color={theme.colors.onPrimaryContainer} />
         ) : (
           <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{chapter.number}</Text>
         )}

@@ -82,8 +82,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
 ## 5. Learn by heart
 
 - [ ] On a Kural, **Learn** opens Memorize at Step 1 of 4.
-- [ ] Next step hides every other word under a **frosted, blurred tile** (nothing readable through
-      it); tap a tile and the word fades in.
+- [ ] Next step hides every other word as a **spoiler**: a shimmer of moving particles, nothing
+      readable; tap one and the word fades in.
 - [ ] Step 3 shows first words only; Step 4 hides everything.
 - [ ] Listen slowly is slower than normal Listen. Meaning shows the English hint.
 - [ ] Check my recall → I knew it → "Committed to memory". The card's button now says Learning.
@@ -121,7 +121,8 @@ You → bottom of the screen should read **Kural Daily 1.3.0**.
       **Appearance** → Page: Auto, Paper, Palm leaf, Night; Accent: Indigo, Kumkum, Leaf, Saffron;
       Font: Classic, Modern, Device, with a live preview. Change the accent and check it on Today
       (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
-      the share sheet's chips. Only the streak flame stays saffron.
+      the share sheet's chips, Browse chapter ticks, By heart, the ✓ Read mark, the reading calendar
+      and streak dots. Only the flame icon stays saffron.
       **Reading** → language, text size S–XL (preview updates), reading speed.
 - [ ] Auto page follows the phone's dark mode (toggle it in quick settings).
 - [ ] Reset progress asks first, clears history / streak / learning / quiz, keeps Saved.

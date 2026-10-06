@@ -25,7 +25,7 @@ export const ACCENTS: { value: Accent; label: string; tamil: string; swatch: str
   { value: 'indigo', label: 'Indigo', tamil: 'அவுரி', swatch: '#1F4E9E' },
   { value: 'maroon', label: 'Kumkum', tamil: 'குங்குமம்', swatch: '#8E2B2B' },
   { value: 'green', label: 'Leaf', tamil: 'இலை', swatch: '#2F6B3A' },
-  { value: 'saffron', label: 'Saffron', tamil: 'காவி', swatch: '#B4651A' },
+  { value: 'saffron', label: 'Saffron', tamil: 'காவி', swatch: '#9A5400' },
 ];
 
 export type ReadingFont = 'classic' | 'modern' | 'device';
@@ -160,7 +160,7 @@ const buildTypeScale = (font: ReadingFont): TypeScale => {
 
 /** Colours Paper doesn't define. */
 export interface ExtraColors {
-  /** Saffron for the streak flame only; everything else follows the accent. */
+  /** Saffron for the streak flame icon only; everything else follows the accent. */
   flame: string;
   flameContainer: string;
   onFlameContainer: string;
@@ -311,7 +311,8 @@ export const buildTheme = (appearance: ResolvedAppearance, accent: Accent, readi
         level4: base.elevation[3],
         level5: base.elevation[4],
       },
-      flame: base.dark ? '#F5BC6C' : '#B4651A',
+      // The streak flame is saffron; with the Saffron accent it is the accent itself
+      flame: accent === 'saffron' ? a.primary : base.dark ? '#F5BC6C' : '#B4651A',
       flameContainer: base.dark ? '#3D2A12' : '#FBE9CF',
       onFlameContainer: base.dark ? '#FCE2BD' : '#5C3300',
       success: base.dark ? '#8FD19A' : '#2E6B3A',

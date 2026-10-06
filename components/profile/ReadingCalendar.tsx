@@ -77,14 +77,14 @@ export const ReadingCalendar: React.FC<ReadingCalendarProps> = ({ readDays }) =>
                 <View
                   style={[
                     styles.day,
-                    done && { backgroundColor: theme.colors.flame },
+                    done && { backgroundColor: theme.colors.primary },
                     isToday && !done && { borderWidth: 1.5, borderColor: theme.colors.primary },
                   ]}
                 >
                   <Text
                     variant="labelMedium"
                     style={{
-                      color: done ? theme.colors.surface : future ? theme.colors.outline : theme.colors.onSurface,
+                      color: done ? theme.colors.onPrimary : future ? theme.colors.outline : theme.colors.onSurface,
                     }}
                   >
                     {Number(key.slice(8))}

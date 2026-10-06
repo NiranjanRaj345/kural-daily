@@ -68,13 +68,13 @@ export const VoicePickerSheet: React.FC<VoicePickerSheetProps> = ({ visible, onC
               <View
                 style={[
                   styles.help,
-                  { backgroundColor: !bestIsNatural || tamil.length === 0 ? theme.colors.flameContainer : theme.colors.surfaceVariant },
+                  { backgroundColor: !bestIsNatural || tamil.length === 0 ? theme.colors.primaryContainer : theme.colors.surfaceVariant },
                 ]}
               >
-                <Text variant="titleSmall" style={{ color: !bestIsNatural || tamil.length === 0 ? theme.colors.onFlameContainer : theme.colors.onSurface }}>
+                <Text variant="titleSmall" style={{ color: !bestIsNatural || tamil.length === 0 ? theme.colors.onPrimaryContainer : theme.colors.onSurface }}>
                   {tamil.length === 0 ? 'No Tamil voice installed' : bestIsNatural ? 'Get more Tamil voices' : 'Want a more natural voice?'}
                 </Text>
-                <Text variant="bodySmall" style={[styles.helpText, { color: !bestIsNatural || tamil.length === 0 ? theme.colors.onFlameContainer : theme.colors.onSurfaceVariant }]}>
+                <Text variant="bodySmall" style={[styles.helpText, { color: !bestIsNatural || tamil.length === 0 ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant }]}>
                   {VOICE_HELP}
                 </Text>
                 {Platform.OS === 'android' && (

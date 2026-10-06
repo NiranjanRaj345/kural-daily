@@ -46,8 +46,8 @@ export const StreakPill: React.FC<StreakPillProps> = ({ readDays, streak, onPres
               style={[
                 styles.dot,
                 {
-                  backgroundColor: done ? theme.colors.flame : 'transparent',
-                  borderColor: done ? theme.colors.flame : key === todayKey ? theme.colors.primary : theme.colors.outline,
+                  backgroundColor: done ? theme.colors.primary : 'transparent',
+                  borderColor: done ? theme.colors.primary : key === todayKey ? theme.colors.primary : theme.colors.outline,
                 },
               ]}
             />

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Pressable, Platform, TextStyle } from 'react-native';
+import { View, StyleSheet, Pressable, Platform } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,6 +10,7 @@ import { SheetModal } from './SheetModal';
 import { hasTamilVoice, speakKural, stopSpeaking } from '../services/SpeechService';
 import { showNoTamilVoiceAlert } from './voiceHelp';
 import { useAppTheme, space, radius, useType } from '../theme';
+import { Spoiler } from './ui/Spoiler';
 
 /** learn: first time (joins the review list) · review: due today (graded) · practice: ungraded run-through */
 export type MemorizeMode = 'learn' | 'review' | 'practice';
@@ -36,51 +37,6 @@ const STEPS = [
   { title: 'From memory', hint: 'Recite the whole Kural, then check yourself.' },
 ];
 const RECALL = STEPS.length - 1;
-
-/*
- * A hidden word drawn out of focus, under frosted glass. Native blur isn't dependable on Android
- * (a text shadow there comes out sharp, clipped to a box), so the blur is
- * built by hand: faint copies of the word spread around its place, never one
- * at the centre. The copies smear into the word's rough shape, which can't be
- * read, and it looks the same on every platform.
- */
-const BLUR_RINGS = [
-  { radius: 3, opacity: 0.09 },
-  { radius: 5.5, opacity: 0.07 },
-  { radius: 8, opacity: 0.05 },
-];
-const BLUR_COPIES = BLUR_RINGS.flatMap(({ radius: r, opacity }, ring) =>
-  Array.from({ length: 10 }, (_, i) => {
-    const angle = ((i + ring / BLUR_RINGS.length) / 10) * Math.PI * 2;
-    return { x: Math.round(Math.cos(angle) * r * 10) / 10, y: Math.round(Math.sin(angle) * r * 10) / 10, opacity };
-  })
-);
-
-const withAlpha = (hex: string, alpha: number) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
-};
-
-/** A hidden word: the smudged word under a frosted-glass box. Tapping it reveals the word. */
-const BlurredWord: React.FC<{ word: string; style: TextStyle; ink: string; glass: string; edge: string }> = ({
-  word, style, ink, glass, edge,
-}) => (
-  <View style={[styles.tile, { borderColor: edge }]}>
-    {/* Keeps the word's size; never drawn */}
-    <Text style={[style, { opacity: 0 }]}>{word}</Text>
-    {BLUR_COPIES.map((o, i) => (
-      <Text
-        key={i}
-        style={[style, styles.blurCopy, { color: ink, left: o.x, top: o.y, opacity: o.opacity }]}
-        importantForAccessibility="no"
-        accessibilityElementsHidden
-      >
-        {word}
-      </Text>
-    ))}
-    <View style={[StyleSheet.absoluteFill, { backgroundColor: withAlpha(glass, 0.5) }]} />
-  </View>
-);
 
 const isHidden = (step: number, wordIndex: number, globalIndex: number) => {
   if (step === 0) return false;
@@ -241,8 +197,8 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
     >
       {done ? (
         <Animated.View entering={FadeIn} style={styles.done}>
-          <View style={[styles.doneIcon, { backgroundColor: theme.colors.successContainer }]}>
-            <MaterialCommunityIcons name="check-decagram" size={40} color={theme.colors.onSuccessContainer} />
+          <View style={[styles.doneIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+            <MaterialCommunityIcons name="check-decagram" size={40} color={theme.colors.onPrimaryContainer} />
           </View>
           <Text variant="headlineSmall" style={{ color: theme.colors.onSurface, textAlign: 'center' }}>
             {mode === 'review'
@@ -290,13 +246,8 @@ export const MemorizeSheet: React.FC<MemorizeSheetProps> = ({ queue, mode, onClo
                       style={styles.word}
                     >
                       {hidden ? (
-                        <BlurredWord
-                          word={word}
-                          style={type.kural(20)}
-                          ink={theme.colors.ink}
-                          glass={theme.colors.surfaceVariant}
-                          edge={theme.colors.outlineVariant}
-                        />
+                        // Hidden words are a shimmer of particles, like a chat spoiler
+                        <Spoiler text={word} style={type.kural(20)} color={theme.colors.ink} />
                       ) : (
                         // A peeked word fades in from behind its glass
                         <Animated.Text
@@ -368,17 +319,7 @@ const styles = StyleSheet.create({
   word: {
     paddingHorizontal: 4,
   },
-  blurCopy: {
-    position: 'absolute',
-  },
-  // The blur stays inside its tile
-  tile: {
-    overflow: 'hidden',
-    marginHorizontal: -4,
-    paddingHorizontal: 4,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
+
   tools: {
     flexDirection: 'row',
     flexWrap: 'wrap',

@@ -150,8 +150,8 @@ export const KuralCard: React.FC<KuralCardProps> = ({ kural, defaultExpanded = f
               {/* Shows once the Kural has counted as read (see useReadTracker) */}
               {isRead && (
                 <Animated.View entering={FadeIn.duration(300)} style={styles.readMark} accessibilityLabel="Read">
-                  <MaterialCommunityIcons name="check-circle" size={13} color={theme.colors.success} />
-                  <Text variant="labelSmall" style={{ color: theme.colors.success }}>Read</Text>
+                  <MaterialCommunityIcons name="check-circle" size={13} color={theme.colors.primary} />
+                  <Text variant="labelSmall" style={{ color: theme.colors.primary }}>Read</Text>
                 </Animated.View>
               )}
             </View>

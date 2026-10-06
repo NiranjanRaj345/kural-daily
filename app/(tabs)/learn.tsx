@@ -13,7 +13,7 @@ import { KuralListItem } from '../../components/ui/KuralListItem';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { SectionLabel } from '../../components/ui/SectionLabel';
 import { StatTile } from '../../components/ui/StatTile';
-import { BOX_INTERVALS, MASTERED_BOX, dueKurals, learningSummary } from '../../utils/srs';
+import { BOX_INTERVALS, dueKurals, learningSummary } from '../../utils/srs';
 import { toLocalDateKey } from '../../utils/date';
 import { useAppTheme, useType, space, radius } from '../../theme';
 
@@ -40,7 +40,7 @@ const BoxDots: React.FC<{ box: number }> = ({ box }) => {
             styles.dot,
             {
               backgroundColor: i <= box
-                ? box >= MASTERED_BOX ? theme.colors.success : theme.colors.primary
+                ? theme.colors.primary
                 : theme.colors.outlineVariant,
             },
           ]}
@@ -140,7 +140,7 @@ export default function LearnScreen() {
 
             <View style={styles.stats}>
               <StatTile icon="school-outline" value={summary.total} label="Learning" />
-              <StatTile icon="head-heart-outline" iconColor={theme.colors.success} value={summary.mastered} label="By heart" />
+              <StatTile icon="head-heart-outline" value={summary.mastered} label="By heart" />
               <StatTile icon="calendar-check-outline" iconColor={theme.colors.primary} value={summary.due} label="Due today" />
             </View>
 
