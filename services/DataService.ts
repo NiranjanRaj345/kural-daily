@@ -71,8 +71,6 @@ for (const k of kurals) {
 
 export const getChapters = (): Chapter[] => chapters;
 
-export const getChapter = (chapterNumber: number): Chapter | undefined => chapters[chapterNumber - 1];
-
 /** Position of a Kural within its chapter, 1–10. */
 export const getPositionInChapter = (kural: Kural) => ((kural.number - 1) % 10) + 1;
 

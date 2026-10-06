@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.3.0 (in testing)
+## 1.3.0 (2026-10-06)
 
 ### From the first round of device testing
 - **Today's Kural is a surprise**: instead of 1, 2, 3… the days follow one fixed shuffled order of all 1330 Kurals. None repeats until every Kural has been shown (each returns exactly 1330 days later), two days in a row never come from the same chapter, and everyone sees the same Kural on the same day.

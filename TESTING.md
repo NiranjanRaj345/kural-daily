@@ -184,7 +184,7 @@ screen recording. Phone model and Android version help too.
 ## After testing
 
 1. Merge the pull request.
-2. Change `## 1.3.0 (in testing)` in CHANGELOG.md to the release date.
+2. Make sure the release's section in CHANGELOG.md carries its date (e.g. `## 1.3.0 (2026-10-06)`).
 3. Create the GitHub release `v1.3.0` from `master` with the 1.3.0 changelog section.
 
 ## First store release
