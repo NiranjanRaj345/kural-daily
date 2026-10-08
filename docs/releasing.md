@@ -9,7 +9,8 @@
    `app/(tabs)/profile.tsx` together, with the new date.
 4. `npm run check` passes, and the [device test plan](testing.md) passes on a real phone.
 5. Merge to `master`, date the changelog section (e.g. `## 1.3.0 (2026-10-08)`), and create the
-   GitHub release `vX.Y.Z` from `master` with that section as the notes.
+   GitHub release `vX.Y.Z` from `master` with that section as the notes. Attach the APK that
+   Google Play signed (see *One signing key everywhere* below), not an EAS-built APK.
 
 ## One-time setup (Aatra Labs accounts)
 
@@ -21,13 +22,28 @@ Aatra Labs Expo account and Google Play Console. Once, on your computer:
 2. `npx eas-cli@latest init` creates the EAS project under that account and writes its ID into
    `app.json` (`expo.extra.eas.projectId`). Commit that change.
 3. The first `production` build asks to generate an Android keystore: let EAS create and keep it.
-   This is the **upload key**. In Play Console, keep **Play App Signing** on (the default), so
-   Google holds the app's signing key and a lost upload key can be reset.
+   This is the **upload key**. Play App Signing is on: Google generated and holds the **app
+   signing key** that users' installs are signed with, and a lost upload key can be reset.
 4. Back up the upload key: `npx eas-cli@latest credentials` → Android → production → download
    the keystore, and store it somewhere safe, not in this repository.
 
 Builds signed by the old personal Expo account can't be installed over builds from this one
 (the package ID and key are different): uninstall old test builds first.
+
+## One signing key everywhere
+
+Android only installs an update signed with the same key as the installed app. EAS builds are
+signed with the upload key, but Play installs are signed with Google's app signing key. So every
+APK given to the public (GitHub release, Galaxy Store) must be the one **Google Play signed**:
+
+1. Upload the `.aab` to Play (any track).
+2. Play Console → Test and release → **App bundle explorer** → choose the version →
+   **Downloads** → **Signed, universal APK** → Download.
+3. Attach that APK to the GitHub release as `kural-daily_vX.Y.Z.apk`, and upload the same file to
+   Galaxy Store.
+
+Then Play, GitHub and Galaxy installs can update each other. EAS `preview` and `production-apk`
+builds are for your own testing only; never publish them.
 
 ## Store builds
 
@@ -42,8 +58,9 @@ Build from `master` after merging. `production` builds bump `android.versionCode
 3. Upload the `.aab` to **Internal testing** first, install it from the Play link on your phone,
    then promote to Production. (New personal developer accounts must run a closed test with
    testers for a set period before Production is unlocked; the Console shows the current rule.)
-4. Store listing: title, short and full description, the 512×512 icon (`assets/images/icon.png`
-   scaled), a 1024×500 feature graphic, and at least two phone screenshots.
+4. Store listing: title, short and full description, the 512×512 icon
+   (`docs/store/icon-512.png`), the 1024×500 feature graphic (`docs/store/feature-graphic.png`)
+   and at least two phone screenshots.
 5. App content: privacy policy URL
    `https://github.com/aatralabs/kural-daily/blob/master/PRIVACY.md` (keep it in sync with
    You → Privacy policy in the app), Data safety: *no data collected or shared*, content rating
@@ -53,10 +70,9 @@ Build from `master` after merging. `production` builds bump `android.versionCode
 
 **Samsung Galaxy Store** (Seller Portal, seller.samsungapps.com):
 
-1. Build what Seller Portal asks for: an APK with
-   `npx eas-cli@latest build --profile production-apk --platform android`, or the same `.aab`
-   as Play if the upload page accepts bundles.
-2. Use the same package name and EAS signing key as Play, so users can move between stores.
+1. Upload the Play-signed universal APK from *One signing key everywhere*, not an EAS build, so
+   users can move between stores.
+2. Same package name as Play (`com.aatralabs.kuraldaily`).
 3. Same listing details, screenshots and privacy policy URL (`PRIVACY.md`). Samsung reviews each release; allow
    a few days.
 
