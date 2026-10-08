@@ -50,6 +50,3 @@ coverage/
 # generated native folders
 /ios
 /android
-
-# Other tools' local worktrees
-.kilo/

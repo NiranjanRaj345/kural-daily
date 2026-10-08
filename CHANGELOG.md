@@ -32,17 +32,19 @@ A redesign around reading and learning the Thirukkural, and the first open-sourc
   The tab shows a badge when reviews are due.
 
 ### Look and feel
+- **Night** is a deeper ink-black with ivory text, and accent tints are softer in every page
+  style, so nothing on screen competes with the couplet.
 - A quieter design: plain lists and rows instead of a box around everything, the couplet always
   the largest text on the card, and the design rules written down in `docs/design.md`.
 - **Page** (Auto, Paper, Palm leaf, Night) and **Accent** (Indigo, Kumkum, Leaf, Saffron). The
   accent is used for everything you select, complete or get right; only the streak flame stays
   saffron. Every combination meets WCAG AA contrast.
-- **Font**: Classic (book serif), Modern (clean sans) or Device (the phone's font), with an
-  optional **Bold couplet**.
+- **Font**: Classic (book serif), Modern (clean sans) or Device (the phone's font). The couplet
+  is bold by default; turn **Bold couplet** off for a lighter book weight.
 - **Text size**: match the phone's text size (default), or a fixed S, M, L or XL that scales the
   couplet, translation and meaning together.
-- New installs start with Auto page, Indigo, the phone's font and text size, and the best Tamil
-  voice installed. Existing settings are kept on upgrade.
+- New installs start with Auto page, Indigo, the phone's font and text size, a bold couplet and
+  the best Tamil voice installed. Existing settings are kept on upgrade.
 
 ### Welcome
 - A short, hands-on tour on first launch: hear the first Kural, say it from memory with three words

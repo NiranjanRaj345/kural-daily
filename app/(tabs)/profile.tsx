@@ -26,6 +26,28 @@ import { MASTERED_BOX } from '../../utils/srs';
 import { APP_NAME, APP_VERSION, CONTACT_EMAIL, PUBLISHER, REPO_URL, SHARE_APP_MESSAGE } from '../../constants/app';
 import { useAppTheme, space, radius } from '../../theme';
 
+const PRIVACY_UPDATED = '8 October 2026';
+
+/** The in-app privacy policy, in the same words as PRIVACY.md. */
+const PRIVACY_SECTIONS = [
+  {
+    heading: 'Data collection',
+    body: 'We do not collect, store or share any personal information. There are no accounts, ads, analytics, tracking or crash reporting, and the app makes no network requests of its own. It works fully offline.',
+  },
+  {
+    heading: 'Data stored on your device',
+    body: 'Your settings (appearance, font, text size, reading language, voice and speed, reminders, share options), saved Kurals, reading history, reading days and streaks, the Kurals you are learning and their review dates, quiz scores and recent searches.\n\nThis data never leaves your phone. It is deleted when you uninstall the app or clear its data. Reset progress (below) clears your reading history, reading days, streaks, learning and quiz scores; your saved Kurals and settings stay.',
+  },
+  {
+    heading: 'Permissions',
+    body: "• Notifications (optional): only for the daily Kural and streak reminders you turn on, scheduled on your device. Asked for only when you turn a reminder on.\n• Read aloud: uses your phone's own text-to-speech voices. The app sends nothing anywhere; your phone's speech engine may have its own policy if it uses an online voice.\n• Sharing: Kural images are made on your device and handed to the share sheet you choose. No storage permission is needed. On iPhone, Save Image asks to add it to your Photos.",
+  },
+  {
+    heading: 'Children',
+    body: 'The app is suitable for all ages and collects no data from anyone, including children.',
+  },
+];
+
 /** A rounded group of settings rows. */
 const Group: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const theme = useAppTheme();
@@ -118,7 +140,7 @@ export default function ProfileScreen() {
           contentContainerStyle={styles.listContent}
           initialNumToRender={12}
           ListEmptyComponent={
-            <EmptyState icon="history" title="No history yet" message="Kurals you open will appear here, most recent first." />
+            <EmptyState icon="history" title="No history yet" message="Kurals you read appear here, most recent first. A Kural counts after a few seconds with it." />
           }
         />
         <KuralDetailModal kural={selectedKural} onClose={() => setSelectedKural(null)} sequence={historyKurals} />
@@ -134,7 +156,7 @@ export default function ProfileScreen() {
         {/* Reading progress: streak and calendar */}
         <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
           <View style={styles.streakRow}>
-            <View style={[styles.flameBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+            <View style={[styles.flameBadge, { backgroundColor: streak > 0 ? theme.colors.flameContainer : theme.colors.surfaceVariant }]}>
               <MaterialCommunityIcons name="fire" size={26} color={streak > 0 ? theme.colors.flame : theme.colors.outline} />
             </View>
             <View style={{ flex: 1 }}>
@@ -255,7 +277,7 @@ export default function ProfileScreen() {
           <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
           <List.Item
             title="Reset progress"
-            description="Clears history, streaks, learning and quiz scores. Saved Kurals are kept."
+            description="Clears history, streaks, learning and quiz scores. Saved Kurals stay."
             descriptionNumberOfLines={2}
             titleStyle={{ color: theme.colors.error }}
             left={(props) => <List.Icon {...props} color={theme.colors.error} icon="restore" />}
@@ -278,38 +300,24 @@ export default function ProfileScreen() {
       <RemindersSheet visible={sheet === 'reminders'} onClose={() => setSheet(null)} />
       <AboutKuralSheet visible={showAbout} onClose={() => setShowAbout(false)} />
 
-      {/* Privacy Policy */}
-      <SheetModal visible={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} title="Privacy policy">
+      {/* Privacy policy: keep in step with PRIVACY.md */}
+      <SheetModal visible={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} title="Privacy policy" subtitle={`Last updated: ${PRIVACY_UPDATED}`}>
         <View style={styles.policy}>
-          <Text variant="titleMedium" style={styles.policyHeading}>Data collection</Text>
+          {PRIVACY_SECTIONS.map((section) => (
+            <View key={section.heading}>
+              <Text variant="titleMedium" style={styles.policyHeading}>{section.heading}</Text>
+              <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
+                {section.body}
+              </Text>
+            </View>
+          ))}
+          <Text variant="titleMedium" style={styles.policyHeading}>Open source and contact</Text>
           <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            We do not collect, store, or share any personal information. There are no accounts, ads, analytics or tracking. The app works fully offline.
-          </Text>
-
-          <Text variant="titleMedium" style={styles.policyHeading}>Local storage</Text>
-          <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            All user preferences (theme, history, favorites, streaks, quiz scores) are stored locally on your device. This data never leaves your phone and is removed when you uninstall the app.
-          </Text>
-
-          <Text variant="titleMedium" style={styles.policyHeading}>Permissions</Text>
-          <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            • Notifications (optional): Used only for the daily Kural and streak reminders you turn on, scheduled locally on your device. Requested only when you turn a reminder on.{'\n'}
-            • Read aloud: Uses your phone&apos;s own text-to-speech voices. Nothing is sent anywhere by the app.{'\n'}
-            • Sharing: Kural images are created on your device and passed to the share sheet you choose. No storage permission is needed.
-          </Text>
-
-          <Text variant="titleMedium" style={styles.policyHeading}>Open source</Text>
-          <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            The app&apos;s source code is public, so anyone can check what it does: github.com/aatralabs/kural-daily
-          </Text>
-
-          <Text variant="titleMedium" style={styles.policyHeading}>Contact</Text>
-          <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            {PUBLISHER} · {CONTACT_EMAIL}
-          </Text>
-
-          <Text variant="bodySmall" style={{ marginTop: space.xl, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
-            Last updated: October 8, 2026
+            The source code is public, so anyone can check what the app does:{' '}
+            <Text style={{ color: theme.colors.primary }} onPress={() => Linking.openURL(REPO_URL).catch(() => {})}>
+              github.com/aatralabs/kural-daily
+            </Text>
+            . Questions: {PUBLISHER} · {CONTACT_EMAIL}
           </Text>
         </View>
       </SheetModal>
@@ -324,7 +332,7 @@ export default function ProfileScreen() {
           <Dialog.Title style={{ textAlign: 'center' }}>Reset progress?</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
-              This clears your reading history, streaks and quiz scores. Your saved Kurals and settings stay. This can&apos;t be undone.
+              This clears your reading history, reading days, streaks, learning progress and quiz scores. Your saved Kurals and settings stay. This can&apos;t be undone.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>

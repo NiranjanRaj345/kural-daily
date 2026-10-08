@@ -52,7 +52,7 @@ what you read.
 **Make it yours**
 - Page styles (Paper, Palm leaf, Night, Auto) and accents (Indigo, Kumkum, Leaf, Saffron), all
   meeting WCAG AA contrast.
-- Classic, Modern or the phone's own font; optional bold couplet; text size that follows the phone
+- Classic, Modern or the phone's own font; a bold couplet (or a lighter book weight); text size that follows the phone
   or a fixed S–XL; Tamil, English or both.
 
 **Easy start**: a short, hands-on tour on first launch: hear the first Kural, try saying it from

@@ -19,6 +19,9 @@ Set in `theme/index.ts`. Never hard-code a colour in a component.
 | Streak | `flame` | The flame icon only |
 | Error | `error` | Destructive actions (Reset progress) |
 
+- Night is ink-black with ivory text, not pure black and white. Accent tints (containers) stay
+  low in Night and lean towards the paper in light pages, so a tinted block never outshines the
+  couplet.
 - One accent at a time, chosen by the reader: Indigo, Kumkum, Leaf or Saffron. Every
   page × accent pair passes WCAG AA (tested).
 - No success green or warning yellow. "Done" and "right" use the accent, and "wrong" is neutral grey,

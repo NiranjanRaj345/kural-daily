@@ -64,13 +64,6 @@
     "preset": "jest-expo",
     "setupFiles": [
       "./jest.setup.js"
-    ],
-    "testPathIgnorePatterns": [
-      "/node_modules/",
-      "/\\.kilo/"
-    ],
-    "modulePathIgnorePatterns": [
-      "<rootDir>/\\.kilo/"
     ]
   }
 }

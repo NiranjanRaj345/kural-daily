@@ -98,7 +98,7 @@ export const AppearanceSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
     <SheetModal visible={visible} onClose={onClose} title="Appearance" height="85%">
       <AppearancePicker />
       <FontPicker />
-      <Block title="Couplet weight" detail="Off keeps the Kural in its usual book weight">
+      <Block title="Couplet weight" detail="Off sets the Kural in a lighter book weight">
         <View style={styles.switchRow}>
           <Text variant="bodyMedium" style={[styles.flex, { color: theme.colors.onSurface }]}>
             Bold couplet

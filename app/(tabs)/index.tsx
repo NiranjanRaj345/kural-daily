@@ -161,8 +161,8 @@ export default function TodayScreen() {
           </View>
         ) : (
           <Text style={[styles.errorText, { color: theme.colors.error }]}>
-            Today&apos;s Kural didn&apos;t load. Pull down to try again; if it keeps happening, reinstall the app
-            (your progress is kept on the phone either way).
+            Today&apos;s Kural didn&apos;t load. Pull down to try again. If it keeps happening, close the app fully
+            and open it again.
           </Text>
         )}
 
