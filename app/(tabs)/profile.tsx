@@ -23,7 +23,7 @@ import { VoicePickerSheet } from '../../components/profile/VoicePickerSheet';
 import { getTamilVoices } from '../../services/SpeechService';
 import { completedChapters, computeMilestones } from '../../utils/milestones';
 import { MASTERED_BOX } from '../../utils/srs';
-import { APP_NAME, APP_VERSION, REPO_URL, SHARE_APP_MESSAGE } from '../../constants/app';
+import { APP_NAME, APP_VERSION, CONTACT_EMAIL, PUBLISHER, REPO_URL, SHARE_APP_MESSAGE } from '../../constants/app';
 import { useAppTheme, space, radius } from '../../theme';
 
 /** A rounded group of settings rows. */
@@ -264,7 +264,7 @@ export default function ProfileScreen() {
         </Group>
 
         <Text variant="labelSmall" style={[styles.version, { color: theme.colors.onSurfaceVariant }]}>
-          {APP_NAME} {APP_VERSION}
+          {APP_NAME} {APP_VERSION} · {PUBLISHER}
         </Text>
       </ScrollView>
 
@@ -303,8 +303,13 @@ export default function ProfileScreen() {
             The app&apos;s source code is public, so anyone can check what it does: github.com/NiranjanRaj345/kural-daily
           </Text>
 
+          <Text variant="titleMedium" style={styles.policyHeading}>Contact</Text>
+          <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
+            {PUBLISHER} · {CONTACT_EMAIL}
+          </Text>
+
           <Text variant="bodySmall" style={{ marginTop: space.xl, color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
-            Last updated: October 6, 2026
+            Last updated: October 8, 2026
           </Text>
         </View>
       </SheetModal>

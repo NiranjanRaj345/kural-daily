@@ -18,12 +18,13 @@ Open the build link on the phone (or scan the QR code) and install.
 
 Test both paths if you can:
 
-- **Upgrade**: install the new APK *over* the version already on your phone (same signing key, so
-  Android allows it). Your data must survive.
 - **Fresh install**: uninstall (or Settings → Apps → Kural Daily → Storage → Clear data), then
-  install again. This shows the welcome screens.
+  install. This shows the welcome tour.
+- **Update**: install a newer build *over* an earlier build of the same package ID
+  (`com.aatralabs.kuraldaily`) and signing key. Your data must survive. Builds of 1.2 and earlier
+  used `com.mrmonk.kuraldaily`: they are a different app and can't be updated; uninstall them.
 
-The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3.0**).
+The bottom of the You tab shows the version and publisher (e.g. **Kural Daily 1.3.0 · Aatra Labs**).
 
 ## 1. First launch (fresh install)
 
@@ -45,12 +46,11 @@ The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3
 - [ ] Repeat with **Not now, start reading** (after clearing data): no permission prompt; Today
       shows the "A Kural every morning?" card.
 
-## 2. Upgrade from 1.2
+## 2. Updating (from an earlier `com.aatralabs.kuraldaily` build)
 
-- [ ] No welcome screens.
-- [ ] Streak, saved Kurals, reading history and quiz scores are all still there.
-- [ ] Theme: if you had Light / Dark / Sepia, you now have Paper / Night / Palm leaf.
-- [ ] If daily reminders were on before, Streak reminder is now on too.
+- [ ] No welcome tour.
+- [ ] Streak, saved Kurals, reading history, learning and quiz scores are all still there.
+- [ ] Settings (page, accent, font, text size, reminders) are unchanged.
 
 ## 3. Today
 
