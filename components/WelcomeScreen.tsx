@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +6,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated';
 import { useSettingsStore, ReadingLanguage } from '../store/useSettingsStore';
 import { getKuralByNumber } from '../services/DataService';
+import { getDailyKural } from '../services/DailyService';
+import { hasTamilVoice, speakKural, stopSpeaking } from '../services/SpeechService';
+import { showNoTamilVoiceAlert } from './voiceHelp';
+import { Spoiler } from './ui/Spoiler';
 import { enableDailyReminders, formatReminderTime } from '../services/NotificationService';
 import { TimePickerModal } from 'react-native-paper-dates';
 import { uses24HourClock } from '../utils/date';
@@ -18,7 +22,17 @@ const LANGUAGES: { value: ReadingLanguage; title: string; detail: string }[] = [
   { value: 'english', title: 'English only', detail: 'Translation and English explanation' },
 ];
 
-/** First-launch introduction: what the Thirukkural is, how to read it, and a daily habit. */
+// The tour: two short hands-on steps, then the two choices that matter
+const STEP_COUNT = 5;
+const LANGUAGE_STEP = 3;
+const LAST_STEP = STEP_COUNT - 1;
+// Words of the first Kural hidden in the "learn it" step (counted across both lines)
+const HIDDEN_WORDS = [1, 3, 5];
+
+/**
+ * First-launch tour: hear the first Kural, try learning it, see that each day
+ * is a surprise, then choose how to read and whether to be reminded.
+ */
 export const WelcomeScreen: React.FC = () => {
   const theme = useAppTheme();
   const type = useType();
@@ -30,12 +44,37 @@ export const WelcomeScreen: React.FC = () => {
   const notificationHour = useSettingsStore((s) => s.notificationHour);
   const notificationMinute = useSettingsStore((s) => s.notificationMinute);
   const [step, setStep] = useState(0);
+  const [speaking, setSpeaking] = useState(false);
+  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [todayShown, setTodayShown] = useState(false);
+  const speechRate = useSettingsStore((s) => s.speechRate);
+  const voice = useSettingsStore((s) => s.selectedVoiceIdentifier);
+  const today = getDailyKural();
+  const sample = getKuralByNumber(1)!;
+
+  // Stop reading aloud when moving on or leaving the tour
+  useEffect(() => () => stopSpeaking(), [step]);
+
+  const hear = async () => {
+    if (speaking) {
+      stopSpeaking();
+      return;
+    }
+    if (!(await hasTamilVoice())) {
+      showNoTamilVoiceAlert();
+      return;
+    }
+    setSpeaking(true);
+    speakKural(sample, { voice, rate: speechRate, onEnd: () => setSpeaking(false) });
+  };
+
+  const words = [sample.line1, sample.line2].map((l) => l.trim().split(/\s+/));
+  const allRevealed = HIDDEN_WORDS.every((i) => revealed.has(i));
   const [busy, setBusy] = useState(false);
   const [pickTime, setPickTime] = useState(false);
   const setNotificationTime = useSettingsStore((s) => s.setNotificationTime);
 
   const language: ReadingLanguage = showTamil && showEnglish ? 'both' : showTamil ? 'tamil' : 'english';
-  const sample = getKuralByNumber(1)!;
 
   const finish = async (withReminder: boolean) => {
     setBusy(true);
@@ -52,15 +91,15 @@ export const WelcomeScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.topBar}>
         <View style={styles.progress}>
-          {[0, 1, 2].map((i) => (
+          {Array.from({ length: STEP_COUNT }, (_, i) => (
             <View
               key={i}
               style={[styles.progressDot, { backgroundColor: i <= step ? theme.colors.primary : theme.colors.outlineVariant }]}
             />
           ))}
         </View>
-        {step < 2 && (
-          <Button compact onPress={completeOnboarding} accessibilityLabel="Skip introduction">Skip</Button>
+        {step < LANGUAGE_STEP && (
+          <Button compact onPress={() => setStep(LANGUAGE_STEP)} accessibilityLabel="Skip the tour">Skip</Button>
         )}
       </View>
 
@@ -83,11 +122,106 @@ export const WelcomeScreen: React.FC = () => {
               <Text style={[type.translation, styles.sampleEnglish, { color: theme.colors.onSurfaceVariant }]}>
                 {sample.eng}
               </Text>
+              <Button
+                mode="text"
+                icon={speaking ? 'stop-circle-outline' : 'volume-high'}
+                onPress={hear}
+                style={styles.hear}
+                accessibilityLabel={speaking ? 'Stop' : 'Hear the first Kural'}
+              >
+                {speaking ? 'Stop' : 'Hear it'}
+              </Button>
             </View>
           </Animated.View>
         )}
 
         {step === 1 && (
+          <Animated.View entering={FadeInRight.duration(300)} style={styles.page}>
+            <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>Now say it from memory</Text>
+            <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>
+              Three words are hidden. Say the whole Kural aloud, then tap a hidden word to check yourself.
+            </Text>
+            <View style={[styles.sample, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+              {(() => {
+                let index = -1;
+                return words.map((line, li) => (
+                  <View key={li} style={styles.wordLine}>
+                    {line.map((word) => {
+                      index += 1;
+                      const i = index;
+                      const hidden = HIDDEN_WORDS.includes(i) && !revealed.has(i);
+                      return (
+                        <Pressable
+                          key={i}
+                          disabled={!hidden}
+                          onPress={() => setRevealed((r) => new Set(r).add(i))}
+                          accessibilityRole={hidden ? 'button' : 'text'}
+                          accessibilityLabel={hidden ? 'Hidden word, tap to reveal' : word}
+                        >
+                          {hidden ? (
+                            <Spoiler text={word} style={type.kural(20)} color={theme.colors.ink} />
+                          ) : (
+                            <Animated.Text
+                              entering={HIDDEN_WORDS.includes(i) ? FadeIn.duration(250) : undefined}
+                              style={[type.kural(20), { color: HIDDEN_WORDS.includes(i) ? theme.colors.primary : theme.colors.ink }]}
+                            >
+                              {word}
+                            </Animated.Text>
+                          )}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ));
+              })()}
+            </View>
+            <Text variant="bodyMedium" style={{ color: allRevealed ? theme.colors.primary : theme.colors.onSurfaceVariant }}>
+              {allRevealed
+                ? 'That\'s how Learn works: fewer words each round until you can say it all, then it comes back over the following weeks so it stays.'
+                : `${HIDDEN_WORDS.length - revealed.size} hidden · tap to reveal`}
+            </Text>
+          </Animated.View>
+        )}
+
+        {step === 2 && (
+          <Animated.View entering={FadeInRight.duration(300)} style={styles.page}>
+            <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>Every day is a surprise</Text>
+            <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>
+              Each day brings a Kural from anywhere in the book, the same one for everyone. None repeats until
+              you&apos;ve seen all 1330.
+            </Text>
+            <Pressable
+              onPress={() => setTodayShown(true)}
+              disabled={todayShown}
+              accessibilityRole="button"
+              accessibilityLabel={todayShown ? `Today's Kural is ${today.number}, ${today.chap_tam}` : "Reveal today's Kural"}
+              style={[styles.sample, styles.todayTeaser, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
+            >
+              <Text variant="labelSmall" style={[styles.sampleLabel, { color: theme.colors.onSurfaceVariant }]}>
+                Today&apos;s Kural
+              </Text>
+              {todayShown ? (
+                <Animated.View entering={FadeIn.duration(300)} style={styles.todayRow}>
+                  <Text style={[type.display(36), { color: theme.colors.primary }]}>{today.number}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[type.tamilTitle, { color: theme.colors.onSurface }]}>{today.chap_tam}</Text>
+                    <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>{today.chap_eng}</Text>
+                  </View>
+                </Animated.View>
+              ) : (
+                <View style={styles.todayRow}>
+                  <Spoiler text={String(today.number)} style={type.display(36)} color={theme.colors.primary} />
+                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Tap to peek</Text>
+                </View>
+              )}
+            </Pressable>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              Spend a few seconds with it, or listen, and the day counts toward your streak.
+            </Text>
+          </Animated.View>
+        )}
+
+        {step === LANGUAGE_STEP && (
           <Animated.View entering={FadeInRight.duration(300)} style={styles.page}>
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>How would you like to read?</Text>
             <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>
@@ -135,14 +269,11 @@ export const WelcomeScreen: React.FC = () => {
           </Animated.View>
         )}
 
-        {step === 2 && (
+        {step === LAST_STEP && (
           <Animated.View entering={FadeInRight.duration(300)} style={styles.page}>
-            <View style={[styles.bigIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-              <MaterialCommunityIcons name="weather-sunset-up" size={40} color={theme.colors.primary} />
-            </View>
-            <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>One Kural a day</Text>
+            <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>Want a nudge?</Text>
             <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>
-              A new couplet waits each morning. Read it daily to build a streak, and learn the ones you love by heart.
+              We can send each day&apos;s Kural at a time that suits you.
             </Text>
             <View style={[styles.timeCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
               <View style={{ flex: 1 }}>
@@ -163,14 +294,14 @@ export const WelcomeScreen: React.FC = () => {
       </ScrollView>
 
       <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant }]}>
-        {step < 2 ? (
+        {step < LAST_STEP ? (
           <Button
             mode="contained"
             onPress={() => setStep(step + 1)}
             contentStyle={styles.buttonContent}
             style={styles.wide}
           >
-            Continue
+            {step === 1 && !allRevealed ? 'Skip this' : 'Continue'}
           </Button>
         ) : (
           <>
@@ -271,13 +402,23 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     marginVertical: space.sm,
   },
-  bigIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  hear: {
+    alignSelf: 'flex-start',
+    marginTop: space.sm,
+    marginLeft: -space.sm,
+  },
+  wordLine: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+  },
+  todayTeaser: {
+    marginTop: space.sm,
+  },
+  todayRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: space.sm,
+    gap: space.lg,
   },
   footer: {
     paddingHorizontal: space.xl,

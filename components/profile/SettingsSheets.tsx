@@ -3,7 +3,6 @@ import { View, StyleSheet, Platform, Alert, Linking } from 'react-native';
 import { List, Switch, Text, Divider, SegmentedButtons } from 'react-native-paper';
 import { TimePickerModal } from 'react-native-paper-dates';
 import { SheetModal } from '../SheetModal';
-import { KuralVerse } from '../KuralVerse';
 import { AppearancePicker } from './AppearancePicker';
 import { FontPicker } from './FontPicker';
 import { useSettingsStore, ReadingLanguage } from '../../store/useSettingsStore';
@@ -14,7 +13,7 @@ import {
 } from '../../services/NotificationService';
 import { uses24HourClock } from '../../utils/date';
 import { DEVICE_TEXT_SIZE, useReadingSizes } from '../../hooks/useReadingSizes';
-import { ACCENTS, APPEARANCES, READING_FONTS, useAppTheme, space, radius } from '../../theme';
+import { ACCENTS, APPEARANCES, READING_FONTS, useAppTheme, useType, space, radius } from '../../theme';
 
 export const FONT_SIZES = [
   { value: '20', label: 'S', accessibilityLabel: 'Small' },
@@ -74,24 +73,29 @@ const Block: React.FC<{ title: string; detail?: string; children: React.ReactNod
   );
 };
 
-const Preview: React.FC = () => {
+/**
+ * One line of the first Kural at the chosen reading size, shown only under the
+ * text-size control, where the effect isn't otherwise visible.
+ */
+const SizeSample: React.FC = () => {
   const theme = useAppTheme();
+  const type = useType();
   const sizes = useReadingSizes();
+  const kural = getKuralByNumber(1)!;
   return (
-    <View style={[styles.preview, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
-      <KuralVerse kural={getKuralByNumber(1)!} size={sizes.verse} minSize={sizes.verseMin} />
-    </View>
+    <Text style={[type.kural(sizes.verse), styles.sizeSample, { color: theme.colors.ink }]} numberOfLines={1}>
+      {kural.line1}
+    </Text>
   );
 };
 
-/** Page colour, accent, font and couplet weight, with a live preview. */
+/** Page colour, accent, font and couplet weight. Each choice previews itself. */
 export const AppearanceSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
   const theme = useAppTheme();
   const boldKural = useSettingsStore((s) => s.boldKural);
   const setBoldKural = useSettingsStore((s) => s.setBoldKural);
   return (
     <SheetModal visible={visible} onClose={onClose} title="Appearance" height="85%">
-      <Preview />
       <AppearancePicker />
       <FontPicker />
       <Block title="Couplet weight" detail="Off keeps the Kural in its usual book weight">
@@ -118,7 +122,6 @@ export const ReadingSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
 
   return (
     <SheetModal visible={visible} onClose={onClose} title="Reading" height="75%">
-      <Preview />
       <Block title="Language" detail="The couplet, its translation and the meaning">
         <SegmentedButtons
           value={language}
@@ -148,6 +151,7 @@ export const ReadingSheet: React.FC<SheetProps> = ({ visible, onClose }) => {
             buttons={FONT_SIZES}
           />
         )}
+        <SizeSample />
       </Block>
       <Block title="Reading speed" detail="For Listen and when learning by heart">
         <SegmentedButtons
@@ -315,12 +319,8 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  preview: {
-    marginHorizontal: space.xl,
+  sizeSample: {
     marginTop: space.md,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   group: {
     marginHorizontal: space.lg,
