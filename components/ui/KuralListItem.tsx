@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text } from 'react-native-paper';
 import { Kural } from '../../types/kural';
-import { useAppTheme, space, radius, useType } from '../../theme';
+import { useAppTheme, space, useType } from '../../theme';
 
 interface KuralListItemProps {
   kural: Kural;
@@ -11,7 +11,7 @@ interface KuralListItemProps {
   showChapter?: boolean;
   showEnglish?: boolean;
   right?: React.ReactNode;
-  /** Dim the number badge's fill for kurals already read. */
+  /** Mute the number of Kurals already read. */
   read?: boolean;
 }
 
@@ -28,26 +28,15 @@ const KuralListItemBase: React.FC<KuralListItemProps> = ({
       android_ripple={{ color: theme.colors.primaryContainer }}
       style={({ pressed }) => [
         styles.container,
-        {
-          backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.outlineVariant,
-          opacity: pressed ? 0.85 : 1,
-        },
+        { borderBottomColor: theme.colors.rule, opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <View
-        style={[
-          styles.badge,
-          { backgroundColor: read ? theme.colors.surfaceVariant : theme.colors.primaryContainer },
-        ]}
+      <Text
+        variant="labelLarge"
+        style={[styles.number, { color: read ? theme.colors.onSurfaceVariant : theme.colors.primary }]}
       >
-        <Text
-          variant="labelMedium"
-          style={{ color: read ? theme.colors.onSurfaceVariant : theme.colors.onPrimaryContainer }}
-        >
-          {kural.number}
-        </Text>
-      </View>
+        {kural.number}
+      </Text>
       <View style={styles.body}>
         <Text style={[type.tamilPreview, { color: theme.colors.ink }]}>{kural.line1}</Text>
         <Text style={[type.tamilPreview, { color: theme.colors.ink }]}>{kural.line2}</Text>
@@ -69,25 +58,20 @@ const KuralListItemBase: React.FC<KuralListItemProps> = ({
 
 export const KuralListItem = React.memo(KuralListItemBase);
 
+// A plain row in a list: lists are separated by rules, not drawn as stacks of cards
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: space.lg,
-    marginHorizontal: space.lg,
-    marginBottom: space.sm,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: space.md,
+    marginHorizontal: space.xl,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     gap: space.md,
-    overflow: 'hidden',
   },
-  badge: {
-    minWidth: 40,
-    height: 40,
-    paddingHorizontal: 6,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+  number: {
+    width: 40,
+    marginTop: 3,
+    fontVariant: ['tabular-nums'],
   },
   body: {
     flex: 1,

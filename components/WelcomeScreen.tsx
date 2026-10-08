@@ -18,12 +18,6 @@ const LANGUAGES: { value: ReadingLanguage; title: string; detail: string }[] = [
   { value: 'english', title: 'English only', detail: 'Translation and English explanation' },
 ];
 
-const FACTS = [
-  { value: '1330', label: 'couplets' },
-  { value: '133', label: 'chapters' },
-  { value: '3', label: 'books' },
-];
-
 /** First-launch introduction: what the Thirukkural is, how to read it, and a daily habit. */
 export const WelcomeScreen: React.FC = () => {
   const theme = useAppTheme();
@@ -75,20 +69,12 @@ export const WelcomeScreen: React.FC = () => {
           <Animated.View entering={FadeIn.duration(400)} style={styles.page}>
             <Text style={[type.kural(40), { color: theme.colors.primary }]}>திருக்குறள்</Text>
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground }}>
-              Two lines of wisdom, every day
+              One couplet a day
             </Text>
             <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurfaceVariant }]}>
-              Written by Thiruvalluvar some two thousand years ago, the Thirukkural speaks of virtue, wealth
-              and love, each thought in a single couplet of seven words.
+              Thiruvalluvar&apos;s Thirukkural has 1330 couplets in 133 chapters, on virtue, wealth and love.
+              Each is two short lines that hold one complete thought.
             </Text>
-            <View style={styles.facts}>
-              {FACTS.map((f) => (
-                <View key={f.label} style={[styles.fact, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
-                  <Text style={[type.display(26), { color: theme.colors.primary }]}>{f.value}</Text>
-                  <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{f.label}</Text>
-                </View>
-              ))}
-            </View>
             <View style={[styles.sample, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
               <Text variant="labelSmall" style={[styles.sampleLabel, { color: theme.colors.onSurfaceVariant }]}>
                 The first Kural
@@ -243,18 +229,6 @@ const styles = StyleSheet.create({
   },
   lead: {
     lineHeight: 26,
-  },
-  facts: {
-    flexDirection: 'row',
-    gap: space.sm,
-    marginTop: space.sm,
-  },
-  fact: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: space.md,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   sample: {
     marginTop: space.md,

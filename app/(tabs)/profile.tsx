@@ -12,7 +12,7 @@ import { KuralDetailModal } from '../../components/KuralDetailModal';
 import { SheetModal } from '../../components/SheetModal';
 import { KuralListItem } from '../../components/ui/KuralListItem';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { StatTile } from '../../components/ui/StatTile';
+import { Stats } from '../../components/ui/Stats';
 import { SectionLabel } from '../../components/ui/SectionLabel';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { AboutKuralSheet } from '../../components/AboutKuralSheet';
@@ -152,19 +152,21 @@ export default function ProfileScreen() {
           </View>
           <Divider style={[styles.cardDivider, { backgroundColor: theme.colors.outlineVariant }]} />
           <ReadingCalendar readDays={readDays} />
-        </View>
-
-        <View style={styles.statsRow}>
-          <StatTile icon="book-open-variant" value={history.length} label="Kurals read" />
-          <StatTile icon="bookshelf" value={chaptersDone} label="Chapters done" />
-          <StatTile icon="head-heart-outline" value={mastered} label="By heart" />
+          <Divider style={[styles.cardDivider, { backgroundColor: theme.colors.outlineVariant }]} />
+          <Stats
+            items={[
+              { value: history.length, label: 'Kurals read' },
+              { value: chaptersDone, label: 'Chapters done' },
+              { value: mastered, label: 'By heart' },
+            ]}
+          />
         </View>
 
         <SectionLabel>Progress</SectionLabel>
         <Group>
           <List.Item
             title={`Milestones · ${earnedCount} of ${milestones.length}`}
-            description={nextMilestone ? `Next: ${nextMilestone.description} (${nextMilestone.progressLabel})` : 'All earned. Wonderful!'}
+            description={nextMilestone ? `Next: ${nextMilestone.description} (${nextMilestone.progressLabel})` : `All ${milestones.length} earned`}
             descriptionNumberOfLines={2}
             left={(props) => <List.Icon {...props} icon="medal-outline" />}
             right={(props) => <List.Icon {...props} icon="chevron-right" />}
@@ -372,12 +374,6 @@ const styles = StyleSheet.create({
   },
   cardDivider: {
     marginVertical: space.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.lg,
-    marginTop: space.sm,
   },
   sheetGrid: {
     paddingTop: space.lg,

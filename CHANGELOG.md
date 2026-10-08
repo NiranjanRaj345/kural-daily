@@ -9,6 +9,7 @@
 ## 1.3.0 (2026-10-06)
 
 ### From the first round of device testing
+- **Calmer screens, fewer boxes**: lists of Kurals (Saved, Learn, Search, history, chapters) are plain rows with dividers instead of a stack of cards; the icon-and-number stat tiles are a simple row of figures; Today drops the progress card and the Random/Share tiles (progress is on You, sharing in You → More) for a quiet "Open a random Kural" link; How it works is numbered steps. Welcome no longer says "seven words" (it's seven feet) or dates the book to "two thousand years ago".
 - **Today's Kural is a surprise**: instead of 1, 2, 3… the days follow one fixed shuffled order of all 1330 Kurals. None repeats until every Kural has been shown (each returns exactly 1330 days later), two days in a row never come from the same chapter, and everyone sees the same Kural on the same day.
 - **Reading has to be real**: a Kural counts as read (history, journey, streak) after about 6 seconds on screen with the app open, or straight away when you listen, open its meaning, save, share or learn it. Opening one and closing it at once no longer counts. Opening the app no longer counts as reading either; it only ends a streak that has already lapsed. A green ✓ Read on the card shows when a Kural has counted.
 - **Listen to the meaning**: a Listen button under the explanation reads the Tamil meaning in the Tamil voice and the English one in the phone's English voice, sentence by sentence.

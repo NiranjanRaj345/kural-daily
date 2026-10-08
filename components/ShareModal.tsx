@@ -186,7 +186,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ visible, onDismiss, kura
         </View>
 
         {/* Theme Selector */}
-        <Text variant="titleMedium" style={styles.sectionTitle}>Choose Style</Text>
+        <Text variant="titleMedium" style={styles.sectionTitle}>Style</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.themeSelector}>
           {THEMES.map((t) => (
             <TouchableOpacity

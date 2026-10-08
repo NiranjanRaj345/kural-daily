@@ -13,7 +13,7 @@ import {
   QuizType,
 } from '../services/QuizService';
 import { useSettingsStore } from '../store/useSettingsStore';
-import { StatTile } from './ui/StatTile';
+import { Stats } from './ui/Stats';
 import { useAppTheme, space, radius, useType } from '../theme';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -103,9 +103,13 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
     <View>
 
       <View style={styles.stats}>
-        <StatTile icon="fire" iconColor={theme.colors.flame} value={quizStats.currentStreak} label="In a row" />
-        <StatTile icon="check-all" value={quizStats.totalAnswered} label="Answered" />
-        <StatTile icon="target" value={`${accuracy}%`} label="Accuracy" />
+        <Stats
+          items={[
+            { value: quizStats.currentStreak, label: 'In a row' },
+            { value: quizStats.totalAnswered, label: 'Answered' },
+            { value: `${accuracy}%`, label: 'Right' },
+          ]}
+        />
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.modes}>
@@ -284,9 +288,7 @@ export const QuizPanel: React.FC<QuizPanelProps> = ({ scrollRef }) => {
 
 const styles = StyleSheet.create({
   stats: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.xl,
   },
   modes: {
     gap: space.sm,

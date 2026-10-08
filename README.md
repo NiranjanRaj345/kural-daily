@@ -123,7 +123,8 @@ share a Tamil name (குறிப்பறிதல்), so the app identifies
 ## Releasing
 
 See [docs/releasing.md](docs/releasing.md) for versioning and the Google Play and Galaxy Store
-builds, and [docs/testing.md](docs/testing.md) for the device test plan.
+builds, [docs/testing.md](docs/testing.md) for the device test plan, and
+[docs/design.md](docs/design.md) for the design rules (colour roles, type, when to use a card).
 
 ## Contributing
 
