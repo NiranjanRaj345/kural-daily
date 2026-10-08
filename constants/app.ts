@@ -4,7 +4,7 @@ export const APP_NAME = 'Kural Daily';
 /** Publisher shown on the stores and in the app. */
 export const PUBLISHER = 'Aatra Labs';
 /** Contact for the privacy policy and store listings. */
-export const CONTACT_EMAIL = 'aastralabs@gmail.com';
+export const CONTACT_EMAIL = 'aatralabs@gmail.com';
 export const APP_VERSION = appConfig.expo.version;
 
 /** Store listing used by "Share the app". Update if the app is published under a different listing. */

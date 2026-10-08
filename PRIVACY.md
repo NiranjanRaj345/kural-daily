@@ -44,5 +44,5 @@ Kural Daily's source code is public, so anyone can check what the app does:
 ## Changes and contact
 
 If this policy changes, the new version will be published here with a new date. Questions:
-email <aastralabs@gmail.com> or open an issue at
+email <aatralabs@gmail.com> or open an issue at
 <https://github.com/NiranjanRaj345/kural-daily/issues>.
