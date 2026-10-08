@@ -11,6 +11,24 @@
 5. Merge to `master`, date the changelog section (e.g. `## 1.3.0 (2026-10-08)`), and create the
    GitHub release `vX.Y.Z` from `master` with that section as the notes.
 
+## One-time setup (Aatra Labs accounts)
+
+Kural Daily is published by Aatra Labs, with package ID `com.aatralabs.kuraldaily`, from the
+Aatra Labs Expo account and Google Play Console. Once, on your computer:
+
+1. `npx eas-cli@latest login` with the Aatra Labs Expo account (`npx eas-cli@latest whoami` to
+   check).
+2. `npx eas-cli@latest init` creates the EAS project under that account and writes its ID into
+   `app.json` (`expo.extra.eas.projectId`). Commit that change.
+3. The first `production` build asks to generate an Android keystore: let EAS create and keep it.
+   This is the **upload key**. In Play Console, keep **Play App Signing** on (the default), so
+   Google holds the app's signing key and a lost upload key can be reset.
+4. Back up the upload key: `npx eas-cli@latest credentials` → Android → production → download
+   the keystore, and store it somewhere safe, not in this repository.
+
+Builds signed by the old personal Expo account can't be installed over builds from this one
+(the package ID and key are different): uninstall old test builds first.
+
 ## Store builds
 
 Build from `master` after merging. `production` builds bump `android.versionCode` in app.json
@@ -20,7 +38,7 @@ Build from `master` after merging. `production` builds bump `android.versionCode
 
 1. `npx eas-cli@latest build --profile production --platform android` → an `.aab`.
 2. Play Console → create the app (*Kural Daily*, free, app). Package name comes from the first
-   upload: `com.mrmonk.kuraldaily`, and can never change.
+   upload: `com.aatralabs.kuraldaily`, and can never change.
 3. Upload the `.aab` to **Internal testing** first, install it from the Play link on your phone,
    then promote to Production. (New personal developer accounts must run a closed test with
    testers for a set period before Production is unlocked; the Console shows the current rule.)

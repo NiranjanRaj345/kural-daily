@@ -1,6 +1,6 @@
 # Privacy policy
 
-**Kural Daily** · Last updated: 6 October 2026
+**Kural Daily** by Aatra Labs · Last updated: 8 October 2026
 
 Kural Daily is an offline app for reading and learning the Thirukkural. This policy explains what
 happens to your information when you use it. In short: nothing leaves your phone.
@@ -44,4 +44,5 @@ Kural Daily's source code is public, so anyone can check what the app does:
 ## Changes and contact
 
 If this policy changes, the new version will be published here with a new date. Questions:
-open an issue at <https://github.com/NiranjanRaj345/kural-daily/issues>.
+email <aastralabs@gmail.com> or open an issue at
+<https://github.com/NiranjanRaj345/kural-daily/issues>.

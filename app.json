@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mrmonk.kuraldaily",
+      "bundleIdentifier": "com.aatralabs.kuraldaily",
       "buildNumber": "1",
       "infoPlist": {
         "NSPhotoLibraryAddUsageDescription": "Allow Kural Daily to save Kural images you choose to save from the share sheet.",
@@ -25,7 +25,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.mrmonk.kuraldaily",
+      "package": "com.aatralabs.kuraldaily",
       "versionCode": 1,
       "permissions": [
         "android.permission.POST_NOTIFICATIONS"
@@ -67,10 +67,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "348ed6e1-900d-467f-93d7-bcef472a7c77"
-      }
+      "router": {}
     }
   }
 }

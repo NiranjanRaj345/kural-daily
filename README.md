@@ -147,4 +147,6 @@ shipped in `assets/data` remain the work of their authors (the Tamil explanation
 Mu. Varadarasanar) and are not covered by the code license; anyone reusing them should check their
 terms.
 
-Copyright © 2025–2026 Niranjan Rajkumar
+Kural Daily is published by **Aatra Labs** · Contact: aastralabs@gmail.com
+
+Copyright © 2025–2026 Niranjan Rajkumar (Aatra Labs)

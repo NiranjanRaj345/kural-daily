@@ -83,6 +83,9 @@ A redesign around reading and learning the Thirukkural, and the first open-sourc
   - the splash screen, notification icon and favicon
 
 ### Open source and privacy
+- Published by **Aatra Labs** with the package ID `com.aatralabs.kuraldaily`. This is a new app
+  for Android: test builds of 1.2 or earlier (`com.mrmonk.kuraldaily`) can't update to it, so
+  uninstall them first; their progress doesn't carry over.
 - Kural Daily is open source under the GNU GPL v3.0 or later. See the README, CONTRIBUTING and
   PRIVACY (the privacy policy, also linkable from the app stores).
 - Still no account, ads, analytics or network use: everything stays on the phone.
