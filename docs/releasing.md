@@ -45,7 +45,7 @@ Build from `master` after merging. `production` builds bump `android.versionCode
 4. Store listing: title, short and full description, the 512×512 icon (`assets/images/icon.png`
    scaled), a 1024×500 feature graphic, and at least two phone screenshots.
 5. App content: privacy policy URL
-   `https://github.com/NiranjanRaj345/kural-daily/blob/master/PRIVACY.md` (keep it in sync with
+   `https://github.com/aatralabs/kural-daily/blob/master/PRIVACY.md` (keep it in sync with
    You → Privacy policy in the app), Data safety: *no data collected or shared*, content rating
    questionnaire, target audience, no ads.
 6. Once live, check `STORE_URL` in `constants/app.ts` matches the listing (it's used by

@@ -39,10 +39,10 @@ The app is suitable for all ages and collects no data from anyone, including chi
 ## Open source
 
 Kural Daily's source code is public, so anyone can check what the app does:
-<https://github.com/NiranjanRaj345/kural-daily>
+<https://github.com/aatralabs/kural-daily>
 
 ## Changes and contact
 
 If this policy changes, the new version will be published here with a new date. Questions:
 email <aatralabs@gmail.com> or open an issue at
-<https://github.com/NiranjanRaj345/kural-daily/issues>.
+<https://github.com/aatralabs/kural-daily/issues>.
