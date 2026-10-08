@@ -300,7 +300,7 @@ export default function ProfileScreen() {
 
           <Text variant="titleMedium" style={styles.policyHeading}>Open source</Text>
           <Text variant="bodyMedium" style={[styles.policyBody, { color: theme.colors.onSurfaceVariant }]}>
-            The app&apos;s source code is public, so anyone can check what it does: github.com/NiranjanRaj345/kural-daily
+            The app&apos;s source code is public, so anyone can check what it does: github.com/aatralabs/kural-daily
           </Text>
 
           <Text variant="titleMedium" style={styles.policyHeading}>Contact</Text>

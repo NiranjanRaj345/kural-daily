@@ -66,7 +66,7 @@ phone ([privacy policy](PRIVACY.md)).
 Requirements: Node.js 20 or later, and the Expo Go app or an Android/iOS emulator.
 
 ```bash
-git clone https://github.com/NiranjanRaj345/kural-daily.git
+git clone https://github.com/aatralabs/kural-daily.git
 cd kural-daily
 npm install
 npm start            # press a (Android), i (iOS) or w (web)

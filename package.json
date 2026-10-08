@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.3.0",
   "license": "GPL-3.0-or-later",
-  "repository": "github:NiranjanRaj345/kural-daily",
+  "repository": "github:aatralabs/kural-daily",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",

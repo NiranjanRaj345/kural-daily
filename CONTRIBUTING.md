@@ -17,7 +17,7 @@ text with its source.
 ## Working on the code
 
 ```bash
-git clone https://github.com/NiranjanRaj345/kural-daily.git
+git clone https://github.com/aatralabs/kural-daily.git
 cd kural-daily
 npm install
 npm start            # then press a (Android), i (iOS) or w (web)

@@ -11,7 +11,7 @@ export const APP_VERSION = appConfig.expo.version;
 export const STORE_URL = `https://play.google.com/store/apps/details?id=${appConfig.expo.android.package}`;
 
 /** The public source code. */
-export const REPO_URL = 'https://github.com/NiranjanRaj345/kural-daily';
+export const REPO_URL = 'https://github.com/aatralabs/kural-daily';
 
 /** The privacy policy, also shown in the app (You → Privacy policy). */
 export const PRIVACY_URL = `${REPO_URL}/blob/master/PRIVACY.md`;
