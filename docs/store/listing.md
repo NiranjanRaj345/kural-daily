@@ -8,8 +8,9 @@ Graphics in this folder:
 - `icon-512.png`: the 512 × 512 app icon
 - `feature-graphic.png`: the 1024 × 500 feature graphic
 
-Screenshots: take at least four on a phone (Today in Paper, Today in Night, Learn, Browse or
-You), with real progress, not a fresh install.
+- `screenshots/`: five 1080 × 1920 phone screenshots (Today in Paper and Night, Browse, Learn,
+  You), made from the web build with sample progress. Screenshots taken on a phone can replace
+  them later.
 
 ## Main store listing
 
