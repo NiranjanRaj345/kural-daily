@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, AppState, Pressable, Share } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, AppState, Pressable } from 'react-native';
 import { Text, ActivityIndicator, Button, Snackbar, IconButton } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,42 +7,15 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { KuralCard } from '../../components/KuralCard';
 import { KuralDetailModal } from '../../components/KuralDetailModal';
-import { SectionLabel } from '../../components/ui/SectionLabel';
 import { StreakPill } from '../../components/ui/StreakPill';
 import { enableDailyReminders, formatReminderTime } from '../../services/NotificationService';
 import { getDailyKural, getRandomKural } from '../../services/DailyService';
-import { TOTAL_KURALS, getChapterNumber, getKuralsByChapter } from '../../services/DataService';
+import { getChapterNumber, getKuralsByChapter } from '../../services/DataService';
 import { Kural } from '../../types/kural';
 import { useSettingsStore } from '../../store/useSettingsStore';
-import { completedChapters } from '../../utils/milestones';
 import { learningSummary } from '../../utils/srs';
 import { toLocalDateKey } from '../../utils/date';
-import { SHARE_APP_MESSAGE } from '../../constants/app';
 import { useAppTheme, space, radius, useType } from '../../theme';
-
-type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-
-const Tile: React.FC<{ icon: IconName; title: string; subtitle: string; onPress: () => void }> = ({
-  icon, title, subtitle, onPress,
-}) => {
-  const theme = useAppTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      android_ripple={{ color: theme.colors.primaryContainer }}
-      style={({ pressed }) => [
-        styles.tile,
-        { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant, opacity: pressed ? 0.85 : 1 },
-      ]}
-    >
-      <MaterialCommunityIcons name={icon} size={22} color={theme.colors.primary} />
-      <Text variant="titleSmall" style={{ color: theme.colors.onSurface, marginTop: space.md }}>{title}</Text>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{subtitle}</Text>
-    </Pressable>
-  );
-};
 
 export default function TodayScreen() {
   const theme = useAppTheme();
@@ -103,10 +76,6 @@ export default function TodayScreen() {
       : 'Notifications are blocked. You can allow them in system settings.');
   };
 
-  const shareApp = () => {
-    Share.share({ message: SHARE_APP_MESSAGE }).catch(() => {});
-  };
-
   const readSet = useMemo(() => new Set(history), [history]);
   const chapterKurals = useMemo(
     () => (dailyKural ? getKuralsByChapter(getChapterNumber(dailyKural)) : []),
@@ -115,8 +84,6 @@ export default function TodayScreen() {
   const chapterRead = chapterKurals.filter((k) => readSet.has(k.number)).length;
   const firstUnread = chapterKurals.find((k) => !readSet.has(k.number)) ?? chapterKurals[0];
   const dueCount = learningSummary(learning, toLocalDateKey(now)).due;
-  const chaptersDone = useMemo(() => completedChapters(history), [history]);
-  const progress = Math.min(readSet.size / TOTAL_KURALS, 1);
   const showReminderPrompt = !notificationsEnabled && !notificationPromptDismissed;
 
   if (loading) {
@@ -193,7 +160,10 @@ export default function TodayScreen() {
             <KuralCard kural={dailyKural} defaultExpanded visible={onboarded && !detail} />
           </View>
         ) : (
-          <Text style={[styles.errorText, { color: theme.colors.error }]}>Could not load today&apos;s Kural.</Text>
+          <Text style={[styles.errorText, { color: theme.colors.error }]}>
+            Today&apos;s Kural didn&apos;t load. Pull down to try again; if it keeps happening, reinstall the app
+            (your progress is kept on the phone either way).
+          </Text>
         )}
 
         {/* Keep reading: the rest of today's chapter */}
@@ -203,7 +173,7 @@ export default function TodayScreen() {
             accessibilityRole="button"
             accessibilityLabel={`Read the chapter ${dailyKural.chap_tam}, ${chapterRead} of 10 read`}
             android_ripple={{ color: theme.colors.primaryContainer }}
-            style={[styles.chapterRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
+            style={[styles.chapterRow, { borderColor: theme.colors.rule }]}
           >
             <View style={{ flex: 1 }}>
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
@@ -230,45 +200,15 @@ export default function TodayScreen() {
           </Pressable>
         )}
 
-        {/* Progress */}
-        <SectionLabel>Your journey</SectionLabel>
         <Pressable
-          onPress={() => router.navigate('/profile')}
+          onPress={() => setDetail({ kural: getRandomKural() })}
           accessibilityRole="button"
-          style={[styles.journey, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
+          hitSlop={8}
+          style={styles.randomLink}
         >
-          <View style={styles.journeyRow}>
-            <Text style={[type.display(28), { color: theme.colors.onSurface }]}>{readSet.size}</Text>
-            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, flex: 1 }}>
-              of {TOTAL_KURALS} Kurals read
-            </Text>
-            <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
-              {progress > 0 && progress < 0.01 ? '<1' : Math.round(progress * 100)}%
-            </Text>
-          </View>
-          <View style={[styles.progressTrack, { backgroundColor: theme.colors.surfaceVariant }]}>
-            <View style={[styles.progressFill, { width: `${Math.max(progress * 100, readSet.size > 0 ? 1 : 0)}%`, backgroundColor: theme.colors.primary }]} />
-          </View>
-          <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: space.md }}>
-            {chaptersDone} of 133 chapters complete · {learningSummary(learning, toLocalDateKey(now)).mastered} known by heart
-          </Text>
+          <MaterialCommunityIcons name="shuffle-variant" size={18} color={theme.colors.primary} />
+          <Text variant="labelLarge" style={{ color: theme.colors.primary }}>Open a random Kural</Text>
         </Pressable>
-
-        <SectionLabel>More</SectionLabel>
-        <View style={styles.tiles}>
-          <Tile
-            icon="shuffle-variant"
-            title="Random Kural"
-            subtitle="Open any of the 1330"
-            onPress={() => setDetail({ kural: getRandomKural() })}
-          />
-          <Tile
-            icon="account-heart-outline"
-            title="Share the app"
-            subtitle="Invite someone to read along"
-            onPress={shareApp}
-          />
-        </View>
       </ScrollView>
 
       <KuralDetailModal kural={detail?.kural ?? null} sequence={detail?.sequence} onClose={() => setDetail(null)} />
@@ -333,16 +273,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+  // A plain row under the card, not another card
   chapterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,
-    marginHorizontal: space.lg,
-    marginTop: space.md,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+    marginHorizontal: space.xl,
+    marginTop: space.lg,
+    paddingVertical: space.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   chapterProgress: {
     flexDirection: 'row',
@@ -355,37 +294,13 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     borderWidth: 1,
   },
-  journey: {
-    marginHorizontal: space.lg,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  journeyRow: {
+  randomLink: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
     gap: space.sm,
-    marginBottom: space.md,
-  },
-  progressTrack: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: 6,
-    borderRadius: 3,
-  },
-  tiles: {
-    flexDirection: 'row',
-    gap: space.md,
-    paddingHorizontal: space.lg,
-  },
-  tile: {
-    flex: 1,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+    marginHorizontal: space.xl,
+    marginTop: space.lg,
+    minHeight: 44,
   },
 });

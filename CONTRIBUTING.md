@@ -37,6 +37,8 @@ Conventions:
 
 - TypeScript, functional components, hooks; state in `store/useSettingsStore.ts` (zustand).
   Changing the persisted shape needs a `version` bump and a step in `migrateSettings`.
+- Follow [docs/design.md](docs/design.md): plain rows and lists over cards, icons only where they
+  help, colour by role, motion only for state changes.
 - Colours, spacing and type come from `theme/` (`useAppTheme`, `useType`, `space`, `radius`);
   don't hard-code colours, so every page style and accent keeps working.
 - Bundled fonts are one file per weight: use `fontFamily` only, never with a bold `fontWeight`.

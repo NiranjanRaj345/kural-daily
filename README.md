@@ -55,6 +55,9 @@ what you read.
 - Classic, Modern or the phone's own font; optional bold couplet; text size that follows the phone
   or a fixed S–XL; Tamil, English or both.
 
+**Easy start**: a short, hands-on tour on first launch: hear the first Kural, try saying it from
+memory, and peek at today's Kural before choosing how to read.
+
 **Private by design**: no account, no ads, no analytics, no network use. Everything stays on the
 phone ([privacy policy](PRIVACY.md)).
 
@@ -123,7 +126,8 @@ share a Tamil name (குறிப்பறிதல்), so the app identifies
 ## Releasing
 
 See [docs/releasing.md](docs/releasing.md) for versioning and the Google Play and Galaxy Store
-builds, and [docs/testing.md](docs/testing.md) for the device test plan.
+builds, [docs/testing.md](docs/testing.md) for the device test plan, and
+[docs/design.md](docs/design.md) for the design rules (colour roles, type, when to use a card).
 
 ## Contributing
 

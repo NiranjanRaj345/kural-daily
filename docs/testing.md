@@ -28,11 +28,14 @@ The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3
 ## 1. First launch (fresh install)
 
 - [ ] Splash: indigo background with the palm-leaf icon, no white flash.
-- [ ] Welcome 1 shows திருக்குறள், 1330 / 133 / 3 and the first Kural.
-- [ ] Welcome 2: choose தமிழ் மட்டும், then Tamil and English; the selection moves.
-- [ ] After a fresh install, You → Appearance shows Auto page, Indigo, Device font; Reading shows
-      "Match my phone's text size" on; Listening voice says Automatic.
-- [ ] Welcome 3: **Change time** opens the clock. Set an unusual time (e.g. 6:47) using the
+- [ ] Tour 1: the first Kural; **Hear it** reads it aloud (tap again to stop).
+- [ ] Tour 2: three words of the first Kural are hidden as spoilers; tapping each reveals it in the
+      accent colour; when all are shown, a line explains how Learn works. The button says
+      "Skip this" until then.
+- [ ] Tour 3: "Today's Kural" is a spoiler; tapping shows today's number and chapter.
+- [ ] **Skip** on tours 1–3 jumps to the language choice (no settings are skipped).
+- [ ] Language: choose தமிழ் மட்டும், then Tamil and English; the selection moves.
+- [ ] Reminder: **Change time** opens the clock. Set an unusual time (e.g. 6:47) using the
       keyboard icon; the card shows it after **Ok**.
 - [ ] **Remind me daily** shows the Android notification permission prompt. Allow it.
 - [ ] The app opens on Today. You → Reminders shows both Daily Kural and Streak reminder on,
@@ -64,14 +67,15 @@ The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3
       to stop; switching language stops it.
 - [ ] "Keep reading this chapter" opens the chapter's first unread Kural; **Next** goes through
       the chapter; the 10 dots fill as you read.
-- [ ] Your journey numbers go up after reading.
+- [ ] After reading, You shows the Kural in Reading history and the Kurals read figure goes up.
 - [ ] **Counting as read**: open a Kural you haven't read from Browse and close it within a second:
       it is not in You → Reading history. Open another and stay ~6 seconds, or tap Listen / Meaning /
       Save / Share / Learn on it: it is in history.
 - [ ] On a day you haven't read, opening the app alone doesn't add the day to the streak. About
-      6 seconds after Today's Kural is on screen, a green **✓ Read** appears next to அதிகாரம் and
+      6 seconds after Today's Kural is on screen, a **✓ Read** badge appears next to அதிகாரம் and
       the streak pill's last dot fills. Try it from a cold start (swipe the app away first).
-- [ ] Random Kural opens a sheet; Share the app opens the share sheet with the store link.
+- [ ] **Open a random Kural** opens a sheet with a Kural.
+- [ ] You → More → **Share Kural Daily** opens the share sheet with the store link.
 - [ ] The search button opens Search; back returns to Today.
 - [ ] Pull down to refresh works.
 
@@ -130,7 +134,7 @@ The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3
       (Meaning switch, search button, review banner), Learn (badge, Due), Saved, milestones and
       the share sheet's chips, Browse chapter ticks, By heart, the ✓ Read mark, the reading calendar
       and streak dots. Only the flame icon stays saffron.
-      **Reading** → language, text size, reading speed. With "Match my phone's text size" on,
+      **Reading** → language, text size (a sample line under it shows the size), reading speed. With "Match my phone's text size" on,
       change the phone's font size (Settings → Display) and the Kural text follows it. Turn it off:
       S–XL appear and stay the same size whatever the phone is set to. Back on Today, each
       step makes the couplet, the translation and the meaning bigger; the couplet is always the

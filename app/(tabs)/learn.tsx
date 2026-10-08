@@ -2,7 +2,6 @@ import React, { useMemo, useRef, useState } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Button, SegmentedButtons } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSettingsStore } from '../../store/useSettingsStore';
 import { getKuralByNumber } from '../../services/DataService';
 import { getDailyKural } from '../../services/DailyService';
@@ -12,7 +11,7 @@ import { QuizPanel } from '../../components/QuizPanel';
 import { KuralListItem } from '../../components/ui/KuralListItem';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { SectionLabel } from '../../components/ui/SectionLabel';
-import { StatTile } from '../../components/ui/StatTile';
+import { Stats } from '../../components/ui/Stats';
 import { BOX_INTERVALS, dueKurals, learningSummary } from '../../utils/srs';
 import { toLocalDateKey } from '../../utils/date';
 import { useAppTheme, useType, space, radius } from '../../theme';
@@ -138,11 +137,17 @@ export default function LearnScreen() {
               )}
             </View>
 
-            <View style={styles.stats}>
-              <StatTile icon="school-outline" value={summary.total} label="Learning" />
-              <StatTile icon="head-heart-outline" value={summary.mastered} label="By heart" />
-              <StatTile icon="calendar-check-outline" iconColor={theme.colors.primary} value={summary.due} label="Due today" />
-            </View>
+            {summary.total > 0 && (
+              <View style={styles.stats}>
+                <Stats
+                  items={[
+                    { value: summary.total, label: 'Learning' },
+                    { value: summary.mastered, label: 'By heart' },
+                    { value: summary.due, label: 'Due today' },
+                  ]}
+                />
+              </View>
+            )}
 
             {learningList.length > 0 && (
               <>
@@ -168,16 +173,17 @@ export default function LearnScreen() {
 
             {/* How it works */}
             <SectionLabel>How it works</SectionLabel>
-            <View style={[styles.how, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+            {/* Numbered steps read more clearly than a column of icons */}
+            <View style={styles.how}>
               {[
-                { icon: 'book-open-variant' as const, text: 'Read the couplet and listen to it slowly.' },
-                { icon: 'eye-off-outline' as const, text: 'Recite it as words disappear, until you can say it from memory.' },
-                { icon: 'calendar-sync-outline' as const, text: 'It returns after 1, 2, 4, 7, 15, 30 and 60 days. Forget it, and it starts again.' },
-                { icon: 'head-heart-outline' as const, text: 'Once you remember it after a 15-day gap, it counts as known by heart.' },
-              ].map((row) => (
-                <View key={row.text} style={styles.howRow}>
-                  <MaterialCommunityIcons name={row.icon} size={20} color={theme.colors.primary} />
-                  <Text variant="bodyMedium" style={[styles.howText, { color: theme.colors.onSurface }]}>{row.text}</Text>
+                'Read the couplet and listen to it slowly.',
+                'Recite it as words disappear, until you can say it from memory.',
+                'It returns after 1, 2, 4, 7, 15, 30 and 60 days. Forget it, and it starts again.',
+                'Once you remember it after a 15-day gap, it counts as known by heart.',
+              ].map((text, i) => (
+                <View key={text} style={styles.howRow}>
+                  <Text variant="labelLarge" style={[styles.howNumber, { color: theme.colors.primary }]}>{i + 1}</Text>
+                  <Text variant="bodyMedium" style={[styles.howText, { color: theme.colors.onSurface }]}>{text}</Text>
                 </View>
               ))}
             </View>
@@ -212,10 +218,8 @@ const styles = StyleSheet.create({
     marginTop: space.md,
   },
   stats: {
-    flexDirection: 'row',
-    gap: space.sm,
-    paddingHorizontal: space.lg,
-    marginTop: space.md,
+    paddingHorizontal: space.xl,
+    marginTop: space.lg,
   },
   cardMeta: {
     alignItems: 'flex-end',
@@ -231,11 +235,12 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   how: {
-    marginHorizontal: space.lg,
-    padding: space.lg,
-    borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    marginHorizontal: space.xl,
     gap: space.md,
+  },
+  howNumber: {
+    width: 16,
+    fontVariant: ['tabular-nums'],
   },
   howRow: {
     flexDirection: 'row',
