@@ -69,7 +69,7 @@ export const AppearancePicker: React.FC = () => {
       <View style={styles.swatches}>
         {ACCENTS.map((c) => {
           const selected = c.value === accent;
-          const colour = buildTheme(theme.appearance, c.value).colors.primary;
+          const { primary: colour, onPrimary } = buildTheme(theme.appearance, c.value).colors;
           return (
             <Pressable
               key={c.value}
@@ -81,7 +81,7 @@ export const AppearancePicker: React.FC = () => {
             >
               <View style={[styles.ring, { borderColor: selected ? colour : 'transparent' }]}>
                 <View style={[styles.dot, { backgroundColor: colour }]}>
-                  {selected && <MaterialCommunityIcons name="check" size={18} color={theme.dark ? '#121110' : '#FFFFFF'} />}
+                  {selected && <MaterialCommunityIcons name="check" size={18} color={onPrimary} />}
                 </View>
               </View>
               <Text variant="labelSmall" style={{ color: selected ? theme.colors.primary : theme.colors.onSurfaceVariant }}>

@@ -173,9 +173,6 @@ export interface ExtraColors {
   flame: string;
   flameContainer: string;
   onFlameContainer: string;
-  success: string;
-  successContainer: string;
-  onSuccessContainer: string;
   /** Text colour for the couplet itself. */
   ink: string;
   /** Hairlines and the thin rules used in the manuscript layout. */
@@ -205,17 +202,18 @@ interface BasePalette {
 }
 
 const BASES: Record<ResolvedAppearance, BasePalette> = {
+  // Warm paper; the page is a shade deeper than the card so a card reads as a sheet laid on it
   paper: {
     dark: false,
-    background: '#FAF6EE',
-    surface: '#FFFDF8',
-    surfaceVariant: '#F2ECE0',
-    onSurface: '#2A2119',
-    onSurfaceVariant: '#6B5E50',
+    background: '#F6F1E7',
+    surface: '#FFFDF9',
+    surfaceVariant: '#EFE8DB',
+    onSurface: '#29211A',
+    onSurfaceVariant: '#6A5D4F',
     outline: '#A3968A',
-    outlineVariant: '#E8E0D2',
-    ink: '#221A12',
-    elevation: ['#FFFDF8', '#FBF7EF', '#F7F2E8', '#F5EFE4', '#F3ECE0'],
+    outlineVariant: '#E6DDCD',
+    ink: '#1E1710',
+    elevation: ['#FFFDF9', '#FBF7F0', '#F8F3EA', '#F6F0E6', '#F4EDE2'],
   },
   palm: {
     dark: false,
@@ -229,17 +227,19 @@ const BASES: Record<ResolvedAppearance, BasePalette> = {
     ink: '#33230F',
     elevation: ['#F6EAD0', '#F3E5C8', '#F0E1C1', '#EEDEBC', '#ECDBB7'],
   },
+  // Ink-black with a little warmth, not brown; ivory text rather than pure white.
+  // Cards sit one step above the page and hairlines stay quiet.
   night: {
     dark: true,
-    background: '#121110',
-    surface: '#1C1A17',
-    surfaceVariant: '#2A2723',
-    onSurface: '#EDE6DA',
-    onSurfaceVariant: '#B5AB9C',
-    outline: '#706759',
-    outlineVariant: '#332F29',
-    ink: '#F3ECDF',
-    elevation: ['#1E1C19', '#23201C', '#27241F', '#292621', '#2C2924'],
+    background: '#0F0E0C',
+    surface: '#191815',
+    surfaceVariant: '#24221E',
+    onSurface: '#ECE6DA',
+    onSurfaceVariant: '#B0A797',
+    outline: '#6F675B',
+    outlineVariant: '#2B2824',
+    ink: '#F5EFE4',
+    elevation: ['#1B1A17', '#1F1D1A', '#23211D', '#252320', '#282622'],
   },
 };
 
@@ -250,22 +250,24 @@ interface AccentPalette {
   onPrimaryContainer: string;
 }
 
+// Light containers are tinted towards the paper; dark ones stay low and quiet so a
+// tinted block never outshines the couplet.
 const ACCENT_PALETTES: Record<Accent, { light: AccentPalette; dark: AccentPalette }> = {
   indigo: {
-    light: { primary: '#1F4E9E', onPrimary: '#FFFFFF', primaryContainer: '#DCE5F6', onPrimaryContainer: '#0E2A5C' },
-    dark: { primary: '#A8C2F5', onPrimary: '#0E2A5C', primaryContainer: '#25406E', onPrimaryContainer: '#DCE5F6' },
+    light: { primary: '#1F4E9E', onPrimary: '#FFFFFF', primaryContainer: '#E1E6F1', onPrimaryContainer: '#0E2A5C' },
+    dark: { primary: '#A9BFEA', onPrimary: '#0E2A5C', primaryContainer: '#1F2B42', onPrimaryContainer: '#D9E2F4' },
   },
   maroon: {
-    light: { primary: '#8E2B2B', onPrimary: '#FFFFFF', primaryContainer: '#F4DCD7', onPrimaryContainer: '#4A1010' },
-    dark: { primary: '#F2A79D', onPrimary: '#4A1010', primaryContainer: '#5C2420', onPrimaryContainer: '#F9DCD7' },
+    light: { primary: '#8E2B2B', onPrimary: '#FFFFFF', primaryContainer: '#F3E0DB', onPrimaryContainer: '#4A1010' },
+    dark: { primary: '#EBA89E', onPrimary: '#4A1010', primaryContainer: '#3F211E', onPrimaryContainer: '#F7DCD6' },
   },
   green: {
-    light: { primary: '#2F6B3A', onPrimary: '#FFFFFF', primaryContainer: '#DAEAD5', onPrimaryContainer: '#10331A' },
-    dark: { primary: '#9ED3A3', onPrimary: '#10331A', primaryContainer: '#25502D', onPrimaryContainer: '#D6EFD6' },
+    light: { primary: '#2F6B3A', onPrimary: '#FFFFFF', primaryContainer: '#DFE9DA', onPrimaryContainer: '#10331A' },
+    dark: { primary: '#A0CFA4', onPrimary: '#10331A', primaryContainer: '#1E3523', onPrimaryContainer: '#D4ECD5' },
   },
   saffron: {
-    light: { primary: '#9A5400', onPrimary: '#FFFFFF', primaryContainer: '#F9E1C0', onPrimaryContainer: '#4A2800' },
-    dark: { primary: '#F5BC6C', onPrimary: '#4A2800', primaryContainer: '#64400F', onPrimaryContainer: '#FCE2BD' },
+    light: { primary: '#9A5400', onPrimary: '#FFFFFF', primaryContainer: '#F6E4CA', onPrimaryContainer: '#4A2800' },
+    dark: { primary: '#EDBE78', onPrimary: '#4A2800', primaryContainer: '#3F2E18', onPrimaryContainer: '#F8E2C2' },
   },
 };
 
@@ -292,7 +294,7 @@ export const buildTheme = (
       ...md3.colors,
       ...a,
       secondary: base.onSurfaceVariant,
-      onSecondary: base.dark ? '#121110' : '#FFFFFF',
+      onSecondary: base.dark ? base.background : '#FFFFFF',
       // Paper draws selected segments, chips and tonal buttons with the secondary
       // container, so it follows the accent too
       secondaryContainer: a.primaryContainer,
@@ -318,7 +320,7 @@ export const buildTheme = (
       onError: base.dark ? '#690005' : '#FFFFFF',
       errorContainer: base.dark ? '#4A1F1D' : '#F9DEDC',
       onErrorContainer: base.dark ? '#FFDAD6' : '#410E0B',
-      backdrop: 'rgba(20,16,12,0.45)',
+      backdrop: base.dark ? 'rgba(0,0,0,0.6)' : 'rgba(20,16,12,0.45)',
       elevation: {
         level0: 'transparent',
         level1: base.elevation[0],
@@ -329,11 +331,8 @@ export const buildTheme = (
       },
       // The streak flame is saffron; with the Saffron accent it is the accent itself
       flame: accent === 'saffron' ? a.primary : base.dark ? '#F5BC6C' : '#B4651A',
-      flameContainer: base.dark ? '#3D2A12' : '#FBE9CF',
+      flameContainer: base.dark ? '#33240F' : '#FBE9CF',
       onFlameContainer: base.dark ? '#FCE2BD' : '#5C3300',
-      success: base.dark ? '#8FD19A' : '#2E6B3A',
-      successContainer: base.dark ? '#1D3A23' : '#DCEEDB',
-      onSuccessContainer: base.dark ? '#CDEFD0' : '#10331A',
       ink: base.ink,
       rule: base.outlineVariant,
     },

@@ -13,15 +13,17 @@ offline.
 
 ## Data stored on your device
 
-Your settings and progress are stored only on your device:
+These are stored only on your device:
 
-- appearance, font, text size, reading language, voice and reminder settings
+- your settings: appearance, font, text size, reading language, voice and speed, reminders and
+  share options
 - saved Kurals, reading history, reading days and streaks
 - Kurals you are learning and their review dates
 - quiz scores and recent searches
 
-This data never leaves your phone. It is deleted when you uninstall the app or clear its data, and
-You → Reset progress clears your history, streaks, learning and quiz scores at any time.
+This data never leaves your phone. It is deleted when you uninstall the app or clear its data.
+You → Reset progress clears your reading history, reading days, streaks, learning and quiz scores
+at any time; your saved Kurals and settings stay.
 
 ## Permissions
 
@@ -30,7 +32,8 @@ You → Reset progress clears your history, streaks, learning and quiz scores at
 - **Read aloud**: uses your phone's own text-to-speech voices. The app sends nothing anywhere. (Your
   phone's speech engine may have its own policy, for example if it uses an online voice.)
 - **Sharing**: Kural images are created on your device and handed to the share sheet you choose.
-  No storage permission is needed.
+  No storage permission is needed. On iPhone, choosing Save Image in the share sheet asks for
+  permission to add it to your Photos.
 
 ## Children
 

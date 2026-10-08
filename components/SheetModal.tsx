@@ -35,9 +35,9 @@ export const SheetModal: React.FC<SheetModalProps> = ({
       statusBarTranslucent
       navigationBarTranslucent
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.backdrop }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.content, { height, backgroundColor: theme.colors.background, paddingBottom: insets.bottom }]}>
+        <View style={[styles.content, { height, backgroundColor: theme.colors.background, borderColor: theme.colors.outlineVariant, paddingBottom: insets.bottom }]}>
           <View style={[styles.grabber, { backgroundColor: theme.colors.outline }]} />
           <View style={[styles.header, { borderBottomColor: theme.colors.outlineVariant }]}>
             <View style={styles.title}>
@@ -69,11 +69,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   content: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    // A hairline edge so the sheet stays distinct from the dimmed page in Night
+    borderWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 0,
     overflow: 'hidden',
   },
   header: {

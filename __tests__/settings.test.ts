@@ -102,6 +102,6 @@ describe('defaults for a new install', () => {
   });
 });
 
-it('keeps the couplet at its usual weight unless bold is chosen', () => {
-  expect(useSettingsStore.getInitialState().boldKural).toBe(false);
+it('sets the couplet in bold by default', () => {
+  expect(useSettingsStore.getInitialState().boldKural).toBe(true);
 });

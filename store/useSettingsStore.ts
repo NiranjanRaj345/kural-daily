@@ -18,7 +18,7 @@ export interface SettingsState {
   appearance: Appearance;
   accent: Accent;
   readingFont: ReadingFont;
-  /** Set the couplet in bold instead of its usual weight. */
+  /** Set the couplet in bold (the default) instead of its lighter book weight. */
   boldKural: boolean;
   /** Couplet text size (S 20, M 24, L 28, XL 32), or 0 to follow the phone's text size. */
   fontSize: number;
@@ -138,7 +138,7 @@ export const useSettingsStore = create<SettingsState>()(
       appearance: 'auto',
       accent: 'indigo',
       readingFont: 'device',
-      boldKural: false,
+      boldKural: true,
       fontSize: 0, // the phone's text size (DEVICE_TEXT_SIZE)
       showTamil: true,
       showEnglish: true,
