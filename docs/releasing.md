@@ -58,8 +58,9 @@ Build from `master` after merging. `production` builds bump `android.versionCode
 3. Upload the `.aab` to **Internal testing** first, install it from the Play link on your phone,
    then promote to Production. (New personal developer accounts must run a closed test with
    testers for a set period before Production is unlocked; the Console shows the current rule.)
-4. Store listing: title, short and full description, the 512×512 icon (`assets/images/icon.png`
-   scaled), a 1024×500 feature graphic, and at least two phone screenshots.
+4. Store listing: title, short and full description, the 512×512 icon
+   (`docs/store/icon-512.png`), the 1024×500 feature graphic (`docs/store/feature-graphic.png`)
+   and at least two phone screenshots.
 5. App content: privacy policy URL
    `https://github.com/aatralabs/kural-daily/blob/master/PRIVACY.md` (keep it in sync with
    You → Privacy policy in the app), Data safety: *no data collected or shared*, content rating
