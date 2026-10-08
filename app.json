@@ -67,7 +67,11 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "fb870c7e-fb67-45be-952f-8bd86df0d4b6"
+      }
+    },
+    "owner": "aatralabs"
   }
 }
