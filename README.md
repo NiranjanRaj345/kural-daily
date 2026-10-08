@@ -55,6 +55,9 @@ what you read.
 - Classic, Modern or the phone's own font; optional bold couplet; text size that follows the phone
   or a fixed S–XL; Tamil, English or both.
 
+**Easy start**: a short, hands-on tour on first launch: hear the first Kural, try saying it from
+memory, and peek at today's Kural before choosing how to read.
+
 **Private by design**: no account, no ads, no analytics, no network use. Everything stays on the
 phone ([privacy policy](PRIVACY.md)).
 

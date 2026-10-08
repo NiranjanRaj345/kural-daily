@@ -8,7 +8,7 @@
 3. If the privacy policy changed, update `PRIVACY.md` and You → Privacy policy in
    `app/(tabs)/profile.tsx` together, with the new date.
 4. `npm run check` passes, and the [device test plan](testing.md) passes on a real phone.
-5. Merge to `master`, date the changelog section (e.g. `## 1.3.0 (2026-10-06)`), and create the
+5. Merge to `master`, date the changelog section (e.g. `## 1.3.0 (2026-10-08)`), and create the
    GitHub release `vX.Y.Z` from `master` with that section as the notes.
 
 ## Store builds

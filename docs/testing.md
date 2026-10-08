@@ -67,14 +67,15 @@ The bottom of the You tab shows the version being tested (e.g. **Kural Daily 1.3
       to stop; switching language stops it.
 - [ ] "Keep reading this chapter" opens the chapter's first unread Kural; **Next** goes through
       the chapter; the 10 dots fill as you read.
-- [ ] Your journey numbers go up after reading.
+- [ ] After reading, You shows the Kural in Reading history and the Kurals read figure goes up.
 - [ ] **Counting as read**: open a Kural you haven't read from Browse and close it within a second:
       it is not in You → Reading history. Open another and stay ~6 seconds, or tap Listen / Meaning /
       Save / Share / Learn on it: it is in history.
 - [ ] On a day you haven't read, opening the app alone doesn't add the day to the streak. About
-      6 seconds after Today's Kural is on screen, a green **✓ Read** appears next to அதிகாரம் and
+      6 seconds after Today's Kural is on screen, a **✓ Read** badge appears next to அதிகாரம் and
       the streak pill's last dot fills. Try it from a cold start (swipe the app away first).
-- [ ] Random Kural opens a sheet; Share the app opens the share sheet with the store link.
+- [ ] **Open a random Kural** opens a sheet with a Kural.
+- [ ] You → More → **Share Kural Daily** opens the share sheet with the store link.
 - [ ] The search button opens Search; back returns to Today.
 - [ ] Pull down to refresh works.
 

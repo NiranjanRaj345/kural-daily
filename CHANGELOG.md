@@ -1,77 +1,99 @@
 # Changelog
 
-## Unreleased
+## 1.3.0 (2026-10-08)
 
-- Open source under the GNU GPL v3.0 or later. New README, CONTRIBUTING and PRIVACY (the privacy policy as a page the stores can link to); device test plan and release steps moved to `docs/`.
-- You → More → **Source code** links to the repository.
-- Removed the unused EAS `development` profile; `.gitignore` covers credentials and build outputs; a GitHub check runs `npm run check` on every pull request.
+A redesign around reading and learning the Thirukkural, and the first open-source release.
 
-## 1.3.0 (2026-10-06)
-
-### From the first round of device testing
-- **A short, hands-on welcome tour**: hear the first Kural, try saying it from memory with three words hidden (tap to reveal), peek at today's Kural, then choose how to read and whether to be reminded. Skip goes straight to the choices.
-- **Reading and Appearance sheets** no longer open with a Kural preview; a single sample line under Text size shows the size, and each appearance choice previews itself.
-- **Calmer screens, fewer boxes**: lists of Kurals (Saved, Learn, Search, history, chapters) are plain rows with dividers instead of a stack of cards; the icon-and-number stat tiles are a simple row of figures; Today drops the progress card and the Random/Share tiles (progress is on You, sharing in You → More) for a quiet "Open a random Kural" link; How it works is numbered steps. Welcome no longer says "seven words" (it's seven feet) or dates the book to "two thousand years ago".
-- **Today's Kural is a surprise**: instead of 1, 2, 3… the days follow one fixed shuffled order of all 1330 Kurals. None repeats until every Kural has been shown (each returns exactly 1330 days later), two days in a row never come from the same chapter, and everyone sees the same Kural on the same day.
-- **Reading has to be real**: a Kural counts as read (history, journey, streak) after about 6 seconds on screen with the app open, or straight away when you listen, open its meaning, save, share or learn it. Opening one and closing it at once no longer counts. Opening the app no longer counts as reading either; it only ends a streak that has already lapsed. A green ✓ Read on the card shows when a Kural has counted.
-- **Listen to the meaning**: a Listen button under the explanation reads the Tamil meaning in the Tamil voice and the English one in the phone's English voice, sentence by sentence.
-- **The couplet keeps its two lines** on Today, in Kural sheets and in shared images: the text shrinks a little where needed so each line fits on one line. On Today it never goes below about 60% of your text size; with L or XL on a narrow phone the lines wrap rather than get tiny.
-- **Memorize hides words like a chat spoiler**: each hidden word becomes a shimmer of drifting particles (the word itself isn't drawn, so nothing shows through); tap it to reveal. Replaces the boxes that showed where the words were.
-- **Accent colour everywhere**: selected buttons, chips, the review banner, the Learn badge, milestones, Saved, read-chapter ticks, By heart, the Read mark, the reading calendar and streak dots now follow the accent. In the quiz, right answers and Accuracy use the accent and wrong answers a quiet grey (a red would be confused with Kumkum). Filter and mode chips are outlined, with only the selected one filled. Only the flame icon stays saffron (and with the Saffron accent it is the accent),.
-- **Text size works on all the reading text**: S–XL now scales the couplet, the English translation and the meaning together (it used to change only the couplet, which the two-line fitting then shrank back, so S, M and L looked the same). The couplet stays larger than the meaning, and with the Device font it is now bold (Android has no semi-bold for most system fonts). Memorize follows the text size too.
-- **Match my phone's text size** (new, and the default): the reading text follows the phone's font-size setting. Turn it off to pick S–XL, which then stay exactly that size whatever the phone is set to.
-- **Bold couplet** (optional, off by default): You → Appearance → Couplet weight sets the Kural in bold for any font. Off keeps the usual book weight.
-- **New defaults for a new install**: page Auto, accent Indigo, the phone's font and text size, and the best Tamil voice available. Existing settings are kept on upgrade.
-- **Reading calendar** can go back a year (more if your reading goes back further), and forward again to this month.
-- **Today's card, tighter**: the whole card fits on one screen on most phones. The meaning has one header row (பொருள், a small தமிழ் / EN switch, a speaker button, collapse), the chapter details sit on two lines, and Read is a small badge beside them.
-- **Today is shorter**: the week strip is now a one-line streak pill; tap it for the full calendar on You.
-- **You, reorganised**: streak and a month-by-month reading calendar at the top, then Kurals read / chapters done / by heart, Progress (milestones, history, About), Settings (Appearance, Reading, Listening voice, Reminders, each in its own sheet with a one-line summary) and More.
-- **About the Thirukkural rewritten**: the poet, the work's names, its place among the பதினெண்கீழ்க்கணக்கு, the verse form, the arrangement, commentaries and translations, and the sources used in the app.
+### Daily reading
+- **Today's Kural is a surprise.** The days follow one fixed, shuffled order of all 1330 Kurals:
+  none repeats until every Kural has been shown, two days in a row never come from the same
+  chapter, and everyone sees the same Kural on the same day.
+- **The couplet on its two original lines**, on Today, in every Kural sheet and in shared images.
+  The text shrinks a little where needed. With large text on a narrow phone the lines wrap rather
+  than get tiny.
+- **A compact Today card** that fits on one screen on most phones. The meaning has one header row:
+  பொருள் (fold or open), a தமிழ் / EN switch and a speaker button. Below it, the rest of today's
+  chapter and a link to a random Kural.
+- **Listen to the meaning**: the Tamil explanation in the Tamil voice, the English one in the
+  phone's English voice.
+- **Reading counts when you actually read**: a Kural counts (history, streak) after about six
+  seconds on screen, or as soon as you listen, open its meaning, save, share or learn it. A ✓ Read
+  badge shows when it has. Opening the app alone doesn't count.
+- Each Kural shows its place in the book (chapter, position 1–10). Browse shows each book's parts
+  (இயல்).
 
 ### Learn by heart (new)
-- **Memorize mode (மனப்பாடம்)**: read the couplet, then recite it as words are hidden step by step (every other word, first words only, nothing), tapping any word to peek. Listen slowly, see the meaning as a hint.
-- **Spaced review**: Kurals you learn come back after 1, 2, 4, 7, 15, 30 and 60 days (Leitner boxes). Forget one and it starts again; remembered after a 15-day gap counts as known by heart.
-- **Learn tab** with today's review, your Kurals and their progress, how it works, and the quiz. The tab shows a badge when reviews are due.
+- **Memorize (மனப்பாடம்)**: read the couplet, then recite it as words are hidden step by step
+  (every other word, first words only, then all). Hidden words shimmer like a chat spoiler;
+  tap one to check it. Listen slowly, or show the meaning as a hint.
+- **Spaced review**: learned Kurals come back after 1, 2, 4, 7, 15, 30 and 60 days. Forget one and
+  it starts again; remembered after a 15-day gap, it counts as known by heart.
+- **Learn tab** with today's review, your Kurals and their progress, how it works, and the quiz.
+  The tab shows a badge when reviews are due.
 
-### Reading
-- New look built for reading: Noto Serif Tamil for the couplets and Lora for English, set like a printed verse with a margin rule.
-- **Page** (Auto, Paper, Palm leaf, Night) and **Accent** (Indigo, Kumkum, Leaf, Saffron) choices, previewed in their own colours. Every combination meets WCAG AA contrast.
-- Each Kural shows its place in the book: chapter number, position in the chapter (9/10), book.
-- **Reading language** (Both / தமிழ் / English) and **reading speed** for Listen.
-- **Font** choice: Classic (book serif), Modern (clean sans) or Device (the phone's own font throughout the app). Shared images follow it too.
+### Look and feel
+- A quieter design: plain lists and rows instead of a box around everything, the couplet always
+  the largest text on the card, and the design rules written down in `docs/design.md`.
+- **Page** (Auto, Paper, Palm leaf, Night) and **Accent** (Indigo, Kumkum, Leaf, Saffron). The
+  accent is used for everything you select, complete or get right; only the streak flame stays
+  saffron. Every combination meets WCAG AA contrast.
+- **Font**: Classic (book serif), Modern (clean sans) or Device (the phone's font), with an
+  optional **Bold couplet**.
+- **Text size**: match the phone's text size (default), or a fixed S, M, L or XL that scales the
+  couplet, translation and meaning together.
+- New installs start with Auto page, Indigo, the phone's font and text size, and the best Tamil
+  voice installed. Existing settings are kept on upgrade.
+
+### Welcome
+- A short, hands-on tour on first launch: hear the first Kural, say it from memory with three words
+  hidden, peek at today's Kural, then choose how to read and whether to be reminded.
 
 ### Listening
-- **Most natural Tamil voice by default**: Automatic picks the best Tamil voice installed (higher-quality and neural voices first, offline voices preferred), instead of whatever the phone defaults to.
-- Couplets are recited line by line with a short pause between, without reading out punctuation; Memorize plays a little slower to repeat after.
-- Voice picker lists Tamil voices best first, marks the natural-sounding ones, previews each with the first Kural, and explains how to install a better Tamil voice (with a shortcut to the text-to-speech settings on Android).
-- If the phone has no Tamil voice at all, Listen explains how to add one instead of reading Tamil with an English voice.
-- Browse shows the parts (இயல்) of each book; Today offers the rest of today's chapter with a 10-dot progress line.
-- **About the Thirukkural**: the poet, the couplet form (with the seven feet marked) and the full structure of books, parts and chapters.
+- **The most natural Tamil voice by default**: Automatic picks the best Tamil voice installed.
+  Couplets are recited line by line with a short pause.
+- The voice picker lists Tamil voices best first, previews each one, and leads straight to
+  downloading a better voice (Android) or explains where to find one (iPhone). If there is no Tamil
+  voice, Listen says how to add one instead of reading Tamil with an English voice.
 
 ### Reminders
-- **Pick any time**: a clock and keyboard time picker replaces the preset list, for both reminders, on the welcome screen and in You → Reminders.
-- **Streak reminder** (new): an evening nudge, at a time you choose, only on days you haven't read yet and your streak is about to end. Turned on with "Remind me daily"; separate switch and its own Android notification channel.
-- Reminders now look 30 days ahead (was 14), skip today's once you've read, and re-plan as soon as you read or change a setting. Unchanged plans aren't rescheduled.
-- If notification permission is refused (now or later in system settings) the switches turn off to match; a background check never turns them off while permission simply hasn't been asked yet.
+- **Any time you choose**, with a clock and keyboard picker, on the welcome screen and in
+  You → Reminders.
+- **Streak reminder** (new): an evening nudge, only on days you haven't read while your streak is
+  still alive. It has its own switch and Android notification channel.
+- Reminders are planned 30 days ahead, name each day's Kural, skip today's once you've read, and
+  re-plan when you read or change a setting. A test reminder lets you check they arrive.
+- If notifications are refused, now or later in system settings, the switches turn off to match.
 
-### Voice
-- **Install Tamil voices** is always available at the top of the voice picker (You → Listening voice). On Android it opens Google's voice download screen directly, with the text-to-speech settings as a second option; on iPhone it shows where to download one.
+### You
+- Streak and a month-by-month reading calendar, Kurals read / chapters done / by heart,
+  milestones, reading history, and **About the Thirukkural** (the poet, the work's names, the
+  verse form, how the book is arranged, commentaries and translations).
+- Settings in sheets: Appearance, Reading, Listening voice, Reminders, each with a one-line summary.
+- Share the app, the privacy policy, a link to the source code, and Reset progress.
+
+### Sharing
+- Share a Kural as an image in Paper, Palm leaf, Ink, Indigo, Kumkum or Leaf style, always with
+  the couplet on two lines, or as text; Copy text.
 
 ### App icon
-- New icon: a bundle of palm-leaf manuscripts (ஓலைச்சுவடி) tied with a saffron cord, with அ inscribed on the top leaf in the app's couplet serif. The Thirukkural opens with அ (Kural 1: அகர முதல எழுத்தெல்லாம்), and was preserved for centuries on palm leaves. Drawn flat, without gradients or shadows.
-- Proper assets for every platform: full-bleed iOS icon (no transparency), Android adaptive foreground and background inside the safe zone, a monochrome layer for themed icons (the letter and hole cut out, the leaves kept apart), matching splash, notification icon and favicon. The old icon had baked-in corners and a white background that showed on both platforms.
+- A bundle of palm-leaf manuscripts (ஓலைச்சுவடி) tied with a saffron cord, with அ inscribed on
+  the top leaf, the letter the Thirukkural begins with. Proper assets for every platform:
+  - Android adaptive and themed (monochrome) icons
+  - a full-bleed iOS icon
+  - the splash screen, notification icon and favicon
 
-### Habit and sharing
-- **Welcome** on first launch: what the Thirukkural is, how you want to read, and an optional daily reminder.
-- **Streak** on Today (a one-line pill) and a reading calendar on You.
-- **Milestones**: ten reading goals from your first Kural to all 1330, with progress.
-- **Share the app** from Today and You; share sheet gains palm-leaf, ink, indigo, kumkum and leaf styles and a Copy text button.
+### Open source and privacy
+- Kural Daily is open source under the GNU GPL v3.0 or later. See the README, CONTRIBUTING and
+  PRIVACY (the privacy policy, also linkable from the app stores).
+- Still no account, ads, analytics or network use: everything stays on the phone.
 
 ### Fixed
 - Reminder times are always saved as a valid time (the picker can return 24 for midnight).
-- Android: the voice settings shortcuts are declared for Android 11+ package visibility; the unneeded "draw over other apps" permission is blocked; the window background follows the theme (expo-system-ui).
-- The data spelled the part படையியல் as "படையில்".
-- The web build no longer pre-renders pages (it showed hydration errors with saved settings).
+- Android: the voice-settings shortcuts work on Android 11+; the unneeded "draw over other apps"
+  permission is blocked; the window background follows the theme.
+- The part name படையியல் was spelled "படையில்".
+- Today's Kural now counts as read on Android after a cold start (the reading timer could stay
+  stopped).
 
 ## 1.2.0 (2026-10-05)
 
